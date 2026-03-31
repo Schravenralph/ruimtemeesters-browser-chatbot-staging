@@ -61,6 +61,10 @@ services:
       # --- LLM Providers ---
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      # --- Audit logging ---
+      - AUDIT_LOG_LEVEL=${AUDIT_LOG_LEVEL:-REQUEST}
+      - ENABLE_AUDIT_LOGS_FILE=true
+      - AUDIT_INCLUDED_PATHS=/api/v1/chat,/api/v1/tools,/api/v1/models,/api/v1/auths
       # --- Telemetry off ---
       - SCARF_NO_ANALYTICS=true
       - DO_NOT_TRACK=true
