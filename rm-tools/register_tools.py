@@ -56,10 +56,10 @@ def register_tool(base_url: str, token: str, tool_id: str, name: str, filepath: 
         print(f"  + Registered: {name} ({tool_id})")
         return True
 
-    if resp.status_code == 400 and "already exists" in resp.text.lower():
+    if resp.status_code == 400 and "already registered" in resp.text.lower():
         # Update existing tool
         resp = requests.post(
-            f"{base_url}/api/v1/tools/{tool_id}/update",
+            f"{base_url}/api/v1/tools/id/{tool_id}/update",
             headers=headers,
             json=payload,
         )
