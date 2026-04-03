@@ -54,8 +54,10 @@ async def clerk_sso_middleware(request: Request, call_next) -> Response:
 
     path = request.url.path
 
-    # Skip API routes, static assets, health checks, and the OIDC flow itself
-    if any(path.startswith(p) for p in SKIP_PREFIXES):
+    # Only intercept the /auth page — this is where OpenWebUI's frontend
+    # redirects when there's no token. The root / is served as a static
+    # prerendered page and doesn't go through ASGI middleware.
+    if not path.startswith("/auth"):
         return await call_next(request)
 
     # Skip if already has an OpenWebUI token
@@ -73,13 +75,11 @@ async def clerk_sso_middleware(request: Request, call_next) -> Response:
     )
 
     if not has_clerk_session:
+        log.info("Clerk SSO: /auth page hit but no __client_uat cookie — showing login form")
         return await call_next(request)
 
     # User has a Clerk session but no OpenWebUI token — redirect to OIDC
     # The OIDC flow will complete instantly because Clerk already has a session
-    log.info(
-        "Clerk SSO: detected __client_uat cookie for %s — redirecting to OIDC",
-        path,
-    )
+    log.info("Clerk SSO: detected __client_uat at /auth — auto-redirecting to OIDC")
 
     return RedirectResponse(url="/oauth/oidc/login", status_code=302)
