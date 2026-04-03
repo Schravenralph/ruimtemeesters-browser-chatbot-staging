@@ -65,6 +65,7 @@ async def clerk_sso_middleware(request: Request, call_next) -> Response:
     """
     # Skip if Clerk is not configured
     if not CLERK_SECRET_KEY:
+        log.warning("Clerk SSO: skipping — CLERK_SECRET_KEY not set")
         return await call_next(request)
 
     path = request.url.path
@@ -73,13 +74,16 @@ async def clerk_sso_middleware(request: Request, call_next) -> Response:
     if any(path.startswith(p) for p in SKIP_PREFIXES):
         return await call_next(request)
 
-    # Skip if already has an OpenWebUI token
-    if request.cookies.get("token"):
+    # Skip if already has an OpenWebUI token (but only if it's valid)
+    token = request.cookies.get("token")
+    if token:
+        log.debug("Clerk SSO: skipping — existing token cookie found for %s", path)
         return await call_next(request)
 
     # Check for Clerk __session cookie
     clerk_session = request.cookies.get("__session")
     if not clerk_session:
+        log.info("Clerk SSO: no __session cookie for %s (cookies: %s)", path, list(request.cookies.keys()))
         return await call_next(request)
 
     # Only process HTML page requests (not XHR/fetch)
