@@ -191,12 +191,13 @@
 		} else if (
 			$config?.oauth?.providers?.oidc &&
 			!$page.url.searchParams.get('error') &&
-			(!$config?.features.enable_login_form || document.cookie.includes('__client_uat'))
+			(!$config?.features.enable_login_form ||
+				(document.cookie.includes('__client_uat') && !document.cookie.includes('token=')))
 		) {
 			// Auto-redirect to OIDC when:
 			// 1. Login form is disabled (original behavior), OR
-			// 2. User has a Clerk session cookie (__client_uat on .datameesters.nl)
-			// Skip redirect if there's an error param to avoid infinite loop
+			// 2. User has a Clerk session cookie but no OpenWebUI token yet
+			// Skip if error param or token cookie exists (prevents redirect loop after OIDC callback)
 			window.location.href = `${WEBUI_BASE_URL}/oauth/oidc/login`;
 		} else {
 			onboarding = $config?.onboarding ?? false;
