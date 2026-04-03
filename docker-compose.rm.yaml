@@ -20,6 +20,10 @@ services:
     group_add:
       - video
       - "993"  # render group GID for /dev/dri/renderD128
+    environment:
+      - OLLAMA_NUM_THREAD=20
+      - OLLAMA_FLASH_ATTENTION=1
+      - OLLAMA_KV_CACHE_TYPE=q8_0
     tty: true
     restart: unless-stopped
     networks:
@@ -47,6 +51,11 @@ services:
       # --- Branding ---
       - WEBUI_NAME=${WEBUI_NAME:-Ruimtemeesters AI}
       - WEBUI_FAVICON_URL=/brand-assets/favicon.svg
+      # --- URL (needed behind reverse proxy for correct OAuth redirects) ---
+      - WEBUI_URL=${WEBUI_URL:-}
+      # --- Cookie security (set true for HTTPS production) ---
+      - WEBUI_AUTH_COOKIE_SAME_SITE=${WEBUI_AUTH_COOKIE_SAME_SITE:-lax}
+      - WEBUI_AUTH_COOKIE_SECURE=${WEBUI_AUTH_COOKIE_SECURE:-false}
       # --- Auth (Clerk OIDC) ---
       - ENABLE_OAUTH_SIGNUP=${ENABLE_OAUTH_SIGNUP:-true}
       - OPENID_PROVIDER_URL=${CLERK_OIDC_DISCOVERY_URL:-}
