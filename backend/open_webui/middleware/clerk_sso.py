@@ -1,44 +1,32 @@
 """
-FastAPI middleware for Clerk shared cookie SSO.
+FastAPI middleware for Clerk shared-session SSO.
 
-Strategy: when a request has a valid Clerk __session cookie but no OpenWebUI
-token cookie, we verify the JWT, create/sync the OpenWebUI user, generate an
-OpenWebUI token, and REDIRECT back to the same URL with the token cookie set.
-The browser then re-requests with the token cookie, and OpenWebUI's normal
-auth flow picks it up seamlessly.
+Strategy: Clerk's __session cookie is host-only (datameesters.nl) and does NOT
+reach subdomains like chatbot.datameesters.nl. However, the __client_uat cookie
+IS set on .datameesters.nl (all subdomains). When we detect __client_uat but no
+OpenWebUI token, the user is logged into Clerk elsewhere — we auto-redirect to
+the OIDC flow. Since the user already has a Clerk session, the OIDC flow
+completes instantly (no login form), and OpenWebUI gets its token seamlessly.
 
-This redirect approach is necessary because OpenWebUI's SvelteKit frontend
-checks auth client-side and redirects to /auth before the backend response
-for the initial page load arrives.
+Flow:
+1. User visits chatbot.datameesters.nl (no OpenWebUI token)
+2. Middleware sees __client_uat cookie → user has a Clerk session
+3. Redirect to /oauth/oidc/callback trigger (OpenWebUI's OIDC initiation)
+4. Clerk sees the user is logged in → auto-approves → redirects back
+5. OpenWebUI creates session token from OIDC response → user is in
 """
 
 import logging
 import os
 
 from fastapi import Request
-from starlette.responses import RedirectResponse, Response
-
-from open_webui.utils.clerk_sso import (
-    verify_clerk_session,
-    fetch_clerk_user,
-    get_or_create_openwebui_user,
-    create_session_token,
-)
+from starlette.responses import RedirectResponse, Response  # noqa: F401
 
 log = logging.getLogger(__name__)
 
-# Clerk configuration
-CLERK_JWKS_URI = os.environ.get(
-    "CLERK_JWKS_URI",
-    "https://clerk.datameesters.nl/.well-known/jwks.json",
-)
-CLERK_ISSUER = os.environ.get(
-    "CLERK_ISSUER",
-    "https://clerk.datameesters.nl",
-)
 CLERK_SECRET_KEY = os.environ.get("CLERK_SECRET_KEY", "")
 
-# Paths to skip
+# Paths to skip — don't intercept API calls, assets, or the OIDC flow itself
 SKIP_PREFIXES = (
     "/static/",
     "/brand-assets/",
@@ -55,35 +43,23 @@ SKIP_PREFIXES = (
 
 async def clerk_sso_middleware(request: Request, call_next) -> Response:
     """
-    Middleware that enables seamless SSO from Clerk's __session cookie.
+    Detect Clerk session via __client_uat cookie and auto-redirect to OIDC.
 
-    On page loads (HTML requests) with a valid __session cookie but no
-    OpenWebUI token: verifies JWT, creates user, sets token cookie, and
-    redirects back. The browser then loads with the token cookie set.
-
-    On API requests or when token already exists: passes through.
+    This gives seamless SSO: users logged into any *.datameesters.nl app
+    get into the chatbot without seeing a login page.
     """
     # Skip if Clerk is not configured
     if not CLERK_SECRET_KEY:
-        log.warning("Clerk SSO: skipping — CLERK_SECRET_KEY not set")
         return await call_next(request)
 
     path = request.url.path
 
-    # Skip API routes, static assets, health checks
+    # Skip API routes, static assets, health checks, and the OIDC flow itself
     if any(path.startswith(p) for p in SKIP_PREFIXES):
         return await call_next(request)
 
-    # Skip if already has an OpenWebUI token (but only if it's valid)
-    token = request.cookies.get("token")
-    if token:
-        log.debug("Clerk SSO: skipping — existing token cookie found for %s", path)
-        return await call_next(request)
-
-    # Check for Clerk __session cookie
-    clerk_session = request.cookies.get("__session")
-    if not clerk_session:
-        log.info("Clerk SSO: no __session cookie for %s (cookies: %s)", path, list(request.cookies.keys()))
+    # Skip if already has an OpenWebUI token
+    if request.cookies.get("token"):
         return await call_next(request)
 
     # Only process HTML page requests (not XHR/fetch)
@@ -91,52 +67,19 @@ async def clerk_sso_middleware(request: Request, call_next) -> Response:
     if "text/html" not in accept:
         return await call_next(request)
 
-    log.info("Clerk SSO: found __session cookie, verifying...")
+    # Check for Clerk __client_uat cookie (set on .datameesters.nl, reaches all subdomains)
+    has_clerk_session = any(
+        k.startswith("__client_uat") for k in request.cookies.keys()
+    )
 
-    # Verify the Clerk JWT
-    claims = verify_clerk_session(clerk_session, CLERK_JWKS_URI, CLERK_ISSUER)
-    if not claims:
-        log.warning("Clerk SSO: __session JWT verification failed")
+    if not has_clerk_session:
         return await call_next(request)
 
-    clerk_user_id = claims.get("sub")
-    if not clerk_user_id:
-        return await call_next(request)
-
-    log.info("Clerk SSO: verified JWT for user %s", clerk_user_id)
-
-    # Fetch user details from Clerk API
-    clerk_user = fetch_clerk_user(clerk_user_id, CLERK_SECRET_KEY)
-    if not clerk_user:
-        log.warning("Clerk SSO: could not fetch user %s from Clerk API", clerk_user_id)
-        return await call_next(request)
-
-    # Find or create OpenWebUI user
-    user = get_or_create_openwebui_user(clerk_user)
-    if not user:
-        log.warning("Clerk SSO: could not create OpenWebUI user for %s", clerk_user.get("email"))
-        return await call_next(request)
-
-    # Create OpenWebUI session token
-    token = create_session_token(user)
-
+    # User has a Clerk session but no OpenWebUI token — redirect to OIDC
+    # The OIDC flow will complete instantly because Clerk already has a session
     log.info(
-        "Clerk SSO: authenticated %s (%s) — setting token cookie and redirecting",
-        clerk_user.get("name"),
-        clerk_user.get("email"),
+        "Clerk SSO: detected __client_uat cookie for %s — redirecting to OIDC",
+        path,
     )
 
-    # Redirect back to the same URL with the token cookie set
-    # The browser will re-request and OpenWebUI will see the token
-    redirect_url = str(request.url)
-    response = RedirectResponse(url=redirect_url, status_code=302)
-    response.set_cookie(
-        key="token",
-        value=token,
-        httponly=True,
-        samesite="lax",
-        secure=request.url.scheme == "https",
-        max_age=43200,  # 12 hours
-    )
-
-    return response
+    return RedirectResponse(url="/oauth/oidc/login", status_code=302)
