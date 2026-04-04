@@ -11,7 +11,7 @@
 
 services:
   ollama:
-    image: ollama/ollama:${OLLAMA_DOCKER_TAG:-latest}
+    image: intelanalytics/ipex-llm-inference-cpp-xpu:latest
     container_name: rm-ollama
     volumes:
       - ollama-data:/root/.ollama
@@ -21,9 +21,14 @@ services:
       - video
       - "993"  # render group GID for /dev/dri/renderD128
     environment:
-      - OLLAMA_NUM_THREAD=20
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_NUM_GPU=999
       - OLLAMA_FLASH_ATTENTION=1
       - OLLAMA_KV_CACHE_TYPE=q8_0
+    entrypoint: >
+      bash -c "export PATH=/usr/local/lib/python3.11/dist-packages/bigdl/cpp/libs/ollama:$$PATH
+      && source /opt/intel/oneapi/setvars.sh --force 2>/dev/null
+      && ollama serve"
     tty: true
     restart: unless-stopped
     networks:
