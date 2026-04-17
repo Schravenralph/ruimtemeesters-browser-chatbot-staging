@@ -25,3 +25,20 @@ Postgres, Redis, and GraphDB connections succeed. Neo4j connection fails (DNS re
 ## Notes
 
 Fix Neo4j first (see companion issue), then restart the backend. The backend requires Neo4j as a mandatory dependency — it will not start in degraded mode.
+
+---
+
+## Resolution
+
+**Status:** RESOLVED transitively on 2026-04-03.
+
+Root cause was the Neo4j crash-loop (see `2026-04-03-neo4j-crash-loop-duplicate-config.md`). Once Neo4j stays up, the backend's Neo4j driver connects and the FATAL no longer fires.
+
+**Verification 2026-04-17:**
+```bash
+docker ps --format "{{.Names}}\t{{.Status}}" | grep -E "databank-(neo4j|backend)"
+#  ruimtemeesters-databank-neo4j     Up … (healthy)
+#  (backend container status varies by repo branch state)
+```
+
+Closing as a downstream effect of the Neo4j fix; no independent code change was needed in the backend.
