@@ -142,12 +142,13 @@ Richtlijnen:
                 {"content": "Welke gemeenten hebben actieve contracten?", "title": ["Gemeente status", "contracten"]},
                 {"content": "Wat zijn de nieuwste opdrachten in de inbox?", "title": ["Opdrachten", "inbox"]},
             ],
-            "toolIds": ["server:mcp:rm-databank", "server:mcp:rm-geoportaal", "server:mcp:rm-tsa", "server:mcp:rm-dashboarding", "server:mcp:rm-riens", "server:mcp:rm-sales-predictor", "server:mcp:rm-opdrachten", "server:mcp:rm-aggregator"],
+            "toolIds": ["server:mcp:rm-memory", "server:mcp:rm-databank", "server:mcp:rm-geoportaal", "server:mcp:rm-tsa", "server:mcp:rm-dashboarding", "server:mcp:rm-riens", "server:mcp:rm-sales-predictor", "server:mcp:rm-opdrachten", "server:mcp:rm-aggregator"],
         },
         "params": {
             "system": """Je bent de Ruimtemeesters AI Assistent — de centrale toegangspoort tot alle Ruimtemeesters applicaties en data.
 
 Je hebt toegang tot alle tools:
+- Memory: BOPA sessies (create/get/update/list), cross-conversation state
 - Databank: beleidsdocumenten zoeken, kennisgraaf
 - Geoportaal: ruimtelijke regels, luchtkwaliteit, weer, gebouwdata
 - TSA: demografische prognoses (Prophet, SARIMA, ensemble)
@@ -207,6 +208,40 @@ PROMPTS = [
         "command": "help",
         "name": "Help",
         "content": "Toon een overzicht van alle beschikbare commando's en wat de Ruimtemeesters AI Assistent kan doen. Organiseer per categorie: beleid, demografie, ruimtelijk, sales, en opdrachten.",
+    },
+    {
+        "command": "bopa-haalbaarheid",
+        "name": "BOPA Haalbaarheid",
+        "content": (
+            "Beoordeel de haalbaarheid van een BOPA op {{adres}} voor "
+            "{{plan_omschrijving}}. Begin met geocoden, dan "
+            "`activities_at_point`, `check_bouwvlak_hoogte`, en "
+            "`check_bkl_8_0b`. Sla het resultaat op in een nieuwe BOPA "
+            "sessie via `create_bopa_session` en "
+            "`update_bopa_session(phase=1, ...)`."
+        ),
+    },
+    {
+        "command": "bopa-strijdigheid",
+        "name": "BOPA Strijdigheid",
+        "content": (
+            "Voer de strijdigheidsanalyse uit voor BOPA sessie "
+            "{{session_id}}. Roep `ruimtelijke_toets` en `evaluate_rules` "
+            "aan, en schrijf het resultaat met "
+            "`update_bopa_session(phase=2, ...)`. Zorg dat Fase 1 eerst is "
+            "voltooid."
+        ),
+    },
+    {
+        "command": "bopa-beleid",
+        "name": "BOPA Beleidstoets",
+        "content": (
+            "Doe een beleidstoets per bestuurslaag voor BOPA sessie "
+            "{{session_id}}. Rijk: BKL artikelen + NOVI. Provincie: "
+            "verordening + omgevingsvisie. Gemeente: omgevingsvisie + "
+            "sectorbeleid. Gebruik `search_policy` per laag en sla op met "
+            "`update_bopa_session(phase=3, ...)`."
+        ),
     },
 ]
 
@@ -278,11 +313,39 @@ def register_prompt(base_url: str, token: str, prompt: dict) -> bool:
     return False
 
 
+def _dry_run() -> int:
+    """Print every assistant + prompt payload without calling the API."""
+    print(f"=== DRY RUN — {len(ASSISTANTS)} assistants, {len(PROMPTS)} prompts ===\n")
+    for a in ASSISTANTS:
+        print(f"- assistant id={a['id']} name={a['name']!r}")
+        print(f"    base_model_id: {a['base_model_id']}")
+        print(f"    toolIds: {a['meta'].get('toolIds', [])}")
+        print(f"    system prompt: {len(a['params']['system'])} chars")
+    print()
+    for p in PROMPTS:
+        print(f"- prompt /{p['command']} — {p['name']}")
+    print("\nNothing was sent. Re-run without --dry-run to register.")
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description="Register RM assistants and prompts")
     parser.add_argument("--url", default="http://localhost:3333", help="OpenWebUI base URL")
-    parser.add_argument("--token", required=True, help="Admin JWT token")
+    parser.add_argument(
+        "--token",
+        help="Admin JWT token (required unless --dry-run)",
+    )
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Print payloads without calling the API — useful in CI",
+    )
     args = parser.parse_args()
+
+    if args.dry_run:
+        return _dry_run()
+    if not args.token:
+        parser.error("--token is required unless --dry-run is passed")
 
     print(f"=== Registering {len(ASSISTANTS)} assistants ===\n")
     model_success = sum(1 for a in ASSISTANTS if register_model(args.url, args.token, a))
