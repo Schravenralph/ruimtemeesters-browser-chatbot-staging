@@ -141,11 +141,3 @@ class MCPClient:
             await self.exit_stack.aclose()
             self.exit_stack = None
         self.session = None
-
-    async def __aenter__(self):
-        await self.exit_stack.__aenter__()
-        return self
-
-    async def __aexit__(self, exc_type, exc_value, traceback):
-        await self.exit_stack.__aexit__(exc_type, exc_value, traceback)
-        await self.disconnect()
