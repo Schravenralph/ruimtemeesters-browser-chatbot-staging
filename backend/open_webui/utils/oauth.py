@@ -7,7 +7,7 @@ import sys
 import urllib
 import uuid
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import re
 import fnmatch
@@ -1625,6 +1625,11 @@ class OAuthManager:
         # Compute cookie expiry from JWT lifetime
         expires_delta = parse_duration(auth_manager_config.JWT_EXPIRES_IN)
         cookie_max_age = int(expires_delta.total_seconds()) if expires_delta else None
+        cookie_expires = (
+            datetime.now(timezone.utc) + expires_delta
+            if expires_delta
+            else None
+        )
 
         # Set the cookie token
         # Redirect back to the frontend with the JWT token

@@ -181,6 +181,12 @@
 		}
 
 		await oauthCallbackHandler();
+
+		// If oauthCallbackHandler succeeded, the user is now authenticated — skip OIDC redirect
+		if ($user) {
+			return;
+		}
+
 		form = $page.url.searchParams.get('form');
 
 		loaded = true;
