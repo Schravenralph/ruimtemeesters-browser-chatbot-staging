@@ -2,7 +2,7 @@
 
 ## What it is
 
-A branded AI chatbot that gives the Ruimtemeesters team conversational access to the entire application ecosystem. Built as a fork of OpenWebUI with deep integrations into each sibling application.
+A multi-surface AI platform that gives the Ruimtemeesters team conversational access to the entire application ecosystem. Built as a fork of OpenWebUI with deep integrations into each sibling application — accessible from the canonical chat UI, embedded panels in sibling apps, and developer tools like Claude Desktop.
 
 ## Who it's for
 
@@ -22,6 +22,8 @@ Team members switch between multiple applications (Databank, Geoportaal, Dashboa
 5. **Sales intelligence** — gemeente contract status, sales forecasting
 6. **Cross-app context** — combine policy + spatial + demographic data in one query
 7. **Knowledge graph** — traverse relationships between policies, topics, and organizations
+8. **Embedded chat in apps** — access AI and chat history from within any sibling application
+9. **Developer tool access** — MCP-native access to RM data from Claude Desktop, Cursor, Claude Code
 
 ## Roadmap
 
@@ -33,3 +35,11 @@ Team members switch between multiple applications (Databank, Geoportaal, Dashboa
 | A5 | Done | 5 assistants + 8 prompt templates |
 | A6 | Done | Audit logging + docs |
 | C1-C5 | Planned | MCP extension layer |
+| D1 | Proposed | LiteLLM proxy for provider routing + cost management ([ADR-0010](../06-adr/0010-litellm-proxy.md)) |
+| D2 | Proposed | Shared session cookie across .datameesters.nl ([ADR-0009](../06-adr/0009-shared-session-cookie-domain.md)) |
+| D3 | Proposed | OpenWebUI API client library for sibling apps ([ADR-0008](../06-adr/0008-embedded-chat-via-api.md)) |
+| D4 | Proposed | Embedded chat panel in pilot sibling app |
+| D5 | Proposed | Deep-linking from embedded panels to canonical chat UI |
+| D6 | Proposed | Per-user spend dashboards via LiteLLM |
+
+See [Multi-Surface Platform Vision](../01-architecture/multi-surface-platform-vision.md) for full architecture and cost analysis.
