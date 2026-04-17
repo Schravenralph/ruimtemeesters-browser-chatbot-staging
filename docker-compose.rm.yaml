@@ -56,7 +56,15 @@ services:
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
       # --- Branding ---
       - WEBUI_NAME=${WEBUI_NAME:-Ruimtemeesters AI}
-      - WEBUI_FAVICON_URL=/brand-assets/favicon.svg
+      - WEBUI_FAVICON_URL=/brand-assets/icon-blue.png
+      # PWA manifest override — RM colors + icon. Served from this container's own /static mount.
+      - EXTERNAL_PWA_MANIFEST_URL=http://localhost:8080/static/brand-assets/rm-manifest.json
+      # Non-dismissible trust banner on every session.
+      - 'WEBUI_BANNERS=[{"id":"rm-trust","type":"info","title":"","content":"Besloten werkomgeving voor Ruimtemeesters · Data wordt niet gedeeld met LLM-providers","dismissible":false,"timestamp":1713398400}]'
+      # Default model — Gemini 2.5 Flash Lite (fast, cheap, verified).
+      - DEFAULT_MODELS=${DEFAULT_MODELS:-gemini.gemini-2.5-flash-lite}
+      # Internal tool — disable community share (data-leak path).
+      - ENABLE_COMMUNITY_SHARING=${ENABLE_COMMUNITY_SHARING:-false}
       # --- URL (needed behind reverse proxy for correct OAuth redirects) ---
       - WEBUI_URL=${WEBUI_URL:-}
       # --- Cookie security (set true for HTTPS production) ---
@@ -79,7 +87,12 @@ services:
       - CLERK_JWKS_URI=${CLERK_JWKS_URI:-https://clerk.datameesters.nl/.well-known/jwks.json}
       - CLERK_ISSUER=${CLERK_ISSUER:-https://clerk.datameesters.nl}
       # --- LLM Providers ---
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      # Multi-endpoint OpenAI-compatible: OpenAI + Google Gemini (AI Studio).
+      # Order matches OPENAI_API_KEYS to OPENAI_API_BASE_URLS by position.
+      # Per-endpoint curation (prefix_id, model_ids, tags) is NOT env-readable in OpenWebUI;
+      # configure it under Admin Panel → Settings → Connections after first boot.
+      - OPENAI_API_BASE_URLS=https://api.openai.com/v1;https://generativelanguage.googleapis.com/v1beta/openai
+      - OPENAI_API_KEYS=${OPENAI_API_KEY:-};${GEMINI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       # --- Audit logging ---
       - AUDIT_LOG_LEVEL=${AUDIT_LOG_LEVEL:-REQUEST}

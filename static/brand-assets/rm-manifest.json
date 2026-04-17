@@ -1,0 +1,30 @@
+{
+	"name": "Ruimtemeesters AI",
+	"short_name": "RM AI",
+	"description": "Ruimtemeesters AI — besloten werkomgeving voor beleidsonderzoek, ruimtelijke analyse en demografische prognoses.",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#F7F4EF",
+	"theme_color": "#002EA3",
+	"icons": [
+		{
+			"src": "/brand-assets/icon-blue.png",
+			"type": "image/png",
+			"sizes": "500x500",
+			"purpose": "any"
+		},
+		{
+			"src": "/brand-assets/icon-blue.png",
+			"type": "image/png",
+			"sizes": "500x500",
+			"purpose": "maskable"
+		}
+	],
+	"share_target": {
+		"action": "/",
+		"method": "GET",
+		"params": {
+			"text": "shared"
+		}
+	}
+}
