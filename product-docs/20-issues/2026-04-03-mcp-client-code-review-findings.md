@@ -66,3 +66,25 @@ No critical issues. The MCP client is functional and correctly wired. The main i
 1. Add timeouts to tool calls
 2. Add null check in disconnect
 3. Consider connection pooling for scale (future)
+
+---
+
+## Resolution
+
+**Partial — findings #2 and #3 fixed on branch `fix/mcp-client-hardening`. Findings #1, #4, #5, #6 deferred / informational.**
+
+### Finding #2 (no timeout on tool calls) — FIXED
+
+`call_tool` and `list_tool_specs` are now wrapped in `anyio.fail_after(_MCP_CALL_TIMEOUT)`. Timeout defaults to `AIOHTTP_CLIENT_TIMEOUT_TOOL_SERVER_DATA * 3` (~30s with the 10s repo default) — reuses the existing tool-server timeout knob rather than introducing a new one. MCP sessions have more overhead than a single HTTP request, so 3x gives headroom for handshake + list + call.
+
+### Finding #3 (null AttributeError on disconnect) — FIXED
+
+`disconnect()` now checks `self.exit_stack is not None` before calling `aclose()`, and resets both `exit_stack` and `session` to `None` so subsequent calls are no-ops. This matters because `connect()`'s except handler invokes `disconnect()` via `asyncio.shield`; previously, if `connect` failed before line 60 (where `exit_stack` gets assigned), the AttributeError replaced the real upstream exception and masked it from the caller.
+
+Regression test added at `backend/open_webui/test/util/test_mcp_client.py` (2/2 pass under pytest inside the container).
+
+### Deferred
+
+- **#1** (per-server SSL config): real prod concern but needs schema change to `TOOL_SERVER_CONNECTIONS`; filing separately once we have a production deployment that needs it.
+- **#6** (MCP client per-request lifecycle): correct but expensive. Deferred until measured throughput warrants pooling.
+- **#4, #5**: positive findings, no action.

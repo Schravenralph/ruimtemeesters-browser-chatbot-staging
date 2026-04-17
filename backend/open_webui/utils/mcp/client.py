@@ -9,7 +9,15 @@ from mcp.client.auth import OAuthClientProvider, TokenStorage
 from mcp.client.streamable_http import streamablehttp_client
 from mcp.shared.auth import OAuthClientInformationFull, OAuthClientMetadata, OAuthToken
 import httpx
-from open_webui.env import AIOHTTP_CLIENT_SESSION_TOOL_SERVER_SSL
+from open_webui.env import (
+    AIOHTTP_CLIENT_SESSION_TOOL_SERVER_SSL,
+    AIOHTTP_CLIENT_TIMEOUT_TOOL_SERVER_DATA,
+)
+
+# Fallback if the env var is None (opt-out). MCP sessions have more overhead
+# than a single aiohttp request, so we give call_tool/list_tool_specs a bit
+# more headroom than the default 10s used for simple tool-server fetches.
+_MCP_CALL_TIMEOUT = (AIOHTTP_CLIENT_TIMEOUT_TOOL_SERVER_DATA or 10) * 3
 
 
 def create_insecure_httpx_client(headers=None, timeout=None, auth=None):
@@ -66,7 +74,8 @@ class MCPClient:
         if not self.session:
             raise RuntimeError('MCP client is not connected.')
 
-        result = await self.session.list_tools()
+        with anyio.fail_after(_MCP_CALL_TIMEOUT):
+            result = await self.session.list_tools()
         tools = result.tools
 
         tool_specs = []
@@ -87,7 +96,8 @@ class MCPClient:
         if not self.session:
             raise RuntimeError('MCP client is not connected.')
 
-        result = await self.session.call_tool(function_name, function_args)
+        with anyio.fail_after(_MCP_CALL_TIMEOUT):
+            result = await self.session.call_tool(function_name, function_args)
         if not result:
             raise Exception('No result returned from MCP tool call.')
 
@@ -124,8 +134,13 @@ class MCPClient:
         return result_dict
 
     async def disconnect(self):
-        # Clean up and close the session
-        await self.exit_stack.aclose()
+        # Clean up and close the session. exit_stack may be None if connect()
+        # failed before it was assigned (line 60), and disconnect() is shielded
+        # in that error path — so guard against AttributeError.
+        if self.exit_stack is not None:
+            await self.exit_stack.aclose()
+            self.exit_stack = None
+        self.session = None
 
     async def __aenter__(self):
         await self.exit_stack.__aenter__()
