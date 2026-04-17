@@ -16,11 +16,17 @@ A_CODE=$(curl -s -o /dev/null -w '%{http_code}' "$HOST/brand-assets/icon-blue.pn
 
 MANIFEST=$(curl -s "$HOST/manifest.json")
 
-TOKEN=$(docker exec "$APP_CONTAINER" python3 -c "
-from open_webui.utils.auth import create_token
+# Pass ADMIN_USER_ID via `docker exec -e` so the value is read from
+# os.environ inside Python — nothing is interpolated into source, so an
+# ADMIN_USER_ID with an unusual char can't break out of a string literal.
+# Matches the pattern in seed-gemini-connection.sh.
+TOKEN=$(docker exec -i -e ADMIN_USER_ID="$ADMIN_USER_ID" "$APP_CONTAINER" python3 - <<'PY' 2>/dev/null | tail -1
+import os
 from datetime import timedelta
-print(create_token({'id': '$ADMIN_USER_ID'}, timedelta(minutes=5)))
-" 2>/dev/null | tail -1)
+from open_webui.utils.auth import create_token
+print(create_token({'id': os.environ['ADMIN_USER_ID']}, timedelta(minutes=5)))
+PY
+)
 
 CONFIG=$(curl -s "$HOST/api/config" -H "Authorization: Bearer $TOKEN")
 BANNERS=$(curl -s "$HOST/api/v1/configs/banners" -H "Authorization: Bearer $TOKEN")
