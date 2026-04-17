@@ -21,7 +21,7 @@ ASSISTANTS = [
         "name": "Beleidsadviseur",
         "base_model_id": BASE_MODEL,
         "meta": {
-            "profile_image_url": "/brand-assets/icon-blue.png",
+            "profile_image_url": "/brand-assets/assistants/policy.svg",
             "description": "Expert in Dutch policy documents. Searches beleidsstukken, explains policy implications, compares gemeente policies, and shows relevant rules on the map. Understands the Omgevingswet context.",
             "suggestion_prompts": [
                 {"content": "Zoek alle beleidsstukken over luchtkwaliteit in Den Haag", "title": ["Zoek beleidsstukken", "over luchtkwaliteit"]},
@@ -49,7 +49,7 @@ Richtlijnen:
         "name": "Demografie Analist",
         "base_model_id": BASE_MODEL,
         "meta": {
-            "profile_image_url": "/brand-assets/icon-blue.png",
+            "profile_image_url": "/brand-assets/assistants/chart.svg",
             "description": "Specialist in population data and demographic forecasting. Queries Primos/CBS data, runs forecasts with different models, explains trends, and compares projections across gemeenten.",
             "suggestion_prompts": [
                 {"content": "Wat is de bevolkingsprognose voor Utrecht in 2030?", "title": ["Bevolkingsprognose", "Utrecht 2030"]},
@@ -77,7 +77,7 @@ Richtlijnen:
         "name": "Ruimtelijk Adviseur",
         "base_model_id": BASE_MODEL,
         "meta": {
-            "profile_image_url": "/brand-assets/icon-blue.png",
+            "profile_image_url": "/brand-assets/assistants/map-pin.svg",
             "description": "Spatial planning expert. Queries 3D building data, air quality, weather, and spatial rules. Generates map exports and sets up monitoring alerts. Links spatial data to relevant policy context.",
             "suggestion_prompts": [
                 {"content": "Hoe is de luchtkwaliteit in Rotterdam op dit moment?", "title": ["Luchtkwaliteit", "Rotterdam"]},
@@ -105,7 +105,7 @@ Richtlijnen:
         "name": "Sales Adviseur",
         "base_model_id": BASE_MODEL,
         "meta": {
-            "profile_image_url": "/brand-assets/icon-blue.png",
+            "profile_image_url": "/brand-assets/assistants/handshake.svg",
             "description": "Business development assistant. Shows gemeente contract status, finds matching TenderNED assignments, runs sales forecasts, and provides market intelligence.",
             "suggestion_prompts": [
                 {"content": "Welke gemeenten hebben actieve contracten met Ruimtemeesters?", "title": ["Gemeente status", "actieve contracten"]},
@@ -134,7 +134,7 @@ Richtlijnen:
         "name": "Ruimtemeesters Assistent",
         "base_model_id": BASE_MODEL,
         "meta": {
-            "profile_image_url": "/brand-assets/icon-blue.png",
+            "profile_image_url": "/brand-assets/assistants/spark.svg",
             "description": "General-purpose Ruimtemeesters assistant with access to all tools. Routes to the right app based on your question. The default assistant for any RM-related query.",
             "suggestion_prompts": [
                 {"content": "Zoek beleidsstukken over luchtkwaliteit in Den Haag", "title": ["Zoek beleidsstukken", "luchtkwaliteit"]},
