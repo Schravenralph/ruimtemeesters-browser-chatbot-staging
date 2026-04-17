@@ -39,8 +39,7 @@ Current `Ruimtemeesters-TSA/.env` now uses Docker service names and internal por
 DB_HOST=dashboarding-postgres
 DB_PORT=5432
 DB_NAME=dashboarding
-DB_USER=postgres
-DB_PASSWORD=postgres
+# DB_USER / DB_PASSWORD intentionally omitted — see .env for credentials
 ```
 
 Landed as part of `Ruimtemeesters-TSA@9c15339` ("refactor: use ruimtemeesters-shared network, drop local postgres"), which also drops the per-repo postgres container and connects TSA to the shared `ruimtemeesters-databank-network` where Dashboarding's postgres lives.
