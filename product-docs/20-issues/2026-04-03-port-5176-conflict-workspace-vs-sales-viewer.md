@@ -39,11 +39,11 @@ Non-critical because the Sales Viewer API (port 3001) is what the MCP server nee
 Authoritative fix lives in **[Platform ADR-0003 — Port Allocation](https://github.com/Schravenralph/Ruimtemeesters-Platform/blob/main/adr/ADR-0003-port-allocation.md)**. First-claim rule:
 
 - Riens-Sales-Viewer claimed `5176` first (commit `cdd8797`, 2025-10-07) → keeps it.
-- Ruimtemeesters-Workspace claimed later (March 2026) → moves to `5178` (next free slot in the 5176–5179 frontend band).
+- Ruimtemeesters-Workspace claimed later (March 2026) → moves to `5180` (past the 5176-5179 contiguous block; 5178 is reserved for the future `projecten` app in Workspace's catalog).
 
 **Commits:**
-- `Ruimtemeesters-Platform@0c543da` — Platform ADR-0003 added
-- `Ruimtemeesters-Workspace@4697695` — `VITE_PORT=5176` → `5178`
+- `Ruimtemeesters-Platform@fb1f11f` — Platform ADR-0003 added (amended 5178→5180 after bugbot review)
+- `Ruimtemeesters-Workspace@c239f68` — `VITE_PORT=5176` → `5180` (initial 5178 caught by bugbot as colliding with the in-repo `projecten` app reservation)
 
 **Verification:** start both simultaneously — `cd Ruimtemeesters-Workspace && pnpm dev` then `cd Riens-Sales-Viewer && docker compose -f docker-compose.dev.yml up -d frontend`. Both should bind without conflict.
 
