@@ -22,9 +22,10 @@ OpenWebUI UI.
 
 | Server ID in OpenWebUI | URL | Used by assistants |
 |---|---|---|
-| `rm-memory` | `https://mcp.datameesters.nl/memory/mcp` | BOPA Adviseur, Ruimtemeesters Assistent |
-| `rm-databank` | `https://mcp.datameesters.nl/databank/mcp` | Beleidsadviseur, Ruimtelijk Adviseur, BOPA Adviseur, Ruimtemeesters Assistent |
-| `rm-geoportaal` | `https://mcp.datameesters.nl/geoportaal/mcp` | Ruimtelijk Adviseur, BOPA Adviseur, Ruimtemeesters Assistent |
+| `rm-memory` | `https://mcp.datameesters.nl/memory/mcp` | Ruimtemeesters Assistent |
+| `rm-databank` | `https://mcp.datameesters.nl/databank/mcp` | Beleidsadviseur, Ruimtelijk Adviseur, Ruimtemeesters Assistent |
+| `rm-geoportaal` | `https://mcp.datameesters.nl/geoportaal/mcp` | Ruimtelijk Adviseur, Ruimtemeesters Assistent |
+<!-- Note: the 5 specialist assistants are pre-existing; the policy going forward is ONE general agent (`rm-assistent`) with skill files + slash prompts, not per-role specialists. See ADR-024 in Databank. Specialists will be consolidated in a follow-up PR. -->
 | `rm-tsa` | `https://mcp.datameesters.nl/tsa/mcp` | Demografie Analist, Ruimtemeesters Assistent |
 | `rm-dashboarding` | `https://mcp.datameesters.nl/dashboarding/mcp` | Demografie Analist, Ruimtemeesters Assistent |
 | `rm-riens` | `https://mcp.datameesters.nl/riens/mcp` | Sales Adviseur, Ruimtemeesters Assistent |
@@ -66,7 +67,7 @@ python rm-tools/register_assistants.py \
   --token <your admin JWT>
 ```
 
-Output ends with `Models: 6/6` and `Prompts: 11/11` when successful.
+Output ends with `Models: 5/5` and `Prompts: 11/11` when successful.
 
 To preview without touching the server:
 
