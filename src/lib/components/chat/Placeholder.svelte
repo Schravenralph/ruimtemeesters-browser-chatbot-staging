@@ -20,6 +20,7 @@
 		currentChatPage
 	} from '$lib/stores';
 	import { sanitizeResponseContent, extractCurlyBraceWords } from '$lib/utils';
+	import { getFirstName } from '$lib/utils/greeting';
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
 
 	import Suggestions from './Suggestions.svelte';
@@ -243,6 +244,14 @@
 		</div>
 	{:else}
 		<div class="mx-auto max-w-2xl font-primary mt-2" in:fade={{ duration: 200, delay: 200 }}>
+			{#if getFirstName($user)}
+				<div
+					class="mx-5 mb-3 text-center text-lg text-gray-600 dark:text-gray-300"
+					data-testid="rm-greeting"
+				>
+					Hoi {getFirstName($user)}, waarmee kan ik je vandaag helpen?
+				</div>
+			{/if}
 			<div class="mx-5">
 				<Suggestions
 					suggestionPrompts={atSelectedModel?.info?.meta?.suggestion_prompts ??
