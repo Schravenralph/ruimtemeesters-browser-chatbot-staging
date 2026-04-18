@@ -7,7 +7,7 @@
 
 ## Description
 
-The Databank's POST endpoints (`/api/knowledge-graph/traverse`, `/api/knowledge-graph/graphrag-query`, etc.) reject requests authenticated only via `X-API-Key` header with a CSRF validation error: `"Session invalid or expired. Please refresh the page."` 
+The Databank's POST endpoints (`/api/knowledge-graph/traverse`, `/api/knowledge-graph/graphrag-query`, etc.) reject requests authenticated only via `X-API-Key` header with a CSRF validation error: `"Session invalid or expired. Please refresh the page."`
 
 GET endpoints work fine with API key auth. Only POST endpoints are affected.
 

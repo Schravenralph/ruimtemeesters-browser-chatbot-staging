@@ -22,11 +22,11 @@ Today, MCP servers are consumed by a single surface — the OpenWebUI fork at ch
 
 ### 3.1 Surfaces
 
-| Surface | Client | Use Case |
-|---------|--------|----------|
-| **Canonical chat UI** | OpenWebUI (chat.datameesters.nl) | Full-featured chat: all models, assistants, tools, history, admin |
-| **Embedded chat panels** | Custom lightweight views in sibling apps | Quick contextual queries without leaving the app; read chat history |
-| **Developer tools** | Claude Desktop, Cursor, Claude Code | MCP-native access to RM data during development (Phase C5, already planned) |
+| Surface                  | Client                                   | Use Case                                                                    |
+| ------------------------ | ---------------------------------------- | --------------------------------------------------------------------------- |
+| **Canonical chat UI**    | OpenWebUI (chat.datameesters.nl)         | Full-featured chat: all models, assistants, tools, history, admin           |
+| **Embedded chat panels** | Custom lightweight views in sibling apps | Quick contextual queries without leaving the app; read chat history         |
+| **Developer tools**      | Claude Desktop, Cursor, Claude Code      | MCP-native access to RM data during development (Phase C5, already planned) |
 
 ### 3.2 System Diagram
 
@@ -91,10 +91,10 @@ OpenWebUI is not merely a chat frontend — it is the backend of record for conv
 
 Two options exist for showing chat in sibling apps:
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| **Iframe** | Zero frontend code | Requires relaxing X-Frame-Options/CSP; clunky UX; full chat UI forced into a panel |
-| **REST API + custom views** | Purpose-built UX per app; lightweight; only fetch what's needed | Must build and maintain the views |
+| Approach                    | Pros                                                            | Cons                                                                               |
+| --------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| **Iframe**                  | Zero frontend code                                              | Requires relaxing X-Frame-Options/CSP; clunky UX; full chat UI forced into a panel |
+| **REST API + custom views** | Purpose-built UX per app; lightweight; only fetch what's needed | Must build and maintain the views                                                  |
 
 **Decision: REST API + custom views.** Each sibling app calls the OpenWebUI API with the user's JWT, retrieves chats and messages, and renders them in a design that fits the app. A "Open in full chat" action deep-links to `chat.datameesters.nl/c/<chat-id>`, where the shared cookie means the user lands authenticated in the same conversation.
 
@@ -127,25 +127,25 @@ OpenWebUI already supports LiteLLM as a provider. This is a configuration change
 
 ### 5.1 Pricing Reference (as of 2026-04-16)
 
-| Model | Input (per 1M tokens) | Output (per 1M tokens) |
-|-------|----------------------|------------------------|
-| Claude Opus 4.6 | $15 | $75 |
-| Claude Sonnet 4.6 | $3 | $15 |
-| Claude Haiku 4.5 | $1 | $5 |
+| Model             | Input (per 1M tokens) | Output (per 1M tokens) |
+| ----------------- | --------------------- | ---------------------- |
+| Claude Opus 4.6   | $15                   | $75                    |
+| Claude Sonnet 4.6 | $3                    | $15                    |
+| Claude Haiku 4.5  | $1                    | $5                     |
 
-| Subscription | Price | Notes |
-|-------------|-------|-------|
-| Claude Pro | $20/mo | Includes web search, artifacts, file tools |
-| Claude Max | $100–200/mo | Higher limits, same features |
+| Subscription | Price       | Notes                                      |
+| ------------ | ----------- | ------------------------------------------ |
+| Claude Pro   | $20/mo      | Includes web search, artifacts, file tools |
+| Claude Max   | $100–200/mo | Higher limits, same features               |
 
 ### 5.2 Usage Profiles
 
-| Profile | Estimated API Cost (Sonnet 4.6) | vs. Subscription |
-|---------|--------------------------------|-----------------|
-| **Light chat** (20 msg/day, ~2k in + 1k out each) | ~$19/mo | Roughly equal to Pro |
-| **Light chat on Haiku** | ~$6/mo | Cheaper than Pro |
-| **Heavy conversational** (long contexts, docs, artifacts) | $40–100+/mo | Pro/Max wins — subscriptions subsidize heavy users |
-| **Agentic / coding** (tool loops, long sessions) | $500–2000/mo | Max ($200) dramatically cheaper |
+| Profile                                                   | Estimated API Cost (Sonnet 4.6) | vs. Subscription                                   |
+| --------------------------------------------------------- | ------------------------------- | -------------------------------------------------- |
+| **Light chat** (20 msg/day, ~2k in + 1k out each)         | ~$19/mo                         | Roughly equal to Pro                               |
+| **Light chat on Haiku**                                   | ~$6/mo                          | Cheaper than Pro                                   |
+| **Heavy conversational** (long contexts, docs, artifacts) | $40–100+/mo                     | Pro/Max wins — subscriptions subsidize heavy users |
+| **Agentic / coding** (tool loops, long sessions)          | $500–2000/mo                    | Max ($200) dramatically cheaper                    |
 
 ### 5.3 When API + OpenWebUI Wins
 
@@ -183,14 +183,14 @@ This vision builds on the existing Phase A → Phase C roadmap. New work items:
 
 ### Phase D — Multi-Surface Platform
 
-| Step | Description | Depends On |
-|------|-------------|------------|
-| D1 | Deploy LiteLLM proxy, configure OpenWebUI to route through it | Phase A (done) |
-| D2 | Scope OpenWebUI auth cookie to `.datameesters.nl` | Phase A2 (done) |
-| D3 | Build a thin OpenWebUI API client library (TypeScript) for sibling apps | D2 |
-| D4 | Embed chat history panel in one pilot sibling app | D3 |
-| D5 | Add deep-linking from embedded panel to canonical chat UI | D4 |
-| D6 | Per-user spend dashboards via LiteLLM | D1 |
+| Step | Description                                                             | Depends On      |
+| ---- | ----------------------------------------------------------------------- | --------------- |
+| D1   | Deploy LiteLLM proxy, configure OpenWebUI to route through it           | Phase A (done)  |
+| D2   | Scope OpenWebUI auth cookie to `.datameesters.nl`                       | Phase A2 (done) |
+| D3   | Build a thin OpenWebUI API client library (TypeScript) for sibling apps | D2              |
+| D4   | Embed chat history panel in one pilot sibling app                       | D3              |
+| D5   | Add deep-linking from embedded panel to canonical chat UI               | D4              |
+| D6   | Per-user spend dashboards via LiteLLM                                   | D1              |
 
 ### Relationship to Existing Phases
 
@@ -207,10 +207,10 @@ Phase C and Phase D are independent — they can be worked in parallel. Phase C 
 
 ## 8. Open Questions
 
-| # | Question | Impact |
-|---|----------|--------|
-| 1 | Which sibling app should pilot the embedded chat panel? | D4 scope |
-| 2 | Should LiteLLM run as a sidecar in the OpenWebUI compose stack or as a separate service? | D1 deployment |
-| 3 | Is the OpenWebUI API surface sufficient for the embedded views, or do we need to extend it in the fork? | D3 scope |
-| 4 | Should dev-tool MCP access (Phase C5) go through LiteLLM or directly to providers? | D1 + C5 interaction |
-| 5 | What per-user spend limits should be set, and should they differ by role? | D6 policy |
+| #   | Question                                                                                                | Impact              |
+| --- | ------------------------------------------------------------------------------------------------------- | ------------------- |
+| 1   | Which sibling app should pilot the embedded chat panel?                                                 | D4 scope            |
+| 2   | Should LiteLLM run as a sidecar in the OpenWebUI compose stack or as a separate service?                | D1 deployment       |
+| 3   | Is the OpenWebUI API surface sufficient for the embedded views, or do we need to extend it in the fork? | D3 scope            |
+| 4   | Should dev-tool MCP access (Phase C5) go through LiteLLM or directly to providers?                      | D1 + C5 interaction |
+| 5   | What per-user spend limits should be set, and should they differ by role?                               | D6 policy           |

@@ -26,7 +26,7 @@ grep -nE "set_cookie|max_age.*expires.*cookie_expires" backend/open_webui/utils/
 
 ## Why this issue is filed anyway
 
-Memory entry `feedback_pr_review_bots.md` says to check and fix bugbot comments before/during merge. Here the fix landed *before* merge but *after* bugbot's review snapshot, so the open comment on the PR looked unresolved in a session-close audit. Filing this doc makes the resolution traceable and closes the audit loop.
+Memory entry `feedback_pr_review_bots.md` says to check and fix bugbot comments before/during merge. Here the fix landed _before_ merge but _after_ bugbot's review snapshot, so the open comment on the PR looked unresolved in a session-close audit. Filing this doc makes the resolution traceable and closes the audit loop.
 
 ## No PR required
 

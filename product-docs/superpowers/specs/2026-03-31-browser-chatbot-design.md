@@ -85,13 +85,13 @@ Team members currently switch between multiple applications (Databank, Geoportaa
 
 **Aggregator boundaries:**
 
-| Aggregator does | Aggregator does NOT |
-|---|---|
-| Cross-app composition (Databank + Geoportaal queries) | 1:1 proxy of single-app endpoints |
-| Protocol normalization (FastAPI Python apps ↔ Express TS apps) | Business logic (that stays in apps) |
-| Auth token validation & RBAC check | Data transformation for specific consumers |
-| Rate limiting for the chatbot consumer | Being the only way to reach an app |
-| Response trimming for LLM context windows | Duplicating existing app endpoints |
+| Aggregator does                                                | Aggregator does NOT                        |
+| -------------------------------------------------------------- | ------------------------------------------ |
+| Cross-app composition (Databank + Geoportaal queries)          | 1:1 proxy of single-app endpoints          |
+| Protocol normalization (FastAPI Python apps ↔ Express TS apps) | Business logic (that stays in apps)        |
+| Auth token validation & RBAC check                             | Data transformation for specific consumers |
+| Rate limiting for the chatbot consumer                         | Being the only way to reach an app         |
+| Response trimming for LLM context windows                      | Duplicating existing app endpoints         |
 
 ---
 
@@ -125,13 +125,13 @@ User opens chatbot
 
 ### Role Model
 
-| Role | LLM Models | Tools Available | Data Access | Admin |
-|------|-----------|-----------------|-------------|-------|
-| **Admin** | All | All READ + WRITE | All gemeenten, all datasets | Manage users, models, tools, prompts |
-| **Consultant** | All | All READ, selective WRITE (beleidsscan, forecasts, exports) | Assigned gemeenten + public data | — |
-| **Analyst** | All | All READ, WRITE for TSA/forecasts only | All datasets (read), own forecasts (write) | — |
-| **Sales** | OpenAI, Ollama | Riens, Sales Predictor, Opdrachten Scanner | Sales data, gemeente status, assignments | — |
-| **External Client** (future) | Ollama only | READ only, scoped tools | Own gemeente only | — |
+| Role                         | LLM Models     | Tools Available                                             | Data Access                                | Admin                                |
+| ---------------------------- | -------------- | ----------------------------------------------------------- | ------------------------------------------ | ------------------------------------ |
+| **Admin**                    | All            | All READ + WRITE                                            | All gemeenten, all datasets                | Manage users, models, tools, prompts |
+| **Consultant**               | All            | All READ, selective WRITE (beleidsscan, forecasts, exports) | Assigned gemeenten + public data           | —                                    |
+| **Analyst**                  | All            | All READ, WRITE for TSA/forecasts only                      | All datasets (read), own forecasts (write) | —                                    |
+| **Sales**                    | OpenAI, Ollama | Riens, Sales Predictor, Opdrachten Scanner                  | Sales data, gemeente status, assignments   | —                                    |
+| **External Client** (future) | Ollama only    | READ only, scoped tools                                     | Own gemeente only                          | —                                    |
 
 ### Key Auth Decisions
 
@@ -149,6 +149,7 @@ User opens chatbot
 OpenWebUI is a SvelteKit app (Python backend + Svelte frontend). We fork the repo, maintain it as a downstream fork with an `upstream` remote for pulling updates.
 
 **What we change:**
+
 - Theme/CSS — full Ruimtemeesters palette
 - Logos, favicon, app name, meta tags
 - Landing page / onboarding flow
@@ -159,6 +160,7 @@ OpenWebUI is a SvelteKit app (Python backend + Svelte frontend). We fork the rep
 - Welcome messages & help content
 
 **What we don't touch:**
+
 - Core chat engine & streaming logic
 - Model provider integrations (Ollama, OpenAI, etc.)
 - RAG pipeline internals
@@ -169,15 +171,15 @@ OpenWebUI is a SvelteKit app (Python backend + Svelte frontend). We fork the rep
 
 ### Brand Identity
 
-| Color | Hex | Usage |
-|-------|-----|-------|
-| Raisin Black | #161620 | Sidebar, dark UI surfaces |
-| Klein Blue | #002EA3 | Primary actions, accents, user message bubbles |
-| Smart White | #F7F4EF | Backgrounds, text on dark surfaces |
-| Violet | #7F00FF | User avatars, highlights, secondary accents |
-| Pumpkin | #F37021 | Warnings, secondary CTAs, write-action indicators |
-| Lion | #9C885C | Tertiary accents |
-| Mystified | #C3D7C1 | Success states, read-action indicators |
+| Color        | Hex     | Usage                                             |
+| ------------ | ------- | ------------------------------------------------- |
+| Raisin Black | #161620 | Sidebar, dark UI surfaces                         |
+| Klein Blue   | #002EA3 | Primary actions, accents, user message bubbles    |
+| Smart White  | #F7F4EF | Backgrounds, text on dark surfaces                |
+| Violet       | #7F00FF | User avatars, highlights, secondary accents       |
+| Pumpkin      | #F37021 | Warnings, secondary CTAs, write-action indicators |
+| Lion         | #9C885C | Tertiary accents                                  |
+| Mystified    | #C3D7C1 | Success states, read-action indicators            |
 
 Additional service-specific colors from Riens Sales Viewer: servicedesk (#00BFFF), advies (#FFD700), detachering (#FF5722), bemiddeling (#4CAF50).
 
@@ -195,66 +197,66 @@ Additional service-specific colors from Riens Sales Viewer: servicedesk (#00BFFF
 
 #### Databank (Policy docs, knowledge graph, semantic search)
 
-| Tool | Description | Type |
-|------|-------------|------|
-| search_beleid | Hybrid search (keyword + semantic) across policy documents | READ |
-| query_knowledge_graph | Traverse Neo4j relationships between policies, topics, gemeenten | READ |
-| start_beleidsscan | Trigger a new scan/crawl for a municipality's policy documents | WRITE |
-| review_document | Check/update review workflow state for scanned documents | WRITE |
+| Tool                  | Description                                                      | Type  |
+| --------------------- | ---------------------------------------------------------------- | ----- |
+| search_beleid         | Hybrid search (keyword + semantic) across policy documents       | READ  |
+| query_knowledge_graph | Traverse Neo4j relationships between policies, topics, gemeenten | READ  |
+| start_beleidsscan     | Trigger a new scan/crawl for a municipality's policy documents   | WRITE |
+| review_document       | Check/update review workflow state for scanned documents         | WRITE |
 
 #### Geoportaal (3D maps, spatial rules, alerts)
 
-| Tool | Description | Type |
-|------|-------------|------|
-| query_spatial_rules | Look up regels (rules) for a location or policy area | READ |
-| get_air_quality | Retrieve luchtkwaliteit data for a gemeente or location | READ |
-| get_weather | Weather info for a location | READ |
-| export_map | Generate PDF/DOCX export of a spatial view | WRITE |
-| create_alert | Set up monitoring presets for locations | WRITE |
+| Tool                | Description                                             | Type  |
+| ------------------- | ------------------------------------------------------- | ----- |
+| query_spatial_rules | Look up regels (rules) for a location or policy area    | READ  |
+| get_air_quality     | Retrieve luchtkwaliteit data for a gemeente or location | READ  |
+| get_weather         | Weather info for a location                             | READ  |
+| export_map          | Generate PDF/DOCX export of a spatial view              | WRITE |
+| create_alert        | Set up monitoring presets for locations                 | WRITE |
 
 #### Dashboarding (Primos demographics, CBS data)
 
-| Tool | Description | Type |
-|------|-------------|------|
-| query_primos | Population/housing projections by gemeente, year, category | READ |
-| get_cbs_stats | Central Bureau of Statistics demographic data | READ |
-| trigger_cbs_sync | Start a fresh CBS data synchronization | WRITE |
+| Tool             | Description                                                | Type  |
+| ---------------- | ---------------------------------------------------------- | ----- |
+| query_primos     | Population/housing projections by gemeente, year, category | READ  |
+| get_cbs_stats    | Central Bureau of Statistics demographic data              | READ  |
+| trigger_cbs_sync | Start a fresh CBS data synchronization                     | WRITE |
 
 #### TSA Engine (Demographic forecasting, ML ensemble)
 
-| Tool | Description | Type |
-|------|-------------|------|
-| run_forecast | Execute demographic projection (Prophet, SARIMA, ensemble, etc.) | WRITE |
-| run_backtest | Validate forecast accuracy against historical data | WRITE |
-| get_forecast_results | Retrieve completed forecast data with confidence intervals | READ |
+| Tool                 | Description                                                      | Type  |
+| -------------------- | ---------------------------------------------------------------- | ----- |
+| run_forecast         | Execute demographic projection (Prophet, SARIMA, ensemble, etc.) | WRITE |
+| run_backtest         | Validate forecast accuracy against historical data               | WRITE |
+| get_forecast_results | Retrieve completed forecast data with confidence intervals       | READ  |
 
 #### Riens Sales Viewer (Municipal geo viz, sales intelligence)
 
-| Tool | Description | Type |
-|------|-------------|------|
-| get_gemeente_status | Active/archived municipalities, contract status per province | READ |
-| sales_intelligence_query | Insights from the sales intelligence map | READ |
+| Tool                     | Description                                                  | Type |
+| ------------------------ | ------------------------------------------------------------ | ---- |
+| get_gemeente_status      | Active/archived municipalities, contract status per province | READ |
+| sales_intelligence_query | Insights from the sales intelligence map                     | READ |
 
 #### Sales Predictor (HorecA forecasting)
 
-| Tool | Description | Type |
-|------|-------------|------|
-| run_sales_forecast | Execute HorecA sales prediction (Prophet, SARIMA, ensemble) | WRITE |
-| get_sales_forecast_results | Retrieve predictions with model comparison metrics | READ |
+| Tool                       | Description                                                 | Type  |
+| -------------------------- | ----------------------------------------------------------- | ----- |
+| run_sales_forecast         | Execute HorecA sales prediction (Prophet, SARIMA, ensemble) | WRITE |
+| get_sales_forecast_results | Retrieve predictions with model comparison metrics          | READ  |
 
 #### Opdrachten Scanner (DAS/inhuur scanning)
 
-| Tool | Description | Type |
-|------|-------------|------|
-| search_assignments | Find matching DAS/inhuur assignments from TenderNED etc. | READ |
-| trigger_scan | Run a fresh scan against assignment platforms | WRITE |
+| Tool               | Description                                              | Type  |
+| ------------------ | -------------------------------------------------------- | ----- |
+| search_assignments | Find matching DAS/inhuur assignments from TenderNED etc. | READ  |
+| trigger_scan       | Run a fresh scan against assignment platforms            | WRITE |
 
 #### Workspace (Team hub, notifications)
 
-| Tool | Description | Type |
-|------|-------------|------|
-| get_notifications | Retrieve team notifications and updates | READ |
-| get_team_info | Team member details via Clerk integration | READ |
+| Tool              | Description                               | Type |
+| ----------------- | ----------------------------------------- | ---- |
+| get_notifications | Retrieve team notifications and updates   | READ |
+| get_team_info     | Team member details via Clerk integration | READ |
 
 ### Cross-App Queries (via Aggregator)
 
@@ -274,30 +276,35 @@ These are cases where the Aggregator adds genuine value — combining data from 
 Each assistant is a Modelfile: system prompt + model config + curated tool list. Users pick one to start a conversation, or use the generalist. All respect role-based tool visibility.
 
 #### Beleidsadviseur
+
 - **Domain:** Policy documents, knowledge graph, spatial rules
 - **Apps:** Databank, Geoportaal
 - **Tools:** search_beleid, query_knowledge_graph, query_spatial_rules, export_map
 - **Persona:** Expert in Dutch policy documents. Understands Omgevingswet context. Can search beleidsstukken, explain policy implications, compare gemeente policies, and show relevant rules on the map.
 
 #### Demografie Analist
+
 - **Domain:** Population data, demographic forecasting
 - **Apps:** Dashboarding, TSA
 - **Tools:** query_primos, get_cbs_stats, run_forecast, run_backtest, get_forecast_results
 - **Persona:** Specialist in demographic data. Queries Primos/CBS data, runs forecasts with different models, explains trends, compares projections across gemeenten and time horizons.
 
 #### Ruimtelijk Adviseur
+
 - **Domain:** Spatial planning, 3D data, environmental monitoring
 - **Apps:** Geoportaal, Databank
 - **Tools:** query_spatial_rules, get_air_quality, get_weather, export_map, create_alert, search_beleid
 - **Persona:** Spatial planning expert. Queries 3D building data, air quality, weather, and spatial rules. Generates map exports and sets up monitoring alerts. Links spatial data to relevant policy context.
 
 #### Sales Adviseur
+
 - **Domain:** Sales intelligence, assignments, forecasting
 - **Apps:** Riens Sales Viewer, Sales Predictor, Opdrachten Scanner
 - **Tools:** get_gemeente_status, sales_intelligence_query, search_assignments, trigger_scan, run_sales_forecast
 - **Persona:** Business development assistant. Shows gemeente contract status, finds matching TenderNED assignments, runs sales forecasts, provides market intelligence. Knows the Servicedesk Leefomgeving context.
 
 #### Ruimtemeesters Assistent
+
 - **Domain:** All
 - **Apps:** All
 - **Tools:** All (filtered by user role)
@@ -305,16 +312,16 @@ Each assistant is a Modelfile: system prompt + model config + curated tool list.
 
 ### Prompt Templates
 
-| Command | Description |
-|---------|-------------|
-| `/beleidsscan` | Start a policy scan for a gemeente |
-| `/prognose` | Run demographic forecast for a gemeente |
-| `/vergelijk` | Compare two gemeenten on policy/demographics |
-| `/opdrachten` | Search TenderNED for matching assignments |
-| `/rapport` | Generate an export/report from current conversation |
-| `/luchtkwaliteit` | Get air quality data for a location |
-| `/gemeente-status` | Check contract status for a gemeente |
-| `/help` | Show available commands and capabilities |
+| Command            | Description                                         |
+| ------------------ | --------------------------------------------------- |
+| `/beleidsscan`     | Start a policy scan for a gemeente                  |
+| `/prognose`        | Run demographic forecast for a gemeente             |
+| `/vergelijk`       | Compare two gemeenten on policy/demographics        |
+| `/opdrachten`      | Search TenderNED for matching assignments           |
+| `/rapport`         | Generate an export/report from current conversation |
+| `/luchtkwaliteit`  | Get air quality data for a location                 |
+| `/gemeente-status` | Check contract status for a gemeente                |
+| `/help`            | Show available commands and capabilities            |
 
 ---
 
@@ -325,9 +332,9 @@ Each assistant is a Modelfile: system prompt + model config + curated tool list.
 ```yaml
 # Conceptual structure — not a literal docker-compose file
 services:
-  openwebui:        # Forked OpenWebUI (SvelteKit + Python backend)
-  ollama:           # Local LLM inference (GPU passthrough)
-  chatbot-db:       # PostgreSQL (conversations, roles, audit log)
+  openwebui: # Forked OpenWebUI (SvelteKit + Python backend)
+  ollama: # Local LLM inference (GPU passthrough)
+  chatbot-db: # PostgreSQL (conversations, roles, audit log)
 ```
 
 Connected to existing app stacks via shared Docker network (`rm-network`).
@@ -455,6 +462,7 @@ docs/
 ### Phase A — Foundation + Direct App Integration
 
 #### A1. Fork & Brand
+
 - Fork OpenWebUI, set up upstream remote
 - Apply Ruimtemeesters branding (theme CSS, logos, favicon, app name)
 - Custom landing page with RM identity
@@ -463,6 +471,7 @@ docs/
 - **Deliverable:** Branded chatbot running locally, multi-model, no app integrations yet
 
 #### A2. Auth Integration
+
 - Clerk SSO middleware in the OpenWebUI fork
 - Clerk JWT → OpenWebUI role mapping
 - Role-based model and tool visibility
@@ -470,6 +479,7 @@ docs/
 - **Deliverable:** Users log in via Clerk, see tools/models matching their role
 
 #### A3. Tool Layer — Direct App Integration
+
 - OpenWebUI Functions for each app (Python, calling app REST endpoints directly)
 - Databank tools: search_beleid, query_knowledge_graph, start_beleidsscan, review_document
 - Geoportaal tools: query_spatial_rules, get_air_quality, get_weather, export_map, create_alert
@@ -482,6 +492,7 @@ docs/
 - **Deliverable:** Chatbot can read from and write to all apps via direct endpoints
 
 #### A4. Aggregator — Cross-App Composition
+
 - Extend Aggregator with cross-app endpoints (only where composition adds value)
 - Beleid + spatial rules (Databank + Geoportaal)
 - Demographics + policy context (Dashboarding + Databank)
@@ -491,6 +502,7 @@ docs/
 - **Deliverable:** Cross-app queries work through Aggregator, no endpoint duplication
 
 #### A5. Assistants & Prompts
+
 - Create Modelfiles for 5 pre-built assistants (Beleidsadviseur, Demografie Analist, Ruimtelijk Adviseur, Sales Adviseur, Ruimtemeesters Assistent)
 - System prompts with RM domain knowledge and tone
 - Prompt templates for /beleidsscan, /prognose, /vergelijk, /opdrachten, /rapport, /luchtkwaliteit, /gemeente-status, /help
@@ -498,6 +510,7 @@ docs/
 - **Deliverable:** Full chatbot product with specialized assistants and prompt library
 
 #### A6. Audit & Docs
+
 - Tool invocation audit logging to PostgreSQL
 - Product docs folder (full structure from section 8)
 - ADRs for key decisions
@@ -507,6 +520,7 @@ docs/
 ### Phase C — MCP Extension Layer
 
 #### C1. MCP Server Infrastructure
+
 - MCP server scaffold (TypeScript, matching RM ecosystem)
 - Shared auth middleware (Clerk JWT validation)
 - Tool schema generation from Zod validators (reuse Aggregator's Zod schemas)
@@ -514,6 +528,7 @@ docs/
 - **Deliverable:** Reusable MCP server template with auth and schema generation
 
 #### C2. Per-App MCP Servers
+
 - One MCP server per app, wrapping app endpoints as MCP tools
 - Each server lives in its own directory (or alongside its app repo)
 - Tool descriptions optimized for LLM consumption (clear, concise, with examples)
@@ -521,12 +536,14 @@ docs/
 - **Deliverable:** All app tools accessible via MCP
 
 #### C3. Aggregator MCP Server
+
 - Wraps Aggregator cross-app endpoints as MCP tools
 - Automatic Zod → MCP tool schema conversion
 - Maintains the same composition logic from Phase A
 - **Deliverable:** Cross-app queries also available via MCP
 
 #### C4. OpenWebUI MCP Client Integration
+
 - Connect OpenWebUI fork to MCP servers (may require fork customization)
 - MCP tool discovery → automatic tool registration in OpenWebUI
 - Migrate Phase A Python Functions to MCP client calls
@@ -534,6 +551,7 @@ docs/
 - **Deliverable:** OpenWebUI uses MCP instead of direct HTTP calls
 
 #### C5. External Tool Consumers
+
 - Same MCP servers usable from Claude Code, Cursor, other AI tools
 - Developer-facing MCP config for local development
 - Documentation for connecting external tools to RM MCP servers
@@ -555,33 +573,33 @@ Note: A5 (Assistants) and A6 (Audit+Docs) can run in parallel with A3/A4.
 
 ## 10. Tech Stack Summary
 
-| Component | Technology |
-|-----------|-----------|
-| Chat UI | SvelteKit (OpenWebUI fork) |
-| Backend | Python (OpenWebUI backend) |
-| Database | PostgreSQL |
-| Local LLM | Ollama (llama3.1, mistral, codestral) |
-| Remote LLMs | OpenAI (GPT-4o/GPT-4.1), Anthropic (Claude) |
-| Auth (identity) | Clerk |
-| Auth (chatbot) | OpenWebUI internal roles |
-| App integration (Phase A) | OpenWebUI Functions (Python) → REST APIs |
-| App integration (Phase C) | MCP servers (TypeScript) |
-| Aggregator | Existing Ruimtemeesters-Aggregator (Express + TypeScript + Zod) |
-| Container orchestration | Docker Compose |
-| Network | Shared Docker network (rm-network) |
+| Component                 | Technology                                                      |
+| ------------------------- | --------------------------------------------------------------- |
+| Chat UI                   | SvelteKit (OpenWebUI fork)                                      |
+| Backend                   | Python (OpenWebUI backend)                                      |
+| Database                  | PostgreSQL                                                      |
+| Local LLM                 | Ollama (llama3.1, mistral, codestral)                           |
+| Remote LLMs               | OpenAI (GPT-4o/GPT-4.1), Anthropic (Claude)                     |
+| Auth (identity)           | Clerk                                                           |
+| Auth (chatbot)            | OpenWebUI internal roles                                        |
+| App integration (Phase A) | OpenWebUI Functions (Python) → REST APIs                        |
+| App integration (Phase C) | MCP servers (TypeScript)                                        |
+| Aggregator                | Existing Ruimtemeesters-Aggregator (Express + TypeScript + Zod) |
+| Container orchestration   | Docker Compose                                                  |
+| Network                   | Shared Docker network (rm-network)                              |
 
 ---
 
 ## 11. Sibling Application Reference
 
-| App | Stack | Purpose | Chatbot Integration |
-|-----|-------|---------|-------------------|
-| Ruimtemeesters-Databank | Express + TS, MongoDB, PostgreSQL+PostGIS, Neo4j, Redis | Policy doc discovery, knowledge graph, semantic search | search_beleid, query_knowledge_graph, start_beleidsscan, review_document |
-| Ruimtemeesters-Geoportaal | Express 5 + TS, PostgreSQL, OpenLayers, Cesium 3D | Geospatial policy mapping, 3D buildings, air quality | query_spatial_rules, get_air_quality, get_weather, export_map, create_alert |
-| Ruimtemeesters-Dashboarding | Express 5 + TS, React 19, PostgreSQL | Primos demographics, CBS data sync | query_primos, get_cbs_stats, trigger_cbs_sync |
-| Ruimtemeesters-TSA | FastAPI + Python, PostgreSQL, Prophet/SARIMA/ML ensemble | Demographic time series forecasting | run_forecast, run_backtest, get_forecast_results |
-| Riens-Sales-Viewer | Express + TS, React 19, PostgreSQL+PostGIS, OpenAI | Municipal geo viz, sales intelligence | get_gemeente_status, sales_intelligence_query |
-| Sales-Predictor | FastAPI + Python, React | HorecA sales forecasting | run_sales_forecast, get_sales_forecast_results |
-| Ruimtemeesters-Opdrachten-Scanner | TypeScript, Playwright | DAS/inhuur assignment scanning | search_assignments, trigger_scan |
-| Ruimtemeesters-Workspace | React 19 + TS, Clerk, Radix UI | Team hub, notifications | get_notifications, get_team_info |
-| Ruimtemeesters-Aggregator | Express + TS, PostgreSQL, Neo4j, Zod | Gateway API for cross-app queries | Cross-app composition tools |
+| App                               | Stack                                                    | Purpose                                                | Chatbot Integration                                                         |
+| --------------------------------- | -------------------------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------- |
+| Ruimtemeesters-Databank           | Express + TS, MongoDB, PostgreSQL+PostGIS, Neo4j, Redis  | Policy doc discovery, knowledge graph, semantic search | search_beleid, query_knowledge_graph, start_beleidsscan, review_document    |
+| Ruimtemeesters-Geoportaal         | Express 5 + TS, PostgreSQL, OpenLayers, Cesium 3D        | Geospatial policy mapping, 3D buildings, air quality   | query_spatial_rules, get_air_quality, get_weather, export_map, create_alert |
+| Ruimtemeesters-Dashboarding       | Express 5 + TS, React 19, PostgreSQL                     | Primos demographics, CBS data sync                     | query_primos, get_cbs_stats, trigger_cbs_sync                               |
+| Ruimtemeesters-TSA                | FastAPI + Python, PostgreSQL, Prophet/SARIMA/ML ensemble | Demographic time series forecasting                    | run_forecast, run_backtest, get_forecast_results                            |
+| Riens-Sales-Viewer                | Express + TS, React 19, PostgreSQL+PostGIS, OpenAI       | Municipal geo viz, sales intelligence                  | get_gemeente_status, sales_intelligence_query                               |
+| Sales-Predictor                   | FastAPI + Python, React                                  | HorecA sales forecasting                               | run_sales_forecast, get_sales_forecast_results                              |
+| Ruimtemeesters-Opdrachten-Scanner | TypeScript, Playwright                                   | DAS/inhuur assignment scanning                         | search_assignments, trigger_scan                                            |
+| Ruimtemeesters-Workspace          | React 19 + TS, Clerk, Radix UI                           | Team hub, notifications                                | get_notifications, get_team_info                                            |
+| Ruimtemeesters-Aggregator         | Express + TS, PostgreSQL, Neo4j, Zod                     | Gateway API for cross-app queries                      | Cross-app composition tools                                                 |

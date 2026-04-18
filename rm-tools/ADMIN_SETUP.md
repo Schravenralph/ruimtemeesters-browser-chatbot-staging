@@ -20,19 +20,21 @@ OpenWebUI UI.
 2. **Admin Settings → External Tools → + Add Server** for each row below.
 3. For each: **Type = MCP (Streamable HTTP)**, **Auth = Bearer**, **Key = \<your token\>**.
 
-| Server ID in OpenWebUI | URL | Used by assistants |
-|---|---|---|
-| `rm-memory` | `https://mcp.datameesters.nl/memory/mcp` | Ruimtemeesters Assistent |
-| `rm-databank` | `https://mcp.datameesters.nl/databank/mcp` | Beleidsadviseur, Ruimtelijk Adviseur, Ruimtemeesters Assistent |
-| `rm-geoportaal` | `https://mcp.datameesters.nl/geoportaal/mcp` | Ruimtelijk Adviseur, Ruimtemeesters Assistent |
+| Server ID in OpenWebUI | URL                                          | Used by assistants                                             |
+| ---------------------- | -------------------------------------------- | -------------------------------------------------------------- |
+| `rm-memory`            | `https://mcp.datameesters.nl/memory/mcp`     | Ruimtemeesters Assistent                                       |
+| `rm-databank`          | `https://mcp.datameesters.nl/databank/mcp`   | Beleidsadviseur, Ruimtelijk Adviseur, Ruimtemeesters Assistent |
+| `rm-geoportaal`        | `https://mcp.datameesters.nl/geoportaal/mcp` | Ruimtelijk Adviseur, Ruimtemeesters Assistent                  |
+
 <!-- Note: the 5 specialist assistants are pre-existing; the policy going forward is ONE general agent (`rm-assistent`) with skill files + slash prompts, not per-role specialists. See ADR-024 in Databank. Specialists will be consolidated in a follow-up PR. -->
+
 | `rm-tsa` | `https://mcp.datameesters.nl/tsa/mcp` | Demografie Analist, Ruimtemeesters Assistent |
 | `rm-dashboarding` | `https://mcp.datameesters.nl/dashboarding/mcp` | Demografie Analist, Ruimtemeesters Assistent |
 | `rm-riens` | `https://mcp.datameesters.nl/riens/mcp` | Sales Adviseur, Ruimtemeesters Assistent |
 | `rm-sales-predictor` | `https://mcp.datameesters.nl/sales-predictor/mcp` | Sales Adviseur, Ruimtemeesters Assistent |
 | `rm-opdrachten` | `https://mcp.datameesters.nl/opdrachten/mcp` | Sales Adviseur, Ruimtemeesters Assistent |
 | `rm-aggregator` | `https://mcp.datameesters.nl/aggregator/mcp` | Beleidsadviseur, Ruimtelijk Adviseur, Ruimtemeesters Assistent |
-| `rm-knowledge` *(planned)* | `https://mcp.datameesters.nl/knowledge/mcp` | Ruimtemeesters Assistent |
+| `rm-knowledge` _(planned)_ | `https://mcp.datameesters.nl/knowledge/mcp` | Ruimtemeesters Assistent |
 
 The `rm-knowledge` row is **not live yet** — see `Ruimtemeesters-MCP-Servers/docs/superpowers/specs/2026-04-17-memory-knowledge-tools.md`. It will host the Claude-Code-style `save_memory` / `recall_memory` / `get_memory` / `list_memories` / `forget_memory` tools. Architectural question (same `@rm-mcp/memory` package vs separate `@rm-mcp/knowledge`) is still open.
 

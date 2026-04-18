@@ -11,5 +11,6 @@ python rm-tools/register_assistants.py --url http://localhost:3333 --token <admi
 ```
 
 The admin JWT can be obtained from the browser after logging in:
+
 - DevTools → Console → `localStorage.token`
 - Or from the `token` cookie

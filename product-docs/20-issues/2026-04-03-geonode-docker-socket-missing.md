@@ -25,6 +25,7 @@ Core GeoNode functionality may still work, but internal tasks that need Docker a
 ## Notes
 
 Fix options:
+
 1. Mount Docker socket: add `- /var/run/docker.sock:/var/run/docker.sock` to GeoNode's volumes in docker-compose.yml (security implication: gives container access to host Docker)
 2. Disable the Docker-dependent task in GeoNode config
 3. If GeoNode is not critical for the current test round, mark as known issue and skip
@@ -57,12 +58,12 @@ docker logs ... | grep tasks.py:325
 
 ### Follow-up options (when/if GeoNode matters)
 
-| Option | Effort | Risk |
-|---|---|---|
-| A. Mount `/var/run/docker.sock` read-only | low | high (container escape) |
-| B. Switch to GeoServer standalone (no GeoNode wrapper) — already bundled inside the same image at `/geoserver/` | medium | medium |
-| C. Override entrypoint to skip `invoke update` (e.g. `entrypoint: ["/usr/src/app/entrypoint-no-update.sh"]` mounted via volume) | medium | low |
-| D. Fork the image with a no-Docker entrypoint patch | high | low |
+| Option                                                                                                                          | Effort | Risk                    |
+| ------------------------------------------------------------------------------------------------------------------------------- | ------ | ----------------------- |
+| A. Mount `/var/run/docker.sock` read-only                                                                                       | low    | high (container escape) |
+| B. Switch to GeoServer standalone (no GeoNode wrapper) — already bundled inside the same image at `/geoserver/`                 | medium | medium                  |
+| C. Override entrypoint to skip `invoke update` (e.g. `entrypoint: ["/usr/src/app/entrypoint-no-update.sh"]` mounted via volume) | medium | low                     |
+| D. Fork the image with a no-Docker entrypoint patch                                                                             | high   | low                     |
 
 If WMS/WMTS becomes load-bearing for the Ruimtelijk Adviseur, start with option **B** — GeoServer is the actual tile server and doesn't need Docker socket access.
 

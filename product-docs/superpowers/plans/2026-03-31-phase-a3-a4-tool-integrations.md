@@ -16,23 +16,24 @@
 
 ### New files (in staging repo `/home/ralph/Projects/ruimtemeesters-openwebui/`)
 
-| File | Responsibility |
-|------|---------------|
-| `rm-tools/databank.py` | Databank: search beleid, knowledge graph, queries |
-| `rm-tools/geoportaal.py` | Geoportaal: spatial rules, air quality, weather, building data |
-| `rm-tools/dashboarding.py` | Dashboarding: dashboard data, stats, trends |
-| `rm-tools/tsa.py` | TSA: forecasts, backtests, diagnostics, gemeenten |
-| `rm-tools/riens.py` | Riens Sales Viewer: municipality status, export |
-| `rm-tools/sales_predictor.py` | Sales Predictor: train, predict, compare models |
-| `rm-tools/opdrachten.py` | Opdrachten Scanner: inbox, pipeline, library, stats |
-| `rm-tools/aggregator.py` | Aggregator: cross-app composition queries |
-| `rm-tools/register_tools.py` | Script to register all tools via OpenWebUI API |
+| File                          | Responsibility                                                 |
+| ----------------------------- | -------------------------------------------------------------- |
+| `rm-tools/databank.py`        | Databank: search beleid, knowledge graph, queries              |
+| `rm-tools/geoportaal.py`      | Geoportaal: spatial rules, air quality, weather, building data |
+| `rm-tools/dashboarding.py`    | Dashboarding: dashboard data, stats, trends                    |
+| `rm-tools/tsa.py`             | TSA: forecasts, backtests, diagnostics, gemeenten              |
+| `rm-tools/riens.py`           | Riens Sales Viewer: municipality status, export                |
+| `rm-tools/sales_predictor.py` | Sales Predictor: train, predict, compare models                |
+| `rm-tools/opdrachten.py`      | Opdrachten Scanner: inbox, pipeline, library, stats            |
+| `rm-tools/aggregator.py`      | Aggregator: cross-app composition queries                      |
+| `rm-tools/register_tools.py`  | Script to register all tools via OpenWebUI API                 |
 
 ---
 
 ## Task 1: Create rm-tools directory and shared base
 
 **Files:**
+
 - Create: `rm-tools/README.md`
 
 - [ ] **Step 1: Create the tools directory**
@@ -43,7 +44,7 @@ mkdir -p /home/ralph/Projects/ruimtemeesters-openwebui/rm-tools
 
 - [ ] **Step 2: Create README**
 
-```markdown
+````markdown
 # Ruimtemeesters AI — OpenWebUI Tools
 
 Custom tools for the Ruimtemeesters chatbot. Each file is a standalone
@@ -54,20 +55,22 @@ OpenWebUI Tool that gets registered via the API.
 ```bash
 python rm-tools/register_tools.py --url http://localhost:3333 --token <admin-token>
 ```
+````
 
 ## Tool Files
 
-| File | App | Capabilities |
-|------|-----|-------------|
-| databank.py | Databank | Search beleid, knowledge graph, queries |
-| geoportaal.py | Geoportaal | Spatial rules, air quality, weather |
-| dashboarding.py | Dashboarding | Data, stats, trends |
-| tsa.py | TSA Engine | Forecasts, backtests, diagnostics |
-| riens.py | Riens Sales Viewer | Municipality status |
-| sales_predictor.py | Sales Predictor | Train, predict, compare |
-| opdrachten.py | Opdrachten Scanner | Inbox, pipeline, library |
-| aggregator.py | Aggregator | Cross-app composition queries |
-```
+| File               | App                | Capabilities                            |
+| ------------------ | ------------------ | --------------------------------------- |
+| databank.py        | Databank           | Search beleid, knowledge graph, queries |
+| geoportaal.py      | Geoportaal         | Spatial rules, air quality, weather     |
+| dashboarding.py    | Dashboarding       | Data, stats, trends                     |
+| tsa.py             | TSA Engine         | Forecasts, backtests, diagnostics       |
+| riens.py           | Riens Sales Viewer | Municipality status                     |
+| sales_predictor.py | Sales Predictor    | Train, predict, compare                 |
+| opdrachten.py      | Opdrachten Scanner | Inbox, pipeline, library                |
+| aggregator.py      | Aggregator         | Cross-app composition queries           |
+
+````
 
 - [ ] **Step 3: Commit**
 
@@ -76,13 +79,14 @@ cd /home/ralph/Projects/ruimtemeesters-openwebui
 git checkout -b rm/tool-integrations
 git add rm-tools/
 git commit -m "chore: create rm-tools directory for OpenWebUI tool files"
-```
+````
 
 ---
 
 ## Task 2: Databank Tool
 
 **Files:**
+
 - Create: `rm-tools/databank.py`
 
 - [ ] **Step 1: Create the Databank tool**
@@ -239,6 +243,7 @@ git commit -m "feat: add Databank tool — search beleid, knowledge graph, queri
 ## Task 3: Geoportaal Tool
 
 **Files:**
+
 - Create: `rm-tools/geoportaal.py`
 
 - [ ] **Step 1: Create the Geoportaal tool**
@@ -401,6 +406,7 @@ git commit -m "feat: add Geoportaal tool — spatial rules, air quality, weather
 ## Task 4: TSA Tool
 
 **Files:**
+
 - Create: `rm-tools/tsa.py`
 
 - [ ] **Step 1: Create the TSA tool**
@@ -564,6 +570,7 @@ git commit -m "feat: add TSA tool — population forecasts, backtests, diagnosti
 ## Task 5: Dashboarding Tool
 
 **Files:**
+
 - Create: `rm-tools/dashboarding.py`
 
 - [ ] **Step 1: Create the Dashboarding tool**
@@ -678,6 +685,7 @@ git commit -m "feat: add Dashboarding tool — demographic data, stats, trends"
 ## Task 6: Riens Sales Viewer Tool
 
 **Files:**
+
 - Create: `rm-tools/riens.py`
 
 - [ ] **Step 1: Create the Riens tool**
@@ -764,6 +772,7 @@ git commit -m "feat: add Riens Sales Viewer tool — gemeente status"
 ## Task 7: Sales Predictor Tool
 
 **Files:**
+
 - Create: `rm-tools/sales_predictor.py`
 
 - [ ] **Step 1: Create the Sales Predictor tool**
@@ -881,6 +890,7 @@ git commit -m "feat: add Sales Predictor tool — forecasts, predictions, model 
 ## Task 8: Opdrachten Scanner Tool
 
 **Files:**
+
 - Create: `rm-tools/opdrachten.py`
 
 - [ ] **Step 1: Create the Opdrachten Scanner tool**
@@ -1065,6 +1075,7 @@ git commit -m "feat: add Opdrachten Scanner tool — inbox, pipeline, library, s
 ## Task 9: Tool Registration Script
 
 **Files:**
+
 - Create: `rm-tools/register_tools.py`
 
 - [ ] **Step 1: Create the registration script**
@@ -1196,9 +1207,11 @@ git commit -m "feat: add tool registration script for seeding tools into OpenWeb
 - [ ] **Step 1: Get admin JWT token**
 
 Log into https://chatbot.datameesters.nl, open browser DevTools → Console, run:
+
 ```javascript
-localStorage.token
+localStorage.token;
 ```
+
 Copy the token value.
 
 - [ ] **Step 2: Run the registration script**
@@ -1217,6 +1230,7 @@ Open https://chatbot.datameesters.nl → Workspace → Tools. All 7 RM tools sho
 - [ ] **Step 4: Test a tool invocation**
 
 Start a chat, enable the Databank tool, and ask:
+
 > "Zoek beleidsstukken over luchtkwaliteit"
 
 The LLM should call `search_beleidsdocumenten` and return results.

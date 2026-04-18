@@ -11,7 +11,8 @@ read-only databronnen.
 ## Sessie management
 
 Bij elk nieuw BOPA-verzoek:
-1. Gebruik `geocode_address` om locatie te bepalen *(Geoportaal MCP — TBD)*
+
+1. Gebruik `geocode_address` om locatie te bepalen _(Geoportaal MCP — TBD)_
 2. Roep `list_bopa_sessions({gemeente_code, project_id})` aan om te checken
    of er al een sessie bestaat voor dit adres of project
 3. Bestaat er al een actieve sessie? Vraag de adviseur of die wil doorgaan
@@ -40,29 +41,35 @@ Phase 1 (Haalbaarheid)
 prerequisites OK zijn. Stuur de adviseur naar de volgende logische fase.
 
 ### Fase 1 — Haalbaarheid ("Kan dit?")
+
 Tools: `activities_at_point` → `check_bouwvlak_hoogte` → `check_bkl_8_0b`
-*(Geoportaal MCP — TBD; in v1 stelt de adviseur deze data zelf samen)*
+_(Geoportaal MCP — TBD; in v1 stelt de adviseur deze data zelf samen)_
 Schrijf resultaat: `update_bopa_session({phase: 1, data: {verdict, ...}})`
 
 ### Fase 2 — Strijdigheid ("Wat is in strijd?")
+
 Vereist: Fase 1.
-Tools: `ruimtelijke_toets` → `evaluate_rules` *(Geoportaal MCP — TBD)*
+Tools: `ruimtelijke_toets` → `evaluate_rules` _(Geoportaal MCP — TBD)_
 
 ### Fase 3 — Beleid ("Past het in beleid?")
+
 Vereist: Fase 1.
 Tools: `search_policy({section, gemeente_code})` (Databank MCP),
 plus geometrie-evaluatie (Geoportaal MCP — TBD).
 
 ### Fase 4 — Omgevingsaspecten ("Belemmeringen?")
+
 Vereist: Fase 1.
 Tools: spatial checks (Geoportaal — TBD), uploads via `upload_research_report`
 (in latere release).
 
 ### Fase 5 — Onderbouwing
+
 Vereist: Fasen 2 + 3 + 4. Levert markdown per sectie via
 `save_onderbouwing_section` (volgende release).
 
 ### Fase 6 — Toetsing
+
 Vereist: Fase 5. `score_onderbouwing` levert score + gaps (volgende release).
 
 ## Gedrag

@@ -25,6 +25,7 @@ Repeated Redis NOAUTH errors. The health check uses Redis as a dependency indica
 ## Notes
 
 Investigate:
+
 1. Does Geoportaal's docker-compose define its own Redis, or is it accidentally connecting to Databank's Redis?
 2. If it's connecting to Databank's Redis, the Docker network bridge (`databank-network`) may be exposing Redis unintentionally.
 3. If Geoportaal needs its own Redis, add one to its docker-compose.
@@ -47,10 +48,10 @@ The filed symptom was "Redis NOAUTH", but recent logs show no NOAUTH errors — 
 
 Measured on the running container (2026-04-17):
 
-| Endpoint | Latency | Result |
-|---|---|---|
-| `/api/health` | 5020 ms | exit 1 |
-| `/api/health/live` | 20 ms | exit 0 |
+| Endpoint           | Latency | Result |
+| ------------------ | ------- | ------ |
+| `/api/health`      | 5020 ms | exit 1 |
+| `/api/health/live` | 20 ms   | exit 0 |
 
 ### Fix (in the PR above)
 

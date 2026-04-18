@@ -42,6 +42,7 @@ Authoritative fix lives in **[Platform ADR-0003 — Port Allocation](https://git
 - Ruimtemeesters-Workspace claimed later (March 2026) → moves to `5180` (past the 5176-5179 contiguous block; 5178 is reserved for the future `projecten` app in Workspace's catalog).
 
 **Commits:**
+
 - `Ruimtemeesters-Platform@fb1f11f` — Platform ADR-0003 added (amended 5178→5180 after bugbot review)
 - `Ruimtemeesters-Workspace@c239f68` — `VITE_PORT=5176` → `5180` (initial 5178 caught by bugbot as colliding with the in-repo `projecten` app reservation)
 

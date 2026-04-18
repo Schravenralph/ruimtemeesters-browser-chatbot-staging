@@ -18,6 +18,7 @@ Graph traversal from isolated entities returns only the starting node. The chatb
 ## Fix
 
 Enrich the KG extraction pipeline to:
+
 1. Link Regulation entities to the PolicyDocuments they were extracted from
 2. Link related Regulations to each other (e.g., bruidsschat articles cross-reference each other)
 3. Link SpatialUnit entities to applicable Regulations via APPLIES_TO

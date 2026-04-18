@@ -20,6 +20,7 @@
 		currentChatPage
 	} from '$lib/stores';
 	import { sanitizeResponseContent, extractCurlyBraceWords } from '$lib/utils';
+	import { getFirstName } from '$lib/utils/greeting';
 	import { WEBUI_API_BASE_URL, WEBUI_BASE_URL } from '$lib/constants';
 
 	import Suggestions from './Suggestions.svelte';
@@ -71,6 +72,10 @@
 	}
 
 	$: models = selectedModels.map((id) => $_models.find((m) => m.id === id));
+	$: firstName = getFirstName($user);
+	// Suppress the stock "Hello, {name}" fallback when we render the Dutch greeting,
+	// otherwise both appear at once for a frame while the model name resolves.
+	$: hasModelName = Boolean(models[selectedModelIdx]?.name);
 </script>
 
 <div class="m-auto w-full max-w-6xl px-2 @2xl:px-20 translate-y-6 py-24 text-center">
@@ -143,7 +148,7 @@
 						class=" text-3xl @sm:text-3xl line-clamp-1 flex items-center"
 						in:fade={{ duration: 100 }}
 					>
-						{#if models[selectedModelIdx]?.name}
+						{#if hasModelName}
 							<Tooltip
 								content={models[selectedModelIdx]?.name}
 								placement="top"
@@ -153,7 +158,7 @@
 									{models[selectedModelIdx]?.name}
 								</span>
 							</Tooltip>
-						{:else}
+						{:else if !firstName}
 							{$i18n.t('Hello, {{name}}', { name: $user?.name })}
 						{/if}
 					</div>
@@ -243,6 +248,14 @@
 		</div>
 	{:else}
 		<div class="mx-auto max-w-2xl font-primary mt-2" in:fade={{ duration: 200, delay: 200 }}>
+			{#if firstName}
+				<div
+					class="mx-5 mb-3 text-center text-lg text-gray-600 dark:text-gray-300"
+					data-testid="rm-greeting"
+				>
+					Hoi {firstName}, waarmee kan ik je vandaag helpen?
+				</div>
+			{/if}
 			<div class="mx-5">
 				<Suggestions
 					suggestionPrompts={atSelectedModel?.info?.meta?.suggestion_prompts ??

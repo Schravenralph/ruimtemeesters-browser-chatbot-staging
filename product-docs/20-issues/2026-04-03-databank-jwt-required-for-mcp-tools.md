@@ -29,18 +29,18 @@ This is the same issue noted in project memory: "direct app tools need Clerk JWT
 
 **Status:** RESOLVED on 2026-04-03 via `Ruimtemeesters-Databank@cde5c79d1a`.
 
-The fix was "accept API key as auth in authenticate middleware" — same day as the filing. `src/server/middleware/authMiddleware.ts:33-46` now checks `X-API-Key` as *Strategy 0* (before JWT), and if the key validates via `ApiKey.validate(...)`, it treats the caller as an authenticated service account (`userId: service:<keyname>`, `role: admin`) and short-circuits the JWT branch. MCP calls carrying the X-API-Key header no longer hit the "No token provided" path.
+The fix was "accept API key as auth in authenticate middleware" — same day as the filing. `src/server/middleware/authMiddleware.ts:33-46` now checks `X-API-Key` as _Strategy 0_ (before JWT), and if the key validates via `ApiKey.validate(...)`, it treats the caller as an authenticated service account (`userId: service:<keyname>`, `role: admin`) and short-circuits the JWT branch. MCP calls carrying the X-API-Key header no longer hit the "No token provided" path.
 
 Live verification (2026-04-17, with the chatbot's `DATABANK_AUTH_TOKEN` used as `X-API-Key`):
 
-| Endpoint | Status | Notes |
-|---|---|---|
-| `GET /health` | 200 | baseline |
-| `GET /api/search?q=test` | 200 | returns real documents, auth passed |
-| `GET /api/knowledge-graph?limit=1` | 200 | returns KG nodes, auth passed |
-| `GET /api/stats/documents` | 200 | 26,789 documents counted, auth passed |
-| `GET /api/canonical-documents/1` | 400 (validation) | auth passed; 400 is "invalid ID format" |
-| `POST /api/pipeline/query` (MCP's main entry) | 200 after 24.4s | auth passed; latency is a separate perf concern |
+| Endpoint                                      | Status           | Notes                                           |
+| --------------------------------------------- | ---------------- | ----------------------------------------------- |
+| `GET /health`                                 | 200              | baseline                                        |
+| `GET /api/search?q=test`                      | 200              | returns real documents, auth passed             |
+| `GET /api/knowledge-graph?limit=1`            | 200              | returns KG nodes, auth passed                   |
+| `GET /api/stats/documents`                    | 200              | 26,789 documents counted, auth passed           |
+| `GET /api/canonical-documents/1`              | 400 (validation) | auth passed; 400 is "invalid ID format"         |
+| `POST /api/pipeline/query` (MCP's main entry) | 200 after 24.4s  | auth passed; latency is a separate perf concern |
 
 No "No token provided" or auth-related 401/403 anywhere.
 

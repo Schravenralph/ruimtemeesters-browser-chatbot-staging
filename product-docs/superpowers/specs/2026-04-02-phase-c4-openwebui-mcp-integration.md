@@ -53,16 +53,16 @@ Note: `CMD` uses shell form (no JSON array) so `${PACKAGE}` is expanded at runti
 
 8 services, one per MCP server. All on a shared `rm-network`.
 
-| Service | Container | Port | Package | API URL Env Var |
-|---------|-----------|------|---------|----------------|
-| mcp-databank | rm-mcp-databank | 3101 | databank | `DATABANK_API_URL` |
-| mcp-geoportaal | rm-mcp-geoportaal | 3102 | geoportaal | `GEOPORTAAL_API_URL` |
-| mcp-tsa | rm-mcp-tsa | 3103 | tsa | `TSA_API_URL` |
-| mcp-dashboarding | rm-mcp-dashboarding | 3104 | dashboarding | `DASHBOARDING_API_URL` |
-| mcp-riens | rm-mcp-riens | 3105 | riens | `RIENS_API_URL` |
+| Service             | Container              | Port | Package         | API URL Env Var           |
+| ------------------- | ---------------------- | ---- | --------------- | ------------------------- |
+| mcp-databank        | rm-mcp-databank        | 3101 | databank        | `DATABANK_API_URL`        |
+| mcp-geoportaal      | rm-mcp-geoportaal      | 3102 | geoportaal      | `GEOPORTAAL_API_URL`      |
+| mcp-tsa             | rm-mcp-tsa             | 3103 | tsa             | `TSA_API_URL`             |
+| mcp-dashboarding    | rm-mcp-dashboarding    | 3104 | dashboarding    | `DASHBOARDING_API_URL`    |
+| mcp-riens           | rm-mcp-riens           | 3105 | riens           | `RIENS_API_URL`           |
 | mcp-sales-predictor | rm-mcp-sales-predictor | 3106 | sales-predictor | `SALES_PREDICTOR_API_URL` |
-| mcp-opdrachten | rm-mcp-opdrachten | 3107 | opdrachten | `OPDRACHTEN_API_URL` |
-| mcp-aggregator | rm-mcp-aggregator | 3108 | aggregator | `AGGREGATOR_API_URL` |
+| mcp-opdrachten      | rm-mcp-opdrachten      | 3107 | opdrachten      | `OPDRACHTEN_API_URL`      |
+| mcp-aggregator      | rm-mcp-aggregator      | 3108 | aggregator      | `AGGREGATOR_API_URL`      |
 
 Each service passes its `--port` flag matching its assigned port, plus API URL and API key env vars from the host `.env` file.
 
@@ -82,20 +82,20 @@ OpenWebUI's `TOOL_SERVER_CONNECTIONS` env var accepts a JSON array. Each MCP ser
 
 ```json
 {
-  "type": "mcp",
-  "url": "http://rm-mcp-databank:3101/mcp",
-  "auth_type": "none",
-  "headers": {
-    "X-API-Key": "your-databank-api-key-here"
-  },
-  "info": {
-    "id": "rm-databank",
-    "name": "Ruimtemeesters Databank",
-    "description": "Policy documents, knowledge graph, beleidsscan"
-  },
-  "config": {
-    "enable": true
-  }
+	"type": "mcp",
+	"url": "http://rm-mcp-databank:3101/mcp",
+	"auth_type": "none",
+	"headers": {
+		"X-API-Key": "your-databank-api-key-here"
+	},
+	"info": {
+		"id": "rm-databank",
+		"name": "Ruimtemeesters Databank",
+		"description": "Policy documents, knowledge graph, beleidsscan"
+	},
+	"config": {
+		"enable": true
+	}
 }
 ```
 
@@ -103,16 +103,16 @@ OpenWebUI's `TOOL_SERVER_CONNECTIONS` env var accepts a JSON array. Each MCP ser
 
 ### All 8 connections
 
-| Server ID | URL | Name |
-|-----------|-----|------|
-| `rm-databank` | `http://rm-mcp-databank:3101/mcp` | Ruimtemeesters Databank |
-| `rm-geoportaal` | `http://rm-mcp-geoportaal:3102/mcp` | Ruimtemeesters Geoportaal |
-| `rm-tsa` | `http://rm-mcp-tsa:3103/mcp` | Ruimtemeesters TSA |
-| `rm-dashboarding` | `http://rm-mcp-dashboarding:3104/mcp` | Ruimtemeesters Dashboarding |
-| `rm-riens` | `http://rm-mcp-riens:3105/mcp` | Ruimtemeesters Riens Sales Viewer |
-| `rm-sales-predictor` | `http://rm-mcp-sales-predictor:3106/mcp` | Ruimtemeesters Sales Predictor |
-| `rm-opdrachten` | `http://rm-mcp-opdrachten:3107/mcp` | Ruimtemeesters Opdrachten Scanner |
-| `rm-aggregator` | `http://rm-mcp-aggregator:3108/mcp` | Ruimtemeesters Aggregator |
+| Server ID            | URL                                      | Name                              |
+| -------------------- | ---------------------------------------- | --------------------------------- |
+| `rm-databank`        | `http://rm-mcp-databank:3101/mcp`        | Ruimtemeesters Databank           |
+| `rm-geoportaal`      | `http://rm-mcp-geoportaal:3102/mcp`      | Ruimtemeesters Geoportaal         |
+| `rm-tsa`             | `http://rm-mcp-tsa:3103/mcp`             | Ruimtemeesters TSA                |
+| `rm-dashboarding`    | `http://rm-mcp-dashboarding:3104/mcp`    | Ruimtemeesters Dashboarding       |
+| `rm-riens`           | `http://rm-mcp-riens:3105/mcp`           | Ruimtemeesters Riens Sales Viewer |
+| `rm-sales-predictor` | `http://rm-mcp-sales-predictor:3106/mcp` | Ruimtemeesters Sales Predictor    |
+| `rm-opdrachten`      | `http://rm-mcp-opdrachten:3107/mcp`      | Ruimtemeesters Opdrachten Scanner |
+| `rm-aggregator`      | `http://rm-mcp-aggregator:3108/mcp`      | Ruimtemeesters Aggregator         |
 
 ### Where to configure
 
@@ -125,6 +125,7 @@ Add `TOOL_SERVER_CONNECTIONS` as an environment variable in OpenWebUI's `docker-
 ### Current tool ID format (Phase A)
 
 Assistants reference local Python tools by their tool ID:
+
 ```
 toolIds: ["rm_databank", "rm_geoportaal", "rm_aggregator"]
 ```
@@ -132,19 +133,20 @@ toolIds: ["rm_databank", "rm_geoportaal", "rm_aggregator"]
 ### New tool ID format (MCP)
 
 MCP Tool Server tools use the format `server:mcp:{server_id}`:
+
 ```
 toolIds: ["server:mcp:rm-databank", "server:mcp:rm-geoportaal", "server:mcp:rm-aggregator"]
 ```
 
 ### Assistant mapping
 
-| Assistant | Current toolIds | New toolIds |
-|-----------|----------------|-------------|
-| Beleidsadviseur | `rm_databank`, `rm_geoportaal`, `rm_aggregator` | `server:mcp:rm-databank`, `server:mcp:rm-geoportaal`, `server:mcp:rm-aggregator` |
-| Demografie Analist | `rm_dashboarding`, `rm_tsa` | `server:mcp:rm-dashboarding`, `server:mcp:rm-tsa` |
-| Ruimtelijk Adviseur | `rm_geoportaal`, `rm_databank`, `rm_aggregator` | `server:mcp:rm-geoportaal`, `server:mcp:rm-databank`, `server:mcp:rm-aggregator` |
-| Sales Adviseur | `rm_riens`, `rm_sales_predictor`, `rm_opdrachten` | `server:mcp:rm-riens`, `server:mcp:rm-sales-predictor`, `server:mcp:rm-opdrachten` |
-| Ruimtemeesters Assistent | all 8 tools | all 8 `server:mcp:*` IDs |
+| Assistant                | Current toolIds                                   | New toolIds                                                                        |
+| ------------------------ | ------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Beleidsadviseur          | `rm_databank`, `rm_geoportaal`, `rm_aggregator`   | `server:mcp:rm-databank`, `server:mcp:rm-geoportaal`, `server:mcp:rm-aggregator`   |
+| Demografie Analist       | `rm_dashboarding`, `rm_tsa`                       | `server:mcp:rm-dashboarding`, `server:mcp:rm-tsa`                                  |
+| Ruimtelijk Adviseur      | `rm_geoportaal`, `rm_databank`, `rm_aggregator`   | `server:mcp:rm-geoportaal`, `server:mcp:rm-databank`, `server:mcp:rm-aggregator`   |
+| Sales Adviseur           | `rm_riens`, `rm_sales_predictor`, `rm_opdrachten` | `server:mcp:rm-riens`, `server:mcp:rm-sales-predictor`, `server:mcp:rm-opdrachten` |
+| Ruimtemeesters Assistent | all 8 tools                                       | all 8 `server:mcp:*` IDs                                                           |
 
 The update is done in `rm-tools/register_assistants.py` (which seeds the database) and then re-run the registration script.
 
@@ -173,6 +175,7 @@ rm-tools/register_tools.py
 ### Database cleanup
 
 The old Python tools are stored in OpenWebUI's `tool` table. After connecting MCP servers and verifying they work, remove the old tool entries either:
+
 - Via the Admin UI (Settings → Tools → delete each)
 - Via the registration script (add a cleanup step)
 
@@ -201,24 +204,24 @@ The old Python tools are stored in OpenWebUI's `tool` table. After connecting MC
 
 ### MCP Servers repo (`Ruimtemeesters-MCP-Servers`)
 
-| File | Change |
-|------|--------|
-| `Dockerfile` | New — shared multi-stage Dockerfile |
-| `docker-compose.yaml` | New — 8 MCP server services |
-| `.env.example` | Add port assignments (already has API URLs/keys) |
+| File                  | Change                                           |
+| --------------------- | ------------------------------------------------ |
+| `Dockerfile`          | New — shared multi-stage Dockerfile              |
+| `docker-compose.yaml` | New — 8 MCP server services                      |
+| `.env.example`        | Add port assignments (already has API URLs/keys) |
 
 ### OpenWebUI fork (`ruimtemeesters-openwebui`)
 
-| File | Change |
-|------|--------|
-| `docker-compose.yaml` | Add `TOOL_SERVER_CONNECTIONS` env var, join `rm-network` |
-| `rm-tools/register_assistants.py` | Update toolIds to `server:mcp:*` format |
-| `rm-tools/databank.py` | Delete |
-| `rm-tools/geoportaal.py` | Delete |
-| `rm-tools/tsa.py` | Delete |
-| `rm-tools/dashboarding.py` | Delete |
-| `rm-tools/riens.py` | Delete |
-| `rm-tools/sales_predictor.py` | Delete |
-| `rm-tools/opdrachten.py` | Delete |
-| `rm-tools/aggregator.py` | Delete |
-| `rm-tools/register_tools.py` | Delete |
+| File                              | Change                                                   |
+| --------------------------------- | -------------------------------------------------------- |
+| `docker-compose.yaml`             | Add `TOOL_SERVER_CONNECTIONS` env var, join `rm-network` |
+| `rm-tools/register_assistants.py` | Update toolIds to `server:mcp:*` format                  |
+| `rm-tools/databank.py`            | Delete                                                   |
+| `rm-tools/geoportaal.py`          | Delete                                                   |
+| `rm-tools/tsa.py`                 | Delete                                                   |
+| `rm-tools/dashboarding.py`        | Delete                                                   |
+| `rm-tools/riens.py`               | Delete                                                   |
+| `rm-tools/sales_predictor.py`     | Delete                                                   |
+| `rm-tools/opdrachten.py`          | Delete                                                   |
+| `rm-tools/aggregator.py`          | Delete                                                   |
+| `rm-tools/register_tools.py`      | Delete                                                   |

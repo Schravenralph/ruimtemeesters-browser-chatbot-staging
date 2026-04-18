@@ -7,6 +7,7 @@
 ## Scope
 
 ### In scope
+
 - Get the full stack running from zero (no prior setup)
 - Resolve infrastructure conflicts (ports, networks, DB connections)
 - Health-check every service
@@ -16,6 +17,7 @@
 - Produce a repeatable test runbook
 
 ### Out of scope
+
 - CI/CD pipeline fixes (disabled lint/integration workflows)
 - Performance / load testing
 - Production deployment
@@ -38,19 +40,19 @@
 
 Six separate Postgres instances across the stack, each on a different port, plus Neo4j, Redis, and GraphDB:
 
-| Service | DB Type | Host Port | Container Port | DB Name | Network |
-|---------|---------|-----------|----------------|---------|---------|
-| Databank | PostgreSQL | 5432 | 5432 | databank | ruimtemeesters-databank-network |
-| Databank | Neo4j | 7687 | 7687 | — | ruimtemeesters-databank-network |
-| Databank | Redis | 6379 | 6379 | — | ruimtemeesters-databank-network |
-| Databank | GraphDB | 7200 | 7200 | — | ruimtemeesters-databank-network |
-| Geoportaal | PostGIS | 5433 | 5432 | geoportaal | geoportaal-network |
-| TSA | PostgreSQL | 6435 | 5432 | tsa | default + rm-network |
-| Dashboarding | PostgreSQL | 6433 | 5432 | dashboarding | default |
-| Riens Sales Viewer | PostGIS | 5432 | 5432 | sales_viewer | sales-viewer-network + rm-network |
-| Opdrachten Scanner | PostgreSQL | 5435 | 5432 | cold_storage | default |
-| Workspace | PostgreSQL | 6432 | 5432 | tracking | default |
-| Chatbot (OpenWebUI) | PostgreSQL | TBD (needs allocation) | 5432 | openwebui | rm-network |
+| Service             | DB Type    | Host Port              | Container Port | DB Name      | Network                           |
+| ------------------- | ---------- | ---------------------- | -------------- | ------------ | --------------------------------- |
+| Databank            | PostgreSQL | 5432                   | 5432           | databank     | ruimtemeesters-databank-network   |
+| Databank            | Neo4j      | 7687                   | 7687           | —            | ruimtemeesters-databank-network   |
+| Databank            | Redis      | 6379                   | 6379           | —            | ruimtemeesters-databank-network   |
+| Databank            | GraphDB    | 7200                   | 7200           | —            | ruimtemeesters-databank-network   |
+| Geoportaal          | PostGIS    | 5433                   | 5432           | geoportaal   | geoportaal-network                |
+| TSA                 | PostgreSQL | 6435                   | 5432           | tsa          | default + rm-network              |
+| Dashboarding        | PostgreSQL | 6433                   | 5432           | dashboarding | default                           |
+| Riens Sales Viewer  | PostGIS    | 5432                   | 5432           | sales_viewer | sales-viewer-network + rm-network |
+| Opdrachten Scanner  | PostgreSQL | 5435                   | 5432           | cold_storage | default                           |
+| Workspace           | PostgreSQL | 6432                   | 5432           | tracking     | default                           |
+| Chatbot (OpenWebUI) | PostgreSQL | TBD (needs allocation) | 5432           | openwebui    | rm-network                        |
 
 ### Risks
 
@@ -63,6 +65,7 @@ Six separate Postgres instances across the stack, each on a different port, plus
 ### Resolution approach
 
 In Phase 1, before starting any service:
+
 1. Audit every `docker-compose.yml` for host port mappings
 2. Resolve the 5432 conflict (remap Riens to 5434)
 3. Verify TSA/Dashboarding DB relationship
@@ -110,6 +113,7 @@ In Phase 1, before starting any service:
    - Verify model pull works
 
 ### Deliverable
+
 Infrastructure checklist with pass/fail per component.
 
 ---
@@ -130,17 +134,17 @@ For each of the 8 backend services + the chatbot:
 
 ### Service checklist
 
-| Service | Start method | Health endpoint | Test call |
-|---------|-------------|-----------------|-----------|
-| Databank | `docker compose up -d backend` | `GET /health` | `GET /api/documents` |
-| Geoportaal | `docker compose up -d backend` | `GET /health` | `GET /api/spatial-rules` |
-| TSA | `docker compose up -d tsa-engine` | `GET /health` | `GET /api/gemeenten` |
-| Dashboarding | `docker compose up -d db` + local dev | `GET /health` | `GET /api/dashboard` |
-| Riens Sales Viewer | `docker compose up -d` | `GET /health` | `GET /api/gemeente-status` |
-| Sales Predictor | `python backend_api.py` (local) | `GET /health` | `GET /api/models` |
-| Opdrachten Scanner | local (not containerized) | `GET /health` | `GET /api/inbox` |
-| Aggregator | `docker compose up -d` | `GET /health` | `GET /api/health` |
-| Chatbot (OpenWebUI) | `docker compose -f docker-compose.rm.yaml up -d` | `GET /health` | `GET /api/config` |
+| Service             | Start method                                     | Health endpoint | Test call                  |
+| ------------------- | ------------------------------------------------ | --------------- | -------------------------- |
+| Databank            | `docker compose up -d backend`                   | `GET /health`   | `GET /api/documents`       |
+| Geoportaal          | `docker compose up -d backend`                   | `GET /health`   | `GET /api/spatial-rules`   |
+| TSA                 | `docker compose up -d tsa-engine`                | `GET /health`   | `GET /api/gemeenten`       |
+| Dashboarding        | `docker compose up -d db` + local dev            | `GET /health`   | `GET /api/dashboard`       |
+| Riens Sales Viewer  | `docker compose up -d`                           | `GET /health`   | `GET /api/gemeente-status` |
+| Sales Predictor     | `python backend_api.py` (local)                  | `GET /health`   | `GET /api/models`          |
+| Opdrachten Scanner  | local (not containerized)                        | `GET /health`   | `GET /api/inbox`           |
+| Aggregator          | `docker compose up -d`                           | `GET /health`   | `GET /api/health`          |
+| Chatbot (OpenWebUI) | `docker compose -f docker-compose.rm.yaml up -d` | `GET /health`   | `GET /api/config`          |
 
 ### Code review targets
 
@@ -150,6 +154,7 @@ For each of the 8 backend services + the chatbot:
 - `.env` handling — no secrets in committed files
 
 ### Deliverable
+
 Service health matrix (service x status x notes).
 
 ---
@@ -176,13 +181,13 @@ Service health matrix (service x status x notes).
 
 4. **Manual test matrix — assistant x tool**
 
-   | Assistant | Tools to test | Test scenario |
-   |-----------|--------------|---------------|
-   | Ruimtemeesters Assistant | aggregator (context_at_coordinate, search_documents, search_knowledge_graph) | Ask for context about a known municipality |
-   | Beleidsadviseur | databank (search_beleidsdocumenten, get_knowledge_graph) | Search for a policy document by topic |
-   | Demografie-analist | tsa (run_population_forecast, list_gemeenten), dashboarding (get_dashboard_data) | Request population forecast for a gemeente |
-   | Ruimtelijk-adviseur | geoportaal (query_spatial_rules, get_air_quality, get_weather) | Query spatial rules at a coordinate |
-   | Sales-adviseur | riens (get_gemeente_status), sales-predictor (run_sales_forecast) | Check contract status of a gemeente |
+   | Assistant                | Tools to test                                                                    | Test scenario                              |
+   | ------------------------ | -------------------------------------------------------------------------------- | ------------------------------------------ |
+   | Ruimtemeesters Assistant | aggregator (context_at_coordinate, search_documents, search_knowledge_graph)     | Ask for context about a known municipality |
+   | Beleidsadviseur          | databank (search_beleidsdocumenten, get_knowledge_graph)                         | Search for a policy document by topic      |
+   | Demografie-analist       | tsa (run_population_forecast, list_gemeenten), dashboarding (get_dashboard_data) | Request population forecast for a gemeente |
+   | Ruimtelijk-adviseur      | geoportaal (query_spatial_rules, get_air_quality, get_weather)                   | Query spatial rules at a coordinate        |
+   | Sales-adviseur           | riens (get_gemeente_status), sales-predictor (run_sales_forecast)                | Check contract status of a gemeente        |
 
 5. **Auth flow testing**
    - Clerk SSO login (if configured locally)
@@ -195,6 +200,7 @@ Service health matrix (service x status x notes).
    - Test with non-existent tool arguments
 
 ### Deliverable
+
 Test matrix with results, bugs filed in `product-docs/20-issues/`.
 
 ---
@@ -214,19 +220,24 @@ All findings go to `product-docs/20-issues/` as markdown files.
 **Phase found:** 1 | 2 | 3
 
 ## Description
+
 What's wrong.
 
 ## Repro steps
+
 1. ...
 2. ...
 
 ## Expected
+
 What should happen.
 
 ## Actual
+
 What actually happens.
 
 ## Notes
+
 Any additional context, logs, screenshots.
 ```
 

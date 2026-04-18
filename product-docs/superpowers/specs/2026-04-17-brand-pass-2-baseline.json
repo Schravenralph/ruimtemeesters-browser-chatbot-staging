@@ -1,0 +1,41 @@
+{
+	"timestamp": "2026-04-17T11:36:17.352758+02:00",
+	"host": "http://localhost:3333",
+	"criteria": {
+		"A_favicon_content_type_and_200": {
+			"ct": "image/png",
+			"code": "200",
+			"pass": true
+		},
+		"B_manifest_branded": {
+			"background_color": "#343541",
+			"icon": "/static/logo.png",
+			"name": "Ruimtemeesters AI (Open WebUI)",
+			"pass": false
+		},
+		"C_banner_present": {
+			"pass": false
+		},
+		"D_greeting_util_file": {
+			"pass": false
+		},
+		"E_distinct_assistant_avatars": {
+			"count": 1,
+			"pass": false
+		},
+		"F_community_sharing_disabled": {
+			"value": null,
+			"pass": false
+		},
+		"G_default_model_gemini_flash_lite": {
+			"value": "",
+			"pass": false
+		},
+		"H_about_modal_rm_copy": {
+			"pass": false
+		},
+		"I_seed_script_exists": {
+			"pass": false
+		}
+	}
+}

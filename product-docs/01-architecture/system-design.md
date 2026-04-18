@@ -41,29 +41,31 @@ Clerk login at datameesters.nl
 ```
 
 Three layers:
+
 1. **Clerk** — identity (who you are)
 2. **OpenWebUI** — chatbot permissions (what models/tools you see)
 3. **Apps** — data-level RBAC (what data you can access)
 
 ## Stack
 
-| Component | Technology |
-|-----------|-----------|
-| Chat UI | SvelteKit (OpenWebUI fork) |
-| Backend | Python (FastAPI) |
-| Database | PostgreSQL |
-| Local LLM | Ollama (llama3.1, mistral) |
-| Remote LLMs | OpenAI, Anthropic Claude |
-| Auth | Clerk OIDC |
-| Reverse proxy | Caddy |
-| Tools | 8 OpenWebUI Tools (Python → httpx → app APIs) |
-| Assistants | 5 Modelfiles with curated tool access |
+| Component     | Technology                                    |
+| ------------- | --------------------------------------------- |
+| Chat UI       | SvelteKit (OpenWebUI fork)                    |
+| Backend       | Python (FastAPI)                              |
+| Database      | PostgreSQL                                    |
+| Local LLM     | Ollama (llama3.1, mistral)                    |
+| Remote LLMs   | OpenAI, Anthropic Claude                      |
+| Auth          | Clerk OIDC                                    |
+| Reverse proxy | Caddy                                         |
+| Tools         | 8 OpenWebUI Tools (Python → httpx → app APIs) |
+| Assistants    | 5 Modelfiles with curated tool access         |
 
 ## Multi-Surface Platform (Phase D)
 
 The platform is evolving from a single chat UI to multiple surfaces sharing the same backend, sessions, and history. See [Multi-Surface Platform Vision](multi-surface-platform-vision.md) for the full architecture.
 
 Key decisions:
+
 - [ADR-0007: Multi-surface platform](../06-adr/0007-multi-surface-platform.md) — OpenWebUI as backend-of-record
 - [ADR-0008: Embedded chat via API](../06-adr/0008-embedded-chat-via-api.md) — REST API + custom views, not iframe
 - [ADR-0009: Shared session cookie](../06-adr/0009-shared-session-cookie-domain.md) — .datameesters.nl cookie domain

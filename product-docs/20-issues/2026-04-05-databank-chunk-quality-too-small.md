@@ -20,6 +20,7 @@ This is the #1 blocker for chatbot answer quality. Even with correct document re
 See plan: `product-docs/superpowers/plans/2026-04-05-aggregator-kg-proxy-and-chunking.md` (chunking section).
 
 Needs evaluation of chunking strategies with before/after metrics. Key changes:
+
 - Increase chunk size to 1500-2000 chars
 - Never split mid-sentence
 - Split on logical boundaries (paragraph, article, section heading)

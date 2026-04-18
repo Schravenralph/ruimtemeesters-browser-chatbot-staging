@@ -21,6 +21,7 @@ Neo4j starts successfully and accepts bolt connections on port 7687.
 ## Actual
 
 Container restarts every few seconds with config parse error. This cascades to:
+
 - Databank backend FATAL: cannot connect to Neo4j
 - Any tool that queries the knowledge graph fails
 
@@ -29,6 +30,7 @@ Container restarts every few seconds with config parse error. This cascades to:
 Root cause is in the Neo4j Docker entrypoint or the APOC plugin installation script. Each restart re-runs the plugin installer which appends to the config file, creating duplicates.
 
 Fix options:
+
 1. Mount a custom `neo4j.conf` that already includes the APOC config (prevents the installer from adding it)
 2. Clear the config file before each startup via an entrypoint wrapper
 3. Use a Neo4j image version that handles APOC config idempotently
@@ -49,6 +51,7 @@ Fix was landed the same day this issue was filed. The commit adds two env vars i
 Root cause was confirmed: when `NEO4J_PLUGINS=["apoc"]` is set without the matching config env vars, Neo4j 5.x's entrypoint installs the APOC jar and appends the allowlist config to `/var/lib/neo4j/conf/neo4j.conf`. Without a persisted `/conf` mount, this is idempotent-enough for first-run; but if `/conf` ever gets persisted (or the entrypoint re-runs inside the same container), the append duplicates the key and Neo4j refuses to start. Declaring the config via `NEO4J_*` env vars makes the entrypoint skip the conf append entirely.
 
 **Verification 2026-04-17:**
+
 - `/conf` is NOT in the volumes list (checked via `docker inspect`)
 - Stress-tested `docker restart ruimtemeesters-databank-neo4j` ×3; `grep -c "^dbms.security.procedures.unrestricted" neo4j.conf` returns `1` after each restart
 - Container has been `Up 3+ days (healthy)` before stress test

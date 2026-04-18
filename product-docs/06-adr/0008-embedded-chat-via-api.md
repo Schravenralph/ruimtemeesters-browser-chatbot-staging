@@ -7,10 +7,10 @@
 
 Sibling apps (Databank, Geoportaal, Dashboarding, etc.) should show chat history and allow quick AI queries without leaving the app. Two approaches were considered:
 
-| Approach | Pros | Cons |
-|----------|------|------|
-| Iframe the full OpenWebUI UI | Zero frontend code | Must relax X-Frame-Options / CSP; full chat UI crammed into a panel; clunky UX; hard to style to match host app |
-| REST API + custom views | Purpose-built UX per app; lightweight; fetch only what's needed | Must build and maintain the views; depends on API stability |
+| Approach                     | Pros                                                            | Cons                                                                                                            |
+| ---------------------------- | --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Iframe the full OpenWebUI UI | Zero frontend code                                              | Must relax X-Frame-Options / CSP; full chat UI crammed into a panel; clunky UX; hard to style to match host app |
+| REST API + custom views      | Purpose-built UX per app; lightweight; fetch only what's needed | Must build and maintain the views; depends on API stability                                                     |
 
 ## Decision
 

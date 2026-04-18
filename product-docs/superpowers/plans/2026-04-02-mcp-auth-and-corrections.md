@@ -16,23 +16,23 @@
 
 ### MCP Servers repo (`/home/ralph/Projects/Ruimtemeesters-MCP-Servers/`)
 
-| File | Change |
-|------|--------|
-| `packages/shared/src/http.ts` | Add `apiPut()` function |
-| `packages/shared/src/index.ts` | Export `apiPut` |
-| `packages/tsa/src/server.ts` | Port 8100, `/v1/` in all 6 paths |
-| `packages/geoportaal/src/server.ts` | Port 5002/api, add API key |
-| `packages/dashboarding/src/server.ts` | Port 5022, add API key |
-| `packages/riens/src/server.ts` | Port 3001, add API key, use `apiPut()` |
-| `packages/sales-predictor/src/server.ts` | Port 8000, add API key |
-| `packages/opdrachten/src/server.ts` | Add API key |
-| `.env.example` | Correct URLs, add all API key vars |
-| `claude-code-config.json` | Correct URLs, add API key env vars |
+| File                                     | Change                                 |
+| ---------------------------------------- | -------------------------------------- |
+| `packages/shared/src/http.ts`            | Add `apiPut()` function                |
+| `packages/shared/src/index.ts`           | Export `apiPut`                        |
+| `packages/tsa/src/server.ts`             | Port 8100, `/v1/` in all 6 paths       |
+| `packages/geoportaal/src/server.ts`      | Port 5002/api, add API key             |
+| `packages/dashboarding/src/server.ts`    | Port 5022, add API key                 |
+| `packages/riens/src/server.ts`           | Port 3001, add API key, use `apiPut()` |
+| `packages/sales-predictor/src/server.ts` | Port 8000, add API key                 |
+| `packages/opdrachten/src/server.ts`      | Add API key                            |
+| `.env.example`                           | Correct URLs, add all API key vars     |
+| `claude-code-config.json`                | Correct URLs, add API key env vars     |
 
 ### Sales Predictor repo (`/home/ralph/Projects/Sales-Predictor/`)
 
-| File | Change |
-|------|--------|
+| File             | Change                                |
+| ---------------- | ------------------------------------- |
 | `backend_api.py` | Add `SERVICE_API_KEY` HTTP middleware |
 
 ---
@@ -40,6 +40,7 @@
 ## Task 1: Add `apiPut` to shared HTTP client
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/packages/shared/src/http.ts:40-63`
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/packages/shared/src/index.ts:1`
 
@@ -48,29 +49,25 @@
 Add after the `apiPost` function (after line 63):
 
 ```typescript
-export async function apiPut(
-  opts: HttpOptions,
-  path: string,
-  body: unknown,
-): Promise<string> {
-  const url = new URL(path, opts.baseUrl);
+export async function apiPut(opts: HttpOptions, path: string, body: unknown): Promise<string> {
+	const url = new URL(path, opts.baseUrl);
 
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (opts.apiKey) headers['X-API-Key'] = opts.apiKey;
+	const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+	if (opts.apiKey) headers['X-API-Key'] = opts.apiKey;
 
-  const resp = await fetch(url, {
-    method: 'PUT',
-    headers,
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(opts.timeout ?? 30_000),
-  });
+	const resp = await fetch(url, {
+		method: 'PUT',
+		headers,
+		body: JSON.stringify(body),
+		signal: AbortSignal.timeout(opts.timeout ?? 30_000)
+	});
 
-  if (!resp.ok) {
-    const text = await resp.text().catch(() => '');
-    throw new Error(`${resp.status} ${resp.statusText}: ${text.slice(0, 200)}`);
-  }
+	if (!resp.ok) {
+		const text = await resp.text().catch(() => '');
+		throw new Error(`${resp.status} ${resp.statusText}: ${text.slice(0, 200)}`);
+	}
 
-  return resp.text();
+	return resp.text();
 }
 ```
 
@@ -109,6 +106,7 @@ git commit -m "feat(shared): add apiPut helper for PUT requests"
 ## Task 2: Fix TSA MCP server — port and API paths
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/packages/tsa/src/server.ts`
 
 - [ ] **Step 1: Fix port default**
@@ -157,6 +155,7 @@ git commit -m "fix(tsa): correct port to 8100 and add /v1/ to all API paths"
 ## Task 3: Fix Geoportaal MCP server — port and auth
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/packages/geoportaal/src/server.ts`
 
 - [ ] **Step 1: Fix port and add API key**
@@ -171,8 +170,8 @@ to:
 
 ```typescript
 const opts: HttpOptions = {
-  baseUrl: process.env.GEOPORTAAL_API_URL ?? 'http://localhost:5002/api',
-  apiKey: process.env.GEOPORTAAL_API_KEY,
+	baseUrl: process.env.GEOPORTAAL_API_URL ?? 'http://localhost:5002/api',
+	apiKey: process.env.GEOPORTAAL_API_KEY
 };
 ```
 
@@ -197,6 +196,7 @@ git commit -m "fix(geoportaal): correct port to 5002/api, add API key auth"
 ## Task 4: Fix Dashboarding MCP server — port and auth
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/packages/dashboarding/src/server.ts`
 
 - [ ] **Step 1: Fix port and add API key**
@@ -211,8 +211,8 @@ to:
 
 ```typescript
 const opts: HttpOptions = {
-  baseUrl: process.env.DASHBOARDING_API_URL ?? 'http://localhost:5022',
-  apiKey: process.env.DASHBOARDING_API_KEY,
+	baseUrl: process.env.DASHBOARDING_API_URL ?? 'http://localhost:5022',
+	apiKey: process.env.DASHBOARDING_API_KEY
 };
 ```
 
@@ -239,6 +239,7 @@ git commit -m "fix(dashboarding): correct port to 5022, add API key auth"
 **Depends on:** Task 1 (apiPut in shared package)
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/packages/riens/src/server.ts`
 
 - [ ] **Step 1: Replace entire server.ts**
@@ -253,27 +254,37 @@ import { z } from 'zod';
 import { apiGet, apiPut, type HttpOptions } from '@rm-mcp/shared';
 
 const opts: HttpOptions = {
-  baseUrl: process.env.RIENS_API_URL ?? 'http://localhost:3001',
-  apiKey: process.env.RIENS_API_KEY,
+	baseUrl: process.env.RIENS_API_URL ?? 'http://localhost:3001',
+	apiKey: process.env.RIENS_API_KEY
 };
 const server = new McpServer({ name: 'rm-riens', version: '1.0.0' });
 
-server.tool('get_gemeente_status', 'Get contract status of all Dutch municipalities — active, archived, by province', {}, async () => {
-  const text = await apiGet(opts, '/api/municipalities');
-  return { content: [{ type: 'text' as const, text }] };
-});
+server.tool(
+	'get_gemeente_status',
+	'Get contract status of all Dutch municipalities — active, archived, by province',
+	{},
+	async () => {
+		const text = await apiGet(opts, '/api/municipalities');
+		return { content: [{ type: 'text' as const, text }] };
+	}
+);
 
-server.tool('update_gemeente', 'Update status or notes for a municipality', {
-  municipality_name: z.string().describe('Municipality name'),
-  status: z.string().default('').describe("New status: 'active', 'archived', 'prospect'"),
-  notes: z.string().default('').describe('Optional notes'),
-}, async ({ municipality_name, status, notes }) => {
-  const body: Record<string, string> = {};
-  if (status) body.status = status;
-  if (notes) body.notes = notes;
-  const text = await apiPut(opts, `/api/municipalities/${municipality_name}`, body);
-  return { content: [{ type: 'text' as const, text }] };
-});
+server.tool(
+	'update_gemeente',
+	'Update status or notes for a municipality',
+	{
+		municipality_name: z.string().describe('Municipality name'),
+		status: z.string().default('').describe("New status: 'active', 'archived', 'prospect'"),
+		notes: z.string().default('').describe('Optional notes')
+	},
+	async ({ municipality_name, status, notes }) => {
+		const body: Record<string, string> = {};
+		if (status) body.status = status;
+		if (notes) body.notes = notes;
+		const text = await apiPut(opts, `/api/municipalities/${municipality_name}`, body);
+		return { content: [{ type: 'text' as const, text }] };
+	}
+);
 
 // Start server
 await startServer(server);
@@ -300,6 +311,7 @@ git commit -m "fix(riens): correct port to 3001, add API key, use apiPut instead
 ## Task 6: Fix Sales Predictor MCP server — port and auth
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/packages/sales-predictor/src/server.ts`
 
 - [ ] **Step 1: Fix port and add API key**
@@ -307,16 +319,19 @@ git commit -m "fix(riens): correct port to 3001, add API key, use apiPut instead
 Change line 7 from:
 
 ```typescript
-const opts: HttpOptions = { baseUrl: process.env.SALES_PREDICTOR_API_URL ?? 'http://localhost:8001', timeout: 120_000 };
+const opts: HttpOptions = {
+	baseUrl: process.env.SALES_PREDICTOR_API_URL ?? 'http://localhost:8001',
+	timeout: 120_000
+};
 ```
 
 to:
 
 ```typescript
 const opts: HttpOptions = {
-  baseUrl: process.env.SALES_PREDICTOR_API_URL ?? 'http://localhost:8000',
-  apiKey: process.env.SALES_PREDICTOR_API_KEY,
-  timeout: 120_000,
+	baseUrl: process.env.SALES_PREDICTOR_API_URL ?? 'http://localhost:8000',
+	apiKey: process.env.SALES_PREDICTOR_API_KEY,
+	timeout: 120_000
 };
 ```
 
@@ -341,6 +356,7 @@ git commit -m "fix(sales-predictor): correct port to 8000, add API key auth"
 ## Task 7: Fix Opdrachten MCP server — add auth
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/packages/opdrachten/src/server.ts`
 
 - [ ] **Step 1: Add API key**
@@ -355,8 +371,8 @@ to:
 
 ```typescript
 const opts: HttpOptions = {
-  baseUrl: process.env.OPDRACHTEN_API_URL ?? 'http://localhost:6300',
-  apiKey: process.env.OPDRACHTEN_API_KEY,
+	baseUrl: process.env.OPDRACHTEN_API_URL ?? 'http://localhost:6300',
+	apiKey: process.env.OPDRACHTEN_API_KEY
 };
 ```
 
@@ -381,6 +397,7 @@ git commit -m "fix(opdrachten): add API key auth"
 ## Task 8: Add API key middleware to Sales Predictor backend
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/Sales-Predictor/backend_api.py`
 
 - [ ] **Step 1: Add the API key middleware**
@@ -507,6 +524,7 @@ git commit -m "feat: add SERVICE_API_KEY middleware — protects all API routes"
 ## Task 9: Update .env.example
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/.env.example`
 
 - [ ] **Step 1: Replace .env.example contents**
@@ -546,86 +564,87 @@ git commit -m "fix: update .env.example with correct ports and all API key vars"
 ## Task 10: Update claude-code-config.json
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/claude-code-config.json`
 
 - [ ] **Step 1: Replace claude-code-config.json contents**
 
 ```json
 {
-  "mcpServers": {
-    "rm-databank": {
-      "command": "npx",
-      "args": ["tsx", "packages/databank/src/server.ts"],
-      "cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
-      "env": {
-        "DATABANK_API_URL": "http://localhost:4000",
-        "DATABANK_AUTH_TOKEN": ""
-      }
-    },
-    "rm-geoportaal": {
-      "command": "npx",
-      "args": ["tsx", "packages/geoportaal/src/server.ts"],
-      "cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
-      "env": {
-        "GEOPORTAAL_API_URL": "http://localhost:5002/api",
-        "GEOPORTAAL_API_KEY": ""
-      }
-    },
-    "rm-tsa": {
-      "command": "npx",
-      "args": ["tsx", "packages/tsa/src/server.ts"],
-      "cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
-      "env": {
-        "TSA_API_URL": "http://localhost:8100",
-        "TSA_API_KEY": ""
-      }
-    },
-    "rm-dashboarding": {
-      "command": "npx",
-      "args": ["tsx", "packages/dashboarding/src/server.ts"],
-      "cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
-      "env": {
-        "DASHBOARDING_API_URL": "http://localhost:5022",
-        "DASHBOARDING_API_KEY": ""
-      }
-    },
-    "rm-riens": {
-      "command": "npx",
-      "args": ["tsx", "packages/riens/src/server.ts"],
-      "cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
-      "env": {
-        "RIENS_API_URL": "http://localhost:3001",
-        "RIENS_API_KEY": ""
-      }
-    },
-    "rm-sales-predictor": {
-      "command": "npx",
-      "args": ["tsx", "packages/sales-predictor/src/server.ts"],
-      "cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
-      "env": {
-        "SALES_PREDICTOR_API_URL": "http://localhost:8000",
-        "SALES_PREDICTOR_API_KEY": ""
-      }
-    },
-    "rm-opdrachten": {
-      "command": "npx",
-      "args": ["tsx", "packages/opdrachten/src/server.ts"],
-      "cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
-      "env": {
-        "OPDRACHTEN_API_URL": "http://localhost:6300",
-        "OPDRACHTEN_API_KEY": ""
-      }
-    },
-    "rm-aggregator": {
-      "command": "npx",
-      "args": ["tsx", "packages/aggregator/src/server.ts"],
-      "cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
-      "env": {
-        "AGGREGATOR_API_URL": "http://localhost:6000",
-        "AGGREGATOR_API_KEY": ""
-      }
-    }
-  }
+	"mcpServers": {
+		"rm-databank": {
+			"command": "npx",
+			"args": ["tsx", "packages/databank/src/server.ts"],
+			"cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
+			"env": {
+				"DATABANK_API_URL": "http://localhost:4000",
+				"DATABANK_AUTH_TOKEN": ""
+			}
+		},
+		"rm-geoportaal": {
+			"command": "npx",
+			"args": ["tsx", "packages/geoportaal/src/server.ts"],
+			"cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
+			"env": {
+				"GEOPORTAAL_API_URL": "http://localhost:5002/api",
+				"GEOPORTAAL_API_KEY": ""
+			}
+		},
+		"rm-tsa": {
+			"command": "npx",
+			"args": ["tsx", "packages/tsa/src/server.ts"],
+			"cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
+			"env": {
+				"TSA_API_URL": "http://localhost:8100",
+				"TSA_API_KEY": ""
+			}
+		},
+		"rm-dashboarding": {
+			"command": "npx",
+			"args": ["tsx", "packages/dashboarding/src/server.ts"],
+			"cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
+			"env": {
+				"DASHBOARDING_API_URL": "http://localhost:5022",
+				"DASHBOARDING_API_KEY": ""
+			}
+		},
+		"rm-riens": {
+			"command": "npx",
+			"args": ["tsx", "packages/riens/src/server.ts"],
+			"cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
+			"env": {
+				"RIENS_API_URL": "http://localhost:3001",
+				"RIENS_API_KEY": ""
+			}
+		},
+		"rm-sales-predictor": {
+			"command": "npx",
+			"args": ["tsx", "packages/sales-predictor/src/server.ts"],
+			"cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
+			"env": {
+				"SALES_PREDICTOR_API_URL": "http://localhost:8000",
+				"SALES_PREDICTOR_API_KEY": ""
+			}
+		},
+		"rm-opdrachten": {
+			"command": "npx",
+			"args": ["tsx", "packages/opdrachten/src/server.ts"],
+			"cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
+			"env": {
+				"OPDRACHTEN_API_URL": "http://localhost:6300",
+				"OPDRACHTEN_API_KEY": ""
+			}
+		},
+		"rm-aggregator": {
+			"command": "npx",
+			"args": ["tsx", "packages/aggregator/src/server.ts"],
+			"cwd": "/home/ralph/Projects/Ruimtemeesters-MCP-Servers",
+			"env": {
+				"AGGREGATOR_API_URL": "http://localhost:6000",
+				"AGGREGATOR_API_KEY": ""
+			}
+		}
+	}
 }
 ```
 

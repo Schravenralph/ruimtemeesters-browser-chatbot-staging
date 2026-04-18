@@ -29,6 +29,7 @@ Model stalls generating with 861% CPU usage. No response after 5+ minutes.
 ## Notes
 
 Fix options (in order of preference):
+
 1. Use a cloud LLM (OpenAI/Anthropic API) — fast, reliable, supports tool calling natively
 2. Add a GPU to the server and use a larger model (llama3.1:8b with GPU)
 3. Use a smaller tool-calling-optimized model (e.g., qwen2.5:3b which has better tool support)

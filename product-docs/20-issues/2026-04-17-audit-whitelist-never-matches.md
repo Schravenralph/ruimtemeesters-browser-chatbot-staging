@@ -69,6 +69,7 @@ print('match /api/v1/users/list?', bool(pattern.match('/api/v1/users/list')))
 ```
 
 Expected:
+
 - `/api/v1/chat/completions` → True
 - `/api/v1/auths/signin` → True
 - `/api/v1/users/list` → False (not whitelisted)

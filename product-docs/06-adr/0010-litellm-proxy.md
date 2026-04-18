@@ -25,6 +25,7 @@ OpenWebUI ──► LiteLLM Proxy ──┬──► Anthropic (Claude)
 ```
 
 LiteLLM handles:
+
 - **Provider routing:** Route requests to the correct provider based on model name
 - **Per-user spend tracking:** Budget visibility without custom metering code
 - **Fallback chains:** If one provider is down or rate-limited, route to another

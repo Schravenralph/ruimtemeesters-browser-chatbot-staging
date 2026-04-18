@@ -44,15 +44,15 @@ Token no longer required when `--dry-run`. Prints payload summaries for CI inspe
 
 ## 4. Success criteria
 
-| Criterion | Threshold | How measured |
-|---|---|---|
-| General assistant `rm-assistent` includes `rm-memory` in toolIds | yes | diff + API check |
-| 3 BOPA slash prompts registered (`/bopa-haalbaarheid`, `/bopa-strijdigheid`, `/bopa-beleid`) | yes | API: `GET /api/v1/prompts` |
-| **NO new specialist assistant introduced** | confirmed | registrar shows 5 assistants, same as baseline |
-| `.claude/skills/bopa/SKILL.md` exists and matches canonical source | yes | diff against `packages/memory/skills/bopa.md` |
-| `ADMIN_SETUP.md` lists 9 MCP servers | yes | file exists |
-| Registrar syntax check | pass | `python3 -m py_compile` |
-| Registrar dry-run | 5 assistants + 11 prompts | `python3 register_assistants.py --dry-run` |
+| Criterion                                                                                    | Threshold                 | How measured                                   |
+| -------------------------------------------------------------------------------------------- | ------------------------- | ---------------------------------------------- |
+| General assistant `rm-assistent` includes `rm-memory` in toolIds                             | yes                       | diff + API check                               |
+| 3 BOPA slash prompts registered (`/bopa-haalbaarheid`, `/bopa-strijdigheid`, `/bopa-beleid`) | yes                       | API: `GET /api/v1/prompts`                     |
+| **NO new specialist assistant introduced**                                                   | confirmed                 | registrar shows 5 assistants, same as baseline |
+| `.claude/skills/bopa/SKILL.md` exists and matches canonical source                           | yes                       | diff against `packages/memory/skills/bopa.md`  |
+| `ADMIN_SETUP.md` lists 9 MCP servers                                                         | yes                       | file exists                                    |
+| Registrar syntax check                                                                       | pass                      | `python3 -m py_compile`                        |
+| Registrar dry-run                                                                            | 5 assistants + 11 prompts | `python3 register_assistants.py --dry-run`     |
 
 ## 5. Validation
 

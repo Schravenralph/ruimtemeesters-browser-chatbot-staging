@@ -1625,11 +1625,7 @@ class OAuthManager:
         # Compute cookie expiry from JWT lifetime
         expires_delta = parse_duration(auth_manager_config.JWT_EXPIRES_IN)
         cookie_max_age = int(expires_delta.total_seconds()) if expires_delta else None
-        cookie_expires = (
-            datetime.now(timezone.utc) + expires_delta
-            if expires_delta
-            else None
-        )
+        cookie_expires = datetime.now(timezone.utc) + expires_delta if expires_delta else None
 
         # Set the cookie token
         # Redirect back to the frontend with the JWT token

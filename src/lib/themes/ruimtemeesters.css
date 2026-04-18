@@ -6,12 +6,12 @@
  *
  * Brand palette:
  *   Raisin Black: #161620  (dark surfaces, sidebar)
- *   Klein Blue:   #002EA3  (primary actions, accents)
- *   Smart White:  #F7F4EF  (light backgrounds)
- *   Violet:       #7F00FF  (secondary accents)
- *   Pumpkin:      #F37021  (warnings, CTAs)
- *   Lion:         #9C885C  (tertiary)
- *   Mystified:    #C3D7C1  (success states)
+ *   Klein Blue:   #002ea3  (primary actions, accents)
+ *   Smart White:  #f7f4ef  (light backgrounds)
+ *   Violet:       #7f00ff  (secondary accents)
+ *   Pumpkin:      #f37021  (warnings, CTAs)
+ *   Lion:         #9c885c  (tertiary)
+ *   Mystified:    #c3d7c1  (success states)
  *
  * Approach: Override body/sidebar backgrounds and inject brand accent
  * colors via CSS. Avoids editing individual Svelte components to
@@ -24,7 +24,7 @@
 
 /* Main background — warm RM smart white instead of pure white */
 body {
-	background: #F7F4EF;
+	background: #f7f4ef;
 }
 
 /* ============================================
@@ -43,12 +43,12 @@ body {
 
 /* Override blue accent utilities used throughout OpenWebUI */
 :root {
-	--rm-primary: #002EA3;
+	--rm-primary: #002ea3;
 	--rm-primary-hover: #0038c7;
 	--rm-primary-light: rgba(0, 46, 163, 0.1);
-	--rm-violet: #7F00FF;
-	--rm-pumpkin: #F37021;
-	--rm-mystified: #C3D7C1;
+	--rm-violet: #7f00ff;
+	--rm-pumpkin: #f37021;
+	--rm-mystified: #c3d7c1;
 }
 
 /* Primary buttons — any element using bg-blue-600 or similar */
@@ -122,31 +122,31 @@ input[type='checkbox']:checked {
 .shimmer {
 	background: linear-gradient(
 		110deg,
-		#9C885C 0%,
-		#9C885C 43%,
-		#F7F4EF 50%,
-		#9C885C 57%,
-		#9C885C 100%
+		#9c885c 0%,
+		#9c885c 43%,
+		#f7f4ef 50%,
+		#9c885c 57%,
+		#9c885c 100%
 	) !important;
 	background-size: 200% 100% !important;
 	background-clip: text !important;
 	-webkit-background-clip: text !important;
 	-webkit-text-fill-color: transparent !important;
-	color: #9C885C !important;
+	color: #9c885c !important;
 }
 
 :global(.dark) .shimmer {
 	background: linear-gradient(
 		110deg,
-		#7F00FF 0%,
-		#7F00FF 43%,
-		#002EA3 50%,
-		#7F00FF 57%,
-		#7F00FF 100%
+		#7f00ff 0%,
+		#7f00ff 43%,
+		#002ea3 50%,
+		#7f00ff 57%,
+		#7f00ff 100%
 	) !important;
 	background-size: 200% 100% !important;
 	background-clip: text !important;
 	-webkit-background-clip: text !important;
 	-webkit-text-fill-color: transparent !important;
-	color: #7F00FF !important;
+	color: #7f00ff !important;
 }

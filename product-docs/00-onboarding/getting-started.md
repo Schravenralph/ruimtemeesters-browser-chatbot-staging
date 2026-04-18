@@ -8,10 +8,10 @@
 
 ## Repositories
 
-| Repo | Location | Purpose |
-|------|----------|---------|
-| **Product repo** | `/home/ralph/Projects/Ruimtemeesters-Browser-Chatbot` | Docs, specs, plans |
-| **Staging fork** | `/home/ralph/Projects/ruimtemeesters-openwebui` | OpenWebUI fork with RM customizations |
+| Repo             | Location                                              | Purpose                               |
+| ---------------- | ----------------------------------------------------- | ------------------------------------- |
+| **Product repo** | `/home/ralph/Projects/Ruimtemeesters-Browser-Chatbot` | Docs, specs, plans                    |
+| **Staging fork** | `/home/ralph/Projects/ruimtemeesters-openwebui`       | OpenWebUI fork with RM customizations |
 
 The staging fork is a fork of [open-webui/open-webui](https://github.com/open-webui/open-webui) at [Schravenralph/ruimtemeesters-browser-chatbot-staging](https://github.com/Schravenralph/ruimtemeesters-browser-chatbot-staging).
 

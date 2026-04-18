@@ -42,11 +42,13 @@ Filed as "TSA database empty — no migrations". More accurate: TSA and Dashboar
 Two convergent changes:
 
 1. **Dashboarding ran its migrations** on the shared `dashboarding` DB. Current state (live probe):
+
    ```bash
    $ docker exec dashboarding-postgres psql -U postgres -d dashboarding -tAc \
        "SELECT COUNT(*) FROM _migrations;"
    13
    ```
+
    All 13 migrations applied (latest `013_sustainability_tables.sql` on 2026-03-26).
 
 2. **TSA was rewired to the shared network** — `Ruimtemeesters-TSA@9c15339` ("refactor: use ruimtemeesters-shared network, drop local postgres") switched TSA from its own postgres to the Dashboarding-owned one. Current `.env`:

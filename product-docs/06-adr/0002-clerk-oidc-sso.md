@@ -5,7 +5,7 @@
 
 ## Context
 
-All *.datameesters.nl apps share Clerk auth. The chatbot (Python/SvelteKit) can't use `@clerk/react` ClerkProvider like the React apps do.
+All \*.datameesters.nl apps share Clerk auth. The chatbot (Python/SvelteKit) can't use `@clerk/react` ClerkProvider like the React apps do.
 
 ## Decision
 

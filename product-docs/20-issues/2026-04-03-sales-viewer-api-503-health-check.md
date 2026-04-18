@@ -22,12 +22,14 @@ Health endpoint returns 200.
 ## Actual
 
 Returns 503. Likely causes:
+
 1. Missing `GRAPHQL_API_KEY` env var (warning in logs: "GRAPHQL_API_KEY not set — GraphQL endpoint will reject all requests")
 2. Health endpoint may check downstream dependencies that are unavailable
 
 ## Notes
 
 Check:
+
 1. What the health endpoint checks (is it `/health`, `/api/health`, or something else?)
 2. Whether `GRAPHQL_API_KEY` is required for the health check to pass
 3. Whether the health check depends on external services
@@ -44,8 +46,8 @@ Check:
 
 The relevant lines (pre-fix):
 
-- `server/src/app.ts:49`  → `app.use(authMiddleware)`
-- `server/src/app.ts:55`  → `app.get('/health', ...)` (gated)
+- `server/src/app.ts:49` → `app.use(authMiddleware)`
+- `server/src/app.ts:55` → `app.get('/health', ...)` (gated)
 - `server/src/middleware/auth.ts:40` → the `return res.status(503)` that fired
 
 The suspicion about `GRAPHQL_API_KEY` in the original issue was a red herring — it only affects GraphQL requests, not `/health`.
@@ -68,5 +70,6 @@ Regression test added at `server/tests/health.test.ts` that exercises the exact 
 ### Post-merge ops follow-up
 
 After the fix is deployed, set `ALLOW_MOCK_AUTH_IN_PRODUCTION=` (empty) in the production env and confirm:
+
 - `/health` still returns 200
 - Any `/api/*` request without a `SERVICE_API_KEY` match returns 503 (intended)

@@ -7,18 +7,18 @@
 
 ## Valves
 
-| Name | Default | Description |
-|------|---------|-------------|
-| riens_api_url | http://riens-api:3001 | Base URL |
-| api_key | | Service API key |
-| timeout | 30 | Request timeout seconds |
+| Name          | Default               | Description             |
+| ------------- | --------------------- | ----------------------- |
+| riens_api_url | http://riens-api:3001 | Base URL                |
+| api_key       |                       | Service API key         |
+| timeout       | 30                    | Request timeout seconds |
 
 ## Tools
 
-| Method | Endpoint | Type | Description |
-|--------|----------|------|-------------|
-| get_gemeente_status | GET /api/municipalities | READ | All municipalities with contract status |
-| update_gemeente | PUT /api/municipalities/:name | WRITE | Update municipality status or notes |
+| Method              | Endpoint                      | Type  | Description                             |
+| ------------------- | ----------------------------- | ----- | --------------------------------------- |
+| get_gemeente_status | GET /api/municipalities       | READ  | All municipalities with contract status |
+| update_gemeente     | PUT /api/municipalities/:name | WRITE | Update municipality status or notes     |
 
 ## Notes
 

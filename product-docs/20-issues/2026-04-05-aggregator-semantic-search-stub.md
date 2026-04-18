@@ -36,6 +36,7 @@ POST /v1/search/metadata-search — HTTP 200 with FTS ranking
 ```
 
 Implementation confirmed at `Ruimtemeesters-Aggregator/src/routes/semantic-search.ts:52-101`:
+
 - `handleSearch` proxies to Databank `GET /api/search` via `databankGet<DatabankSearchResponse>('/api/search', { params })`
 - Parallel spatial enrichment via `fetchSpatialRulesAtPoint` when `detectMunicipality(q)` finds a gemeente name in the query
 - Both `/semantic` and `/hybrid` route to the same handler (Databank's search is already hybrid vector+keyword)

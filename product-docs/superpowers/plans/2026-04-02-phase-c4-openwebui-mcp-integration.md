@@ -16,33 +16,34 @@
 
 ### MCP Servers repo (`/home/ralph/Projects/Ruimtemeesters-MCP-Servers/`)
 
-| File | Responsibility |
-|------|---------------|
-| `Dockerfile` | Shared multi-stage image for all 8 MCP servers |
-| `docker-compose.yaml` | 8 services on ports 3101-3108, rm-network |
-| `.env.example` | Add MCP port vars (already has API URLs/keys) |
+| File                  | Responsibility                                 |
+| --------------------- | ---------------------------------------------- |
+| `Dockerfile`          | Shared multi-stage image for all 8 MCP servers |
+| `docker-compose.yaml` | 8 services on ports 3101-3108, rm-network      |
+| `.env.example`        | Add MCP port vars (already has API URLs/keys)  |
 
 ### OpenWebUI fork (`/home/ralph/Projects/ruimtemeesters-openwebui/`)
 
-| File | Responsibility |
-|------|---------------|
-| `docker-compose.yaml` | Add TOOL_SERVER_CONNECTIONS, join rm-network |
-| `rm-tools/register_assistants.py` | Update toolIds to `server:mcp:*` format |
-| `rm-tools/databank.py` | Delete |
-| `rm-tools/geoportaal.py` | Delete |
-| `rm-tools/tsa.py` | Delete |
-| `rm-tools/dashboarding.py` | Delete |
-| `rm-tools/riens.py` | Delete |
-| `rm-tools/sales_predictor.py` | Delete |
-| `rm-tools/opdrachten.py` | Delete |
-| `rm-tools/aggregator.py` | Delete |
-| `rm-tools/register_tools.py` | Delete |
+| File                              | Responsibility                               |
+| --------------------------------- | -------------------------------------------- |
+| `docker-compose.yaml`             | Add TOOL_SERVER_CONNECTIONS, join rm-network |
+| `rm-tools/register_assistants.py` | Update toolIds to `server:mcp:*` format      |
+| `rm-tools/databank.py`            | Delete                                       |
+| `rm-tools/geoportaal.py`          | Delete                                       |
+| `rm-tools/tsa.py`                 | Delete                                       |
+| `rm-tools/dashboarding.py`        | Delete                                       |
+| `rm-tools/riens.py`               | Delete                                       |
+| `rm-tools/sales_predictor.py`     | Delete                                       |
+| `rm-tools/opdrachten.py`          | Delete                                       |
+| `rm-tools/aggregator.py`          | Delete                                       |
+| `rm-tools/register_tools.py`      | Delete                                       |
 
 ---
 
 ## Task 1: Create Dockerfile for MCP servers
 
 **Files:**
+
 - Create: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/Dockerfile`
 
 - [ ] **Step 1: Create the Dockerfile**
@@ -101,6 +102,7 @@ git commit -m "feat: add shared Dockerfile for all MCP servers"
 ## Task 2: Create docker-compose.yaml for MCP servers
 
 **Files:**
+
 - Create: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/docker-compose.yaml`
 - Modify: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/.env.example`
 
@@ -119,7 +121,7 @@ services:
       - DATABANK_API_URL=${DATABANK_API_URL:-http://host.docker.internal:4000}
       - DATABANK_AUTH_TOKEN=${DATABANK_AUTH_TOKEN:-}
     ports:
-      - "3101:3101"
+      - '3101:3101'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -137,7 +139,7 @@ services:
       - GEOPORTAAL_API_URL=${GEOPORTAAL_API_URL:-http://host.docker.internal:5002/api}
       - GEOPORTAAL_API_KEY=${GEOPORTAAL_API_KEY:-}
     ports:
-      - "3102:3102"
+      - '3102:3102'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -155,7 +157,7 @@ services:
       - TSA_API_URL=${TSA_API_URL:-http://host.docker.internal:8100}
       - TSA_API_KEY=${TSA_API_KEY:-}
     ports:
-      - "3103:3103"
+      - '3103:3103'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -173,7 +175,7 @@ services:
       - DASHBOARDING_API_URL=${DASHBOARDING_API_URL:-http://host.docker.internal:5022}
       - DASHBOARDING_API_KEY=${DASHBOARDING_API_KEY:-}
     ports:
-      - "3104:3104"
+      - '3104:3104'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -191,7 +193,7 @@ services:
       - RIENS_API_URL=${RIENS_API_URL:-http://host.docker.internal:3001}
       - RIENS_API_KEY=${RIENS_API_KEY:-}
     ports:
-      - "3105:3105"
+      - '3105:3105'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -209,7 +211,7 @@ services:
       - SALES_PREDICTOR_API_URL=${SALES_PREDICTOR_API_URL:-http://host.docker.internal:8000}
       - SALES_PREDICTOR_API_KEY=${SALES_PREDICTOR_API_KEY:-}
     ports:
-      - "3106:3106"
+      - '3106:3106'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -227,7 +229,7 @@ services:
       - OPDRACHTEN_API_URL=${OPDRACHTEN_API_URL:-http://host.docker.internal:6300}
       - OPDRACHTEN_API_KEY=${OPDRACHTEN_API_KEY:-}
     ports:
-      - "3107:3107"
+      - '3107:3107'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -245,7 +247,7 @@ services:
       - AGGREGATOR_API_URL=${AGGREGATOR_API_URL:-http://host.docker.internal:6000}
       - AGGREGATOR_API_KEY=${AGGREGATOR_API_KEY:-}
     ports:
-      - "3108:3108"
+      - '3108:3108'
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
@@ -309,6 +311,7 @@ git commit -m "feat: add docker-compose with 8 MCP server services on rm-network
 ## Task 3: Connect OpenWebUI to MCP servers
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/ruimtemeesters-openwebui/docker-compose.yaml`
 
 - [ ] **Step 1: Update OpenWebUI docker-compose.yaml**
@@ -360,6 +363,7 @@ networks:
 ```
 
 Key changes from original:
+
 - Both services join `rm-network`
 - `rm-network` declared as `external: true` (created by MCP compose or manually)
 - `TOOL_SERVER_CONNECTIONS` env var with all 8 MCP server connections
@@ -378,6 +382,7 @@ git commit -m "feat: connect OpenWebUI to 8 MCP servers via TOOL_SERVER_CONNECTI
 ## Task 4: Update assistant tool assignments
 
 **Files:**
+
 - Modify: `/home/ralph/Projects/ruimtemeesters-openwebui/rm-tools/register_assistants.py`
 
 - [ ] **Step 1: Update all toolIds in register_assistants.py**
@@ -385,26 +390,31 @@ git commit -m "feat: connect OpenWebUI to 8 MCP servers via TOOL_SERVER_CONNECTI
 Replace each `toolIds` array:
 
 **Beleidsadviseur** (line 31):
+
 ```python
 "toolIds": ["server:mcp:rm-databank", "server:mcp:rm-geoportaal", "server:mcp:rm-aggregator"],
 ```
 
 **Demografie Analist** (line 59):
+
 ```python
 "toolIds": ["server:mcp:rm-dashboarding", "server:mcp:rm-tsa"],
 ```
 
 **Ruimtelijk Adviseur** (line 87):
+
 ```python
 "toolIds": ["server:mcp:rm-geoportaal", "server:mcp:rm-databank", "server:mcp:rm-aggregator"],
 ```
 
 **Sales Adviseur** (line 115):
+
 ```python
 "toolIds": ["server:mcp:rm-riens", "server:mcp:rm-sales-predictor", "server:mcp:rm-opdrachten"],
 ```
 
 **Ruimtemeesters Assistent** (line 145):
+
 ```python
 "toolIds": ["server:mcp:rm-databank", "server:mcp:rm-geoportaal", "server:mcp:rm-tsa", "server:mcp:rm-dashboarding", "server:mcp:rm-riens", "server:mcp:rm-sales-predictor", "server:mcp:rm-opdrachten", "server:mcp:rm-aggregator"],
 ```
@@ -443,6 +453,7 @@ git commit -m "feat: update assistant toolIds to MCP server format (server:mcp:r
 ## Task 5: Delete Phase A Python tools
 
 **Files:**
+
 - Delete: `/home/ralph/Projects/ruimtemeesters-openwebui/rm-tools/databank.py`
 - Delete: `/home/ralph/Projects/ruimtemeesters-openwebui/rm-tools/geoportaal.py`
 - Delete: `/home/ralph/Projects/ruimtemeesters-openwebui/rm-tools/tsa.py`

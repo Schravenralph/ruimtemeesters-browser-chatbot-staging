@@ -14,14 +14,14 @@
 
 ## File Structure
 
-| File | Action | Responsibility |
-|---|---|---|
-| `src/config/env.ts` | Modify | Add `DATABANK_API_URL` and `DATABANK_API_KEY` env vars |
-| `src/config/databank-client.ts` | Create | HTTP client for Databank API (GET/POST with API key auth) |
-| `src/routes/knowledge-graph.ts` | Rewrite | Proxy all KG endpoints to Databank HTTP API |
-| `src/routes/health.ts` | Modify | Replace Neo4j health check with Databank KG health check |
-| `src/index.ts` | Modify | Remove `shutdownNeo4j` import (Neo4j no longer used) |
-| `.env` | Modify | Add `DATABANK_API_URL` and `DATABANK_API_KEY` values |
+| File                            | Action  | Responsibility                                            |
+| ------------------------------- | ------- | --------------------------------------------------------- |
+| `src/config/env.ts`             | Modify  | Add `DATABANK_API_URL` and `DATABANK_API_KEY` env vars    |
+| `src/config/databank-client.ts` | Create  | HTTP client for Databank API (GET/POST with API key auth) |
+| `src/routes/knowledge-graph.ts` | Rewrite | Proxy all KG endpoints to Databank HTTP API               |
+| `src/routes/health.ts`          | Modify  | Replace Neo4j health check with Databank KG health check  |
+| `src/index.ts`                  | Modify  | Remove `shutdownNeo4j` import (Neo4j no longer used)      |
+| `.env`                          | Modify  | Add `DATABANK_API_URL` and `DATABANK_API_KEY` values      |
 
 After this change, `src/config/neo4j.ts` and `neo4j-driver` become unused and can be removed.
 
@@ -29,21 +29,22 @@ After this change, `src/config/neo4j.ts` and `neo4j-driver` become unused and ca
 
 ## Endpoint Mapping
 
-| Aggregator endpoint | Current source | New source (Databank) |
-|---|---|---|
-| `GET /v1/kg/stats` | Neo4j `MATCH (n)` | `GET /api/knowledge-graph/stats` |
-| `GET /v1/kg/entities?q=...` | Neo4j `WHERE e.name CONTAINS` | `GET /api/search?q=...` → extract `relatedEntities` |
-| `GET /v1/kg/entity/:id` | Neo4j `WHERE e.id = $id` | `GET /api/knowledge-graph/entity/:id` |
-| `GET /v1/kg/entity/:id/neighbors` | Neo4j `MATCH (e)-[r]-(n)` | Derived from entity endpoint (already returns `neighbors`) |
-| `POST /v1/kg/traverse` | Neo4j variable-length path | Iterative neighbor fetch (GraphDB doesn't support Cypher traversal) |
-| `POST /v1/kg/path` | Neo4j `shortestPath` | Not supported on GraphDB → return 501 with helpful message |
-| `GET /v1/kg/clusters` | Neo4j `labels(n), count(n)` | `GET /api/knowledge-graph/meta?strategy=entity-type` |
+| Aggregator endpoint               | Current source                | New source (Databank)                                               |
+| --------------------------------- | ----------------------------- | ------------------------------------------------------------------- |
+| `GET /v1/kg/stats`                | Neo4j `MATCH (n)`             | `GET /api/knowledge-graph/stats`                                    |
+| `GET /v1/kg/entities?q=...`       | Neo4j `WHERE e.name CONTAINS` | `GET /api/search?q=...` → extract `relatedEntities`                 |
+| `GET /v1/kg/entity/:id`           | Neo4j `WHERE e.id = $id`      | `GET /api/knowledge-graph/entity/:id`                               |
+| `GET /v1/kg/entity/:id/neighbors` | Neo4j `MATCH (e)-[r]-(n)`     | Derived from entity endpoint (already returns `neighbors`)          |
+| `POST /v1/kg/traverse`            | Neo4j variable-length path    | Iterative neighbor fetch (GraphDB doesn't support Cypher traversal) |
+| `POST /v1/kg/path`                | Neo4j `shortestPath`          | Not supported on GraphDB → return 501 with helpful message          |
+| `GET /v1/kg/clusters`             | Neo4j `labels(n), count(n)`   | `GET /api/knowledge-graph/meta?strategy=entity-type`                |
 
 ---
 
 ### Task 1: Add Databank API config to env
 
 **Files:**
+
 - Modify: `src/config/env.ts`
 - Modify: `.env`
 
@@ -86,6 +87,7 @@ git commit -m "feat: add DATABANK_API_URL and DATABANK_API_KEY to aggregator env
 ### Task 2: Create Databank HTTP client
 
 **Files:**
+
 - Create: `src/config/databank-client.ts`
 
 - [ ] **Step 1: Create the HTTP client module**
@@ -95,12 +97,12 @@ import { env } from './env.js';
 import { log } from './logger.js';
 
 export interface DatabankRequestOptions {
-  /** Query string parameters */
-  params?: Record<string, string | number>;
-  /** JSON body for POST requests */
-  body?: unknown;
-  /** Timeout in ms (default 15000) */
-  timeout?: number;
+	/** Query string parameters */
+	params?: Record<string, string | number>;
+	/** JSON body for POST requests */
+	body?: unknown;
+	/** Timeout in ms (default 15000) */
+	timeout?: number;
 }
 
 /**
@@ -108,35 +110,35 @@ export interface DatabankRequestOptions {
  * Auth via X-API-Key header.
  */
 export async function databankGet<T = unknown>(
-  path: string,
-  opts: DatabankRequestOptions = {},
+	path: string,
+	opts: DatabankRequestOptions = {}
 ): Promise<T> {
-  const url = new URL(path, env.DATABANK_API_URL);
-  if (opts.params) {
-    for (const [k, v] of Object.entries(opts.params)) {
-      url.searchParams.set(k, String(v));
-    }
-  }
+	const url = new URL(path, env.DATABANK_API_URL);
+	if (opts.params) {
+		for (const [k, v] of Object.entries(opts.params)) {
+			url.searchParams.set(k, String(v));
+		}
+	}
 
-  const start = Date.now();
-  const res = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'X-API-Key': env.DATABANK_API_KEY,
-      'Accept': 'application/json',
-    },
-    signal: AbortSignal.timeout(opts.timeout ?? 15_000),
-  });
+	const start = Date.now();
+	const res = await fetch(url, {
+		method: 'GET',
+		headers: {
+			'X-API-Key': env.DATABANK_API_KEY,
+			Accept: 'application/json'
+		},
+		signal: AbortSignal.timeout(opts.timeout ?? 15_000)
+	});
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    log.error(`databankGet ${path} → ${res.status}: ${text.slice(0, 200)}`);
-    throw new Error(`Databank API ${res.status}: ${text.slice(0, 200)}`);
-  }
+	if (!res.ok) {
+		const text = await res.text().catch(() => '');
+		log.error(`databankGet ${path} → ${res.status}: ${text.slice(0, 200)}`);
+		throw new Error(`Databank API ${res.status}: ${text.slice(0, 200)}`);
+	}
 
-  const data = await res.json() as T;
-  log.debug(`databankGet ${path} ${Date.now() - start}ms`);
-  return data;
+	const data = (await res.json()) as T;
+	log.debug(`databankGet ${path} ${Date.now() - start}ms`);
+	return data;
 }
 ```
 
@@ -157,6 +159,7 @@ git commit -m "feat: add Databank HTTP client for KG proxy"
 ### Task 3: Rewrite KG routes to proxy to Databank
 
 **Files:**
+
 - Rewrite: `src/routes/knowledge-graph.ts`
 
 This is the core change. Replace all Neo4j Cypher queries with Databank HTTP API calls.
@@ -178,277 +181,294 @@ export const knowledgeGraphRouter: Router = Router();
 // ---------------------------------------------------------------------------
 
 interface DatabankEntity {
-  id: string;
-  type: string;
-  name: string;
-  metadata?: Record<string, unknown>;
-  [key: string]: unknown;
+	id: string;
+	type: string;
+	name: string;
+	metadata?: Record<string, unknown>;
+	[key: string]: unknown;
 }
 
 interface DatabankEntityResponse extends DatabankEntity {
-  neighbors: {
-    incoming: DatabankEntity[];
-    outgoing: DatabankEntity[];
-  };
+	neighbors: {
+		incoming: DatabankEntity[];
+		outgoing: DatabankEntity[];
+	};
 }
 
 interface DatabankSearchResponse {
-  documents: Array<{ id: string; content: string; score: number; metadata: Record<string, unknown> }>;
-  relatedEntities: DatabankEntity[];
-  meta?: Record<string, unknown>;
+	documents: Array<{
+		id: string;
+		content: string;
+		score: number;
+		metadata: Record<string, unknown>;
+	}>;
+	relatedEntities: DatabankEntity[];
+	meta?: Record<string, unknown>;
 }
 
 interface DatabankStatsResponse {
-  nodeCount: number;
-  edgeCount: number;
-  typeDistribution: Record<string, number>;
-  relationshipTypeDistribution: Record<string, number>;
+	nodeCount: number;
+	edgeCount: number;
+	typeDistribution: Record<string, number>;
+	relationshipTypeDistribution: Record<string, number>;
 }
 
 interface DatabankMetaCluster {
-  id: string;
-  label: string;
-  nodeCount: number;
-  [key: string]: unknown;
+	id: string;
+	label: string;
+	nodeCount: number;
+	[key: string]: unknown;
 }
 
 interface DatabankMetaResponse {
-  clusters: Record<string, DatabankMetaCluster>;
+	clusters: Record<string, DatabankMetaCluster>;
 }
 
 // ---------------------------------------------------------------------------
 // GET /v1/kg/stats — knowledge graph statistics
 // ---------------------------------------------------------------------------
 knowledgeGraphRouter.get('/stats', async (_req, res) => {
-  try {
-    const stats = await databankGet<DatabankStatsResponse>('/api/knowledge-graph/stats');
+	try {
+		const stats = await databankGet<DatabankStatsResponse>('/api/knowledge-graph/stats');
 
-    // Map to existing response format for backwards compatibility
-    const nodesByType = Object.entries(stats.typeDistribution).map(([type, count]) => ({
-      types: [type],
-      count,
-    }));
-    const relationshipsByType = Object.entries(stats.relationshipTypeDistribution).map(([type, count]) => ({
-      type,
-      count,
-    }));
+		// Map to existing response format for backwards compatibility
+		const nodesByType = Object.entries(stats.typeDistribution).map(([type, count]) => ({
+			types: [type],
+			count
+		}));
+		const relationshipsByType = Object.entries(stats.relationshipTypeDistribution).map(
+			([type, count]) => ({
+				type,
+				count
+			})
+		);
 
-    res.json({
-      totalNodes: stats.nodeCount,
-      totalRelationships: stats.edgeCount,
-      nodesByType,
-      relationshipsByType,
-    });
-  } catch (err) {
-    log.error('GET /v1/kg/stats failed', err);
-    res.status(502).json({ error: 'Failed to fetch KG stats from Databank' });
-  }
+		res.json({
+			totalNodes: stats.nodeCount,
+			totalRelationships: stats.edgeCount,
+			nodesByType,
+			relationshipsByType
+		});
+	} catch (err) {
+		log.error('GET /v1/kg/stats failed', err);
+		res.status(502).json({ error: 'Failed to fetch KG stats from Databank' });
+	}
 });
 
 // ---------------------------------------------------------------------------
 // GET /v1/kg/entities?q=...&type=...&limit=50 — search entities
 // ---------------------------------------------------------------------------
 const entitiesSchema = z.object({
-  q: z.string().min(1),
-  type: z.string().optional(),
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+	q: z.string().min(1),
+	type: z.string().optional(),
+	limit: z.coerce.number().int().min(1).max(200).default(50)
 });
 
 knowledgeGraphRouter.get('/entities', async (req, res) => {
-  try {
-    const parsed = entitiesSchema.safeParse(req.query);
-    if (!parsed.success) {
-      res.status(400).json({ error: 'Invalid query parameters', details: parsed.error.flatten().fieldErrors });
-      return;
-    }
-    const { q, type, limit } = parsed.data;
+	try {
+		const parsed = entitiesSchema.safeParse(req.query);
+		if (!parsed.success) {
+			res
+				.status(400)
+				.json({ error: 'Invalid query parameters', details: parsed.error.flatten().fieldErrors });
+			return;
+		}
+		const { q, type, limit } = parsed.data;
 
-    // Use Databank's semantic search which returns relatedEntities from the KG
-    const searchResult = await databankGet<DatabankSearchResponse>('/api/search', {
-      params: { q, limit: Math.min(limit, 100) },
-    });
+		// Use Databank's semantic search which returns relatedEntities from the KG
+		const searchResult = await databankGet<DatabankSearchResponse>('/api/search', {
+			params: { q, limit: Math.min(limit, 100) }
+		});
 
-    let entities = searchResult.relatedEntities ?? [];
+		let entities = searchResult.relatedEntities ?? [];
 
-    // Filter by type if specified
-    if (type) {
-      entities = entities.filter((e) => e.type === type);
-    }
+		// Filter by type if specified
+		if (type) {
+			entities = entities.filter((e) => e.type === type);
+		}
 
-    // Respect limit
-    entities = entities.slice(0, limit);
+		// Respect limit
+		entities = entities.slice(0, limit);
 
-    res.json({ count: entities.length, data: entities });
-  } catch (err) {
-    log.error('GET /v1/kg/entities failed', err);
-    res.status(502).json({ error: 'Failed to search KG entities via Databank' });
-  }
+		res.json({ count: entities.length, data: entities });
+	} catch (err) {
+		log.error('GET /v1/kg/entities failed', err);
+		res.status(502).json({ error: 'Failed to search KG entities via Databank' });
+	}
 });
 
 // ---------------------------------------------------------------------------
 // GET /v1/kg/entity/:id — entity with relationships
 // ---------------------------------------------------------------------------
 knowledgeGraphRouter.get('/entity/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const entity = await databankGet<DatabankEntityResponse>(`/api/knowledge-graph/entity/${encodeURIComponent(id)}`);
+	try {
+		const { id } = req.params;
+		const entity = await databankGet<DatabankEntityResponse>(
+			`/api/knowledge-graph/entity/${encodeURIComponent(id)}`
+		);
 
-    // Map to existing response format
-    const relations = [
-      ...entity.neighbors.incoming.map((n) => ({ relation: 'incoming', target: n })),
-      ...entity.neighbors.outgoing.map((n) => ({ relation: 'outgoing', target: n })),
-    ];
+		// Map to existing response format
+		const relations = [
+			...entity.neighbors.incoming.map((n) => ({ relation: 'incoming', target: n })),
+			...entity.neighbors.outgoing.map((n) => ({ relation: 'outgoing', target: n }))
+		];
 
-    const { neighbors: _, ...entityProps } = entity;
-    res.json({ entity: entityProps, relations });
-  } catch (err: any) {
-    if (err?.message?.includes('404')) {
-      res.status(404).json({ error: 'Entity not found' });
-      return;
-    }
-    log.error('GET /v1/kg/entity/:id failed', err);
-    res.status(502).json({ error: 'Failed to fetch entity from Databank' });
-  }
+		const { neighbors: _, ...entityProps } = entity;
+		res.json({ entity: entityProps, relations });
+	} catch (err: any) {
+		if (err?.message?.includes('404')) {
+			res.status(404).json({ error: 'Entity not found' });
+			return;
+		}
+		log.error('GET /v1/kg/entity/:id failed', err);
+		res.status(502).json({ error: 'Failed to fetch entity from Databank' });
+	}
 });
 
 // ---------------------------------------------------------------------------
 // GET /v1/kg/entity/:id/neighbors — 1-hop neighbors
 // ---------------------------------------------------------------------------
 const neighborsSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+	limit: z.coerce.number().int().min(1).max(200).default(50)
 });
 
 knowledgeGraphRouter.get('/entity/:id/neighbors', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const parsed = neighborsSchema.safeParse(req.query);
-    if (!parsed.success) {
-      res.status(400).json({ error: 'Invalid query parameters', details: parsed.error.flatten().fieldErrors });
-      return;
-    }
-    const { limit } = parsed.data;
+	try {
+		const { id } = req.params;
+		const parsed = neighborsSchema.safeParse(req.query);
+		if (!parsed.success) {
+			res
+				.status(400)
+				.json({ error: 'Invalid query parameters', details: parsed.error.flatten().fieldErrors });
+			return;
+		}
+		const { limit } = parsed.data;
 
-    const entity = await databankGet<DatabankEntityResponse>(`/api/knowledge-graph/entity/${encodeURIComponent(id)}`);
+		const entity = await databankGet<DatabankEntityResponse>(
+			`/api/knowledge-graph/entity/${encodeURIComponent(id)}`
+		);
 
-    const allNeighbors = [
-      ...entity.neighbors.incoming.map((n) => ({ node: n, relation: 'incoming' })),
-      ...entity.neighbors.outgoing.map((n) => ({ node: n, relation: 'outgoing' })),
-    ].slice(0, limit);
+		const allNeighbors = [
+			...entity.neighbors.incoming.map((n) => ({ node: n, relation: 'incoming' })),
+			...entity.neighbors.outgoing.map((n) => ({ node: n, relation: 'outgoing' }))
+		].slice(0, limit);
 
-    res.json({ count: allNeighbors.length, data: allNeighbors });
-  } catch (err: any) {
-    if (err?.message?.includes('404')) {
-      res.status(404).json({ error: 'Entity not found' });
-      return;
-    }
-    log.error('GET /v1/kg/entity/:id/neighbors failed', err);
-    res.status(502).json({ error: 'Failed to fetch neighbors from Databank' });
-  }
+		res.json({ count: allNeighbors.length, data: allNeighbors });
+	} catch (err: any) {
+		if (err?.message?.includes('404')) {
+			res.status(404).json({ error: 'Entity not found' });
+			return;
+		}
+		log.error('GET /v1/kg/entity/:id/neighbors failed', err);
+		res.status(502).json({ error: 'Failed to fetch neighbors from Databank' });
+	}
 });
 
 // ---------------------------------------------------------------------------
 // POST /v1/kg/traverse — graph traversal via iterative neighbor fetch
 // ---------------------------------------------------------------------------
 const traverseSchema = z.object({
-  startId: z.string(),
-  maxDepth: z.number().int().min(1).max(5).default(2),
-  relationTypes: z.array(z.string()).optional(),
-  direction: z.enum(['outgoing', 'incoming', 'both']).default('both'),
+	startId: z.string(),
+	maxDepth: z.number().int().min(1).max(5).default(2),
+	relationTypes: z.array(z.string()).optional(),
+	direction: z.enum(['outgoing', 'incoming', 'both']).default('both')
 });
 
 knowledgeGraphRouter.post('/traverse', async (req, res) => {
-  try {
-    const parsed = traverseSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({ error: 'Invalid body', details: parsed.error.flatten().fieldErrors });
-      return;
-    }
-    const { startId, maxDepth, direction } = parsed.data;
+	try {
+		const parsed = traverseSchema.safeParse(req.body);
+		if (!parsed.success) {
+			res.status(400).json({ error: 'Invalid body', details: parsed.error.flatten().fieldErrors });
+			return;
+		}
+		const { startId, maxDepth, direction } = parsed.data;
 
-    // BFS traversal using the entity endpoint
-    const visited = new Map<string, DatabankEntity>();
-    const edges: Array<{ source: string; target: string; relation: string }> = [];
-    let frontier = [startId];
+		// BFS traversal using the entity endpoint
+		const visited = new Map<string, DatabankEntity>();
+		const edges: Array<{ source: string; target: string; relation: string }> = [];
+		let frontier = [startId];
 
-    for (let depth = 0; depth < maxDepth && frontier.length > 0; depth++) {
-      const nextFrontier: string[] = [];
+		for (let depth = 0; depth < maxDepth && frontier.length > 0; depth++) {
+			const nextFrontier: string[] = [];
 
-      // Fetch neighbors for each node in the frontier (max 10 concurrent)
-      const batch = frontier.slice(0, 10);
-      const results = await Promise.allSettled(
-        batch.map((id) =>
-          databankGet<DatabankEntityResponse>(`/api/knowledge-graph/entity/${encodeURIComponent(id)}`),
-        ),
-      );
+			// Fetch neighbors for each node in the frontier (max 10 concurrent)
+			const batch = frontier.slice(0, 10);
+			const results = await Promise.allSettled(
+				batch.map((id) =>
+					databankGet<DatabankEntityResponse>(
+						`/api/knowledge-graph/entity/${encodeURIComponent(id)}`
+					)
+				)
+			);
 
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i];
-        if (result.status !== 'fulfilled') continue;
+			for (let i = 0; i < results.length; i++) {
+				const result = results[i];
+				if (result.status !== 'fulfilled') continue;
 
-        const entity = result.value;
-        const { neighbors: entityNeighbors, ...entityProps } = entity;
-        if (!visited.has(entity.id)) {
-          visited.set(entity.id, entityProps);
-        }
+				const entity = result.value;
+				const { neighbors: entityNeighbors, ...entityProps } = entity;
+				if (!visited.has(entity.id)) {
+					visited.set(entity.id, entityProps);
+				}
 
-        const addNeighbors = (list: DatabankEntity[], rel: string) => {
-          for (const n of list) {
-            if (!visited.has(n.id)) {
-              visited.set(n.id, n);
-              nextFrontier.push(n.id);
-            }
-            edges.push({ source: entity.id, target: n.id, relation: rel });
-          }
-        };
+				const addNeighbors = (list: DatabankEntity[], rel: string) => {
+					for (const n of list) {
+						if (!visited.has(n.id)) {
+							visited.set(n.id, n);
+							nextFrontier.push(n.id);
+						}
+						edges.push({ source: entity.id, target: n.id, relation: rel });
+					}
+				};
 
-        if (direction !== 'incoming') addNeighbors(entityNeighbors.outgoing, 'outgoing');
-        if (direction !== 'outgoing') addNeighbors(entityNeighbors.incoming, 'incoming');
-      }
+				if (direction !== 'incoming') addNeighbors(entityNeighbors.outgoing, 'outgoing');
+				if (direction !== 'outgoing') addNeighbors(entityNeighbors.incoming, 'incoming');
+			}
 
-      frontier = nextFrontier;
-    }
+			frontier = nextFrontier;
+		}
 
-    res.json({
-      count: visited.size,
-      nodes: [...visited.values()],
-      edges,
-      metadata: { startId, maxDepth, direction, depthReached: maxDepth },
-    });
-  } catch (err) {
-    log.error('POST /v1/kg/traverse failed', err);
-    res.status(502).json({ error: 'Failed to traverse graph via Databank' });
-  }
+		res.json({
+			count: visited.size,
+			nodes: [...visited.values()],
+			edges,
+			metadata: { startId, maxDepth, direction, depthReached: maxDepth }
+		});
+	} catch (err) {
+		log.error('POST /v1/kg/traverse failed', err);
+		res.status(502).json({ error: 'Failed to traverse graph via Databank' });
+	}
 });
 
 // ---------------------------------------------------------------------------
 // POST /v1/kg/path — not supported on GraphDB backend
 // ---------------------------------------------------------------------------
 knowledgeGraphRouter.post('/path', async (_req, res) => {
-  res.status(501).json({
-    error: 'Shortest path is not supported on the current GraphDB backend',
-    suggestion: 'Use POST /v1/kg/traverse from each endpoint and check for overlap',
-  });
+	res.status(501).json({
+		error: 'Shortest path is not supported on the current GraphDB backend',
+		suggestion: 'Use POST /v1/kg/traverse from each endpoint and check for overlap'
+	});
 });
 
 // ---------------------------------------------------------------------------
 // GET /v1/kg/clusters — entity clusters from meta endpoint
 // ---------------------------------------------------------------------------
 knowledgeGraphRouter.get('/clusters', async (_req, res) => {
-  try {
-    const meta = await databankGet<DatabankMetaResponse>('/api/knowledge-graph/meta', {
-      params: { strategy: 'entity-type' },
-    });
+	try {
+		const meta = await databankGet<DatabankMetaResponse>('/api/knowledge-graph/meta', {
+			params: { strategy: 'entity-type' }
+		});
 
-    const clusters = Object.values(meta.clusters).map((c) => ({
-      labels: [c.label],
-      size: c.nodeCount,
-    }));
+		const clusters = Object.values(meta.clusters).map((c) => ({
+			labels: [c.label],
+			size: c.nodeCount
+		}));
 
-    res.json({ count: clusters.length, clusters });
-  } catch (err) {
-    log.error('GET /v1/kg/clusters failed', err);
-    res.status(502).json({ error: 'Failed to fetch clusters from Databank' });
-  }
+		res.json({ count: clusters.length, clusters });
+	} catch (err) {
+		log.error('GET /v1/kg/clusters failed', err);
+		res.status(502).json({ error: 'Failed to fetch clusters from Databank' });
+	}
 });
 ```
 
@@ -469,6 +489,7 @@ git commit -m "feat: proxy KG endpoints to Databank HTTP API instead of empty Ne
 ### Task 4: Remove Neo4j dependency from health check and index
 
 **Files:**
+
 - Modify: `src/routes/health.ts`
 - Modify: `src/index.ts`
 
@@ -477,40 +498,48 @@ git commit -m "feat: proxy KG endpoints to Databank HTTP API instead of empty Ne
 In `src/routes/health.ts`, replace the Neo4j import and health check block:
 
 Replace import:
+
 ```typescript
 import { verifyNeo4j } from '../config/neo4j.js';
 ```
+
 with:
+
 ```typescript
 import { databankGet } from '../config/databank-client.js';
 ```
 
 Replace the Neo4j health check block (the `// Check Neo4j` section) with:
+
 ```typescript
-  // Check Databank KG (via HTTP API)
-  const kgStart = Date.now();
-  try {
-    await databankGet('/api/knowledge-graph/stats');
-    checks.knowledgeGraph = { ok: true, latencyMs: Date.now() - kgStart };
-  } catch (err) {
-    checks.knowledgeGraph = { ok: false, error: (err as Error).message };
-  }
+// Check Databank KG (via HTTP API)
+const kgStart = Date.now();
+try {
+	await databankGet('/api/knowledge-graph/stats');
+	checks.knowledgeGraph = { ok: true, latencyMs: Date.now() - kgStart };
+} catch (err) {
+	checks.knowledgeGraph = { ok: false, error: (err as Error).message };
+}
 ```
 
 - [ ] **Step 2: Remove shutdownNeo4j from index.ts**
 
 In `src/index.ts`, remove the import:
+
 ```typescript
 import { shutdownNeo4j } from './config/neo4j.js';
 ```
 
 And change the shutdown function's `Promise.all` from:
+
 ```typescript
-      await Promise.all([shutdownPools(), shutdownNeo4j()]);
+await Promise.all([shutdownPools(), shutdownNeo4j()]);
 ```
+
 to:
+
 ```typescript
-      await shutdownPools();
+await shutdownPools();
 ```
 
 - [ ] **Step 3: Verify it compiles**
@@ -530,6 +559,7 @@ git commit -m "refactor: replace Neo4j health check with Databank KG HTTP check"
 ### Task 5: Clean up unused Neo4j files and dependency
 
 **Files:**
+
 - Delete: `src/config/neo4j.ts`
 - Modify: `package.json` (remove `neo4j-driver`)
 
@@ -575,6 +605,7 @@ docker compose up -d --build
 ```bash
 docker ps --filter name=ruimtemeesters-aggregator --format '{{.Status}}'
 ```
+
 Expected: `Up ... (healthy)` within 30 seconds
 
 - [ ] **Step 3: Test health endpoint**
@@ -582,6 +613,7 @@ Expected: `Up ... (healthy)` within 30 seconds
 ```bash
 curl -s -H "X-API-Key: aggregator-dev-key-2026" http://localhost:6000/health | python3 -m json.tool
 ```
+
 Expected: `"status": "healthy"` with `knowledgeGraph.ok: true`
 
 - [ ] **Step 4: Test KG stats**
@@ -589,6 +621,7 @@ Expected: `"status": "healthy"` with `knowledgeGraph.ok: true`
 ```bash
 curl -s -H "X-API-Key: aggregator-dev-key-2026" http://localhost:6000/v1/kg/stats | python3 -m json.tool
 ```
+
 Expected: `totalNodes: 10276`, `totalRelationships: 6019`, nodesByType includes `PolicyDocument: 8391`
 
 - [ ] **Step 5: Test entity search**
@@ -596,14 +629,17 @@ Expected: `totalNodes: 10276`, `totalRelationships: 6019`, nodesByType includes 
 ```bash
 curl -s -H "X-API-Key: aggregator-dev-key-2026" "http://localhost:6000/v1/kg/entities?q=bruidsschat&limit=5" | python3 -m json.tool
 ```
+
 Expected: `count > 0`, entities with types like `Regulation`, `PolicyDocument`
 
 - [ ] **Step 6: Test entity by ID**
 
 Use an entity ID from step 5 and fetch it:
+
 ```bash
 curl -s -H "X-API-Key: aggregator-dev-key-2026" "http://localhost:6000/v1/kg/entity/reg-8eed5ec3-reg-overgangsregels-tijdelijk-deel-omgevingsplan" | python3 -m json.tool
 ```
+
 Expected: entity with `type: "Regulation"`, `name: "Overgangsregels tijdelijk deel omgevingsplan (bruidsschat)"`, plus relations array
 
 - [ ] **Step 7: Test traverse**
@@ -611,6 +647,7 @@ Expected: entity with `type: "Regulation"`, `name: "Overgangsregels tijdelijk de
 ```bash
 curl -s -X POST -H "Content-Type: application/json" -H "X-API-Key: aggregator-dev-key-2026" http://localhost:6000/v1/kg/traverse -d '{"startId":"reg-8eed5ec3-reg-overgangsregels-tijdelijk-deel-omgevingsplan","maxDepth":2}' | python3 -m json.tool
 ```
+
 Expected: `count > 1`, nodes array with related entities, edges array
 
 - [ ] **Step 8: Test clusters**
@@ -618,6 +655,7 @@ Expected: `count > 1`, nodes array with related entities, edges array
 ```bash
 curl -s -H "X-API-Key: aggregator-dev-key-2026" http://localhost:6000/v1/kg/clusters | python3 -m json.tool
 ```
+
 Expected: clusters with `PolicyDocument`, `Regulation`, `SpatialUnit` labels
 
 ---
@@ -639,6 +677,7 @@ for e in d['data'][:5]:
     print(f'  [{e[\"type\"]}] {e[\"name\"][:80]}')
 "
 ```
+
 Expected: PolicyDocument entities related to omgevingsplan
 
 - [ ] **Step 2: Commit (if any test adjustments needed)**

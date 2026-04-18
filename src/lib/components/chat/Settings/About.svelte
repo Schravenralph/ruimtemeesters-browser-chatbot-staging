@@ -172,5 +172,12 @@
 				target="_blank">Timothy J. Baek</a
 			>
 		</div>
+
+		<hr class=" border-gray-100/30 dark:border-gray-850/30" />
+
+		<div class="mt-2 text-xs text-gray-500 dark:text-gray-400" data-testid="rm-about-attribution">
+			Ruimtemeesters AI · Gebouwd op Open WebUI · Ondersteund door Gemini, OpenAI, Claude en lokale
+			Ollama modellen.
+		</div>
 	</div>
 </div>

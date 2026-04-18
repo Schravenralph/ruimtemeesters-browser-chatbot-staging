@@ -15,11 +15,11 @@ OpenWebUI is the **backend-of-record**, not merely a chat frontend. Its PostgreS
 
 Three surface types:
 
-| Surface | Client | Role |
-|---------|--------|------|
-| Canonical chat UI | OpenWebUI (chat.datameesters.nl) | Full-featured: models, assistants, tools, history, admin |
-| Embedded chat panels | Custom views in sibling apps | Contextual queries, read history, deep-link to full UI |
-| Developer tools | Claude Desktop, Cursor, Claude Code | MCP-native access to RM data (Phase C5) |
+| Surface              | Client                              | Role                                                     |
+| -------------------- | ----------------------------------- | -------------------------------------------------------- |
+| Canonical chat UI    | OpenWebUI (chat.datameesters.nl)    | Full-featured: models, assistants, tools, history, admin |
+| Embedded chat panels | Custom views in sibling apps        | Contextual queries, read history, deep-link to full UI   |
+| Developer tools      | Claude Desktop, Cursor, Claude Code | MCP-native access to RM data (Phase C5)                  |
 
 ## Rationale
 

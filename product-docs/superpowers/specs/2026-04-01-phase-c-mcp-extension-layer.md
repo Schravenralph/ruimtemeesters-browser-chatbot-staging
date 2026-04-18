@@ -95,20 +95,21 @@ Ruimtemeesters-MCP-Servers/
 
 Each MCP server exposes the same tools as the Phase A OpenWebUI Tools, but via MCP protocol. The tool names, parameters, and descriptions are identical.
 
-| MCP Server | Tools | Source (Phase A) |
-|-----------|-------|-----------------|
-| databank | search_beleidsdocumenten, get_knowledge_graph, get_document, list_queries, create_query | rm-tools/databank.py |
-| geoportaal | query_spatial_rules, get_air_quality, get_weather, get_building_data, search_documents, search_pdok | rm-tools/geoportaal.py |
-| tsa | run_population_forecast, get_forecast_results, run_backtest, get_diagnostics, list_gemeenten, get_model_status | rm-tools/tsa.py |
-| dashboarding | get_dashboard_data, get_statistics, get_trends, search_dashboard | rm-tools/dashboarding.py |
-| riens | get_gemeente_status, update_gemeente | rm-tools/riens.py |
-| sales-predictor | run_sales_forecast, get_predictions, compare_models, list_models | rm-tools/sales_predictor.py |
-| opdrachten | get_inbox, get_pipeline, get_pipeline_deadlines, search_library, get_stats, accept_inbox_item, move_pipeline_stage | rm-tools/opdrachten.py |
-| aggregator | context_at_coordinate, context_municipality, search_documents, get_document_summary, spatial_rules_at_point, solar_potential, search_knowledge_graph, get_entity_relations, traverse_graph, graph_stats | rm-tools/aggregator.py |
+| MCP Server      | Tools                                                                                                                                                                                                   | Source (Phase A)            |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| databank        | search_beleidsdocumenten, get_knowledge_graph, get_document, list_queries, create_query                                                                                                                 | rm-tools/databank.py        |
+| geoportaal      | query_spatial_rules, get_air_quality, get_weather, get_building_data, search_documents, search_pdok                                                                                                     | rm-tools/geoportaal.py      |
+| tsa             | run_population_forecast, get_forecast_results, run_backtest, get_diagnostics, list_gemeenten, get_model_status                                                                                          | rm-tools/tsa.py             |
+| dashboarding    | get_dashboard_data, get_statistics, get_trends, search_dashboard                                                                                                                                        | rm-tools/dashboarding.py    |
+| riens           | get_gemeente_status, update_gemeente                                                                                                                                                                    | rm-tools/riens.py           |
+| sales-predictor | run_sales_forecast, get_predictions, compare_models, list_models                                                                                                                                        | rm-tools/sales_predictor.py |
+| opdrachten      | get_inbox, get_pipeline, get_pipeline_deadlines, search_library, get_stats, accept_inbox_item, move_pipeline_stage                                                                                      | rm-tools/opdrachten.py      |
+| aggregator      | context_at_coordinate, context_municipality, search_documents, get_document_summary, spatial_rules_at_point, solar_potential, search_knowledge_graph, get_entity_relations, traverse_graph, graph_stats | rm-tools/aggregator.py      |
 
 ## Auth
 
 Two auth modes (configurable per server):
+
 1. **API Key** — for app-to-app calls (TSA, Aggregator use this)
 2. **Clerk JWT** — for user-context calls (forwarded from MCP client)
 
@@ -134,24 +135,29 @@ C5 is config/docs only — no code needed beyond what C2/C3 produce.
 ## Phasing
 
 ### C1: Shared Infrastructure
+
 - pnpm workspace setup
 - Shared auth, HTTP client, Zod schemas
 - MCP server template (copy-paste starting point)
 
 ### C2: Per-App MCP Servers (7 servers)
+
 - One server per app, same tools as Phase A
 - Each server is independently runnable
 
 ### C3: Aggregator MCP Server
+
 - Wraps all Aggregator endpoints
 - Zod schemas match Aggregator's existing validation
 
 ### C4: OpenWebUI MCP Client
+
 - Configure OpenWebUI fork to connect to MCP servers
 - May require fork changes for MCP client support
 - Migrate Phase A Python tools to MCP client calls (or keep both)
 
 ### C5: External Consumers
+
 - Claude Code config (`.claude.json` or `claude_desktop_config.json`)
 - Cursor config
 - Developer documentation

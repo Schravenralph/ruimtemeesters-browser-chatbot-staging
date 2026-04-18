@@ -18,37 +18,38 @@
 
 ### New files (created in this plan)
 
-| File | Responsibility |
-|------|---------------|
-| `docker-compose.yml` | RM-specific compose: OpenWebUI fork + Ollama + PostgreSQL |
-| `.env` | Environment configuration (LLM keys, Clerk, DB, branding) |
-| `.env.example` | Template for environment variables |
-| `.gitignore` | Already exists, will be extended |
-| `src/lib/themes/ruimtemeesters.css` | RM brand colors and CSS overrides |
-| `static/brand-assets/logo.svg` | RM logo (landscape, klein blue on transparent) |
-| `static/brand-assets/logo-white.svg` | RM logo (landscape, smart white on transparent) |
-| `static/brand-assets/favicon.ico` | RM favicon |
-| `static/brand-assets/favicon.svg` | RM favicon SVG |
-| `backend/open_webui/routers/rm_auth.py` | Clerk role mapping middleware |
-| `backend/open_webui/utils/token_forwarding.py` | Utility to forward Clerk JWT to app endpoints |
-| `backend/open_webui/test/test_rm_auth.py` | Tests for role mapping |
-| `backend/open_webui/test/test_token_forwarding.py` | Tests for token forwarding |
+| File                                               | Responsibility                                            |
+| -------------------------------------------------- | --------------------------------------------------------- |
+| `docker-compose.yml`                               | RM-specific compose: OpenWebUI fork + Ollama + PostgreSQL |
+| `.env`                                             | Environment configuration (LLM keys, Clerk, DB, branding) |
+| `.env.example`                                     | Template for environment variables                        |
+| `.gitignore`                                       | Already exists, will be extended                          |
+| `src/lib/themes/ruimtemeesters.css`                | RM brand colors and CSS overrides                         |
+| `static/brand-assets/logo.svg`                     | RM logo (landscape, klein blue on transparent)            |
+| `static/brand-assets/logo-white.svg`               | RM logo (landscape, smart white on transparent)           |
+| `static/brand-assets/favicon.ico`                  | RM favicon                                                |
+| `static/brand-assets/favicon.svg`                  | RM favicon SVG                                            |
+| `backend/open_webui/routers/rm_auth.py`            | Clerk role mapping middleware                             |
+| `backend/open_webui/utils/token_forwarding.py`     | Utility to forward Clerk JWT to app endpoints             |
+| `backend/open_webui/test/test_rm_auth.py`          | Tests for role mapping                                    |
+| `backend/open_webui/test/test_token_forwarding.py` | Tests for token forwarding                                |
 
 ### Modified files
 
-| File | What changes |
-|------|-------------|
-| `tailwind.config.js` | Add RM brand colors to theme.extend.colors |
-| `src/app.css` | Import ruimtemeesters.css theme overrides |
-| `src/lib/constants.ts` | Update APP_NAME to 'Ruimtemeesters AI' |
-| `backend/open_webui/config.py` | Add RM-specific config variables |
-| `backend/open_webui/main.py` | Mount rm_auth router, add middleware |
+| File                           | What changes                               |
+| ------------------------------ | ------------------------------------------ |
+| `tailwind.config.js`           | Add RM brand colors to theme.extend.colors |
+| `src/app.css`                  | Import ruimtemeesters.css theme overrides  |
+| `src/lib/constants.ts`         | Update APP_NAME to 'Ruimtemeesters AI'     |
+| `backend/open_webui/config.py` | Add RM-specific config variables           |
+| `backend/open_webui/main.py`   | Mount rm_auth router, add middleware       |
 
 ---
 
 ## Task 1: Fork and Set Up Repository
 
 **Files:**
+
 - Modify: `.gitignore`
 
 - [ ] **Step 1: Fork OpenWebUI on GitHub**
@@ -72,6 +73,7 @@ git remote -v
 ```
 
 Expected output:
+
 ```
 origin    https://github.com/YOUR_ORG/ruimtemeesters-browser-chatbot.git (fetch)
 origin    https://github.com/YOUR_ORG/ruimtemeesters-browser-chatbot.git (push)
@@ -121,6 +123,7 @@ git commit -m "chore: set up RM fork with upstream remote and gitignore"
 ## Task 2: Set Up Docker Compose with PostgreSQL
 
 **Files:**
+
 - Create: `docker-compose.yml`
 - Create: `.env.example`
 - Create: `.env`
@@ -156,7 +159,7 @@ services:
       chatbot-db:
         condition: service_healthy
     ports:
-      - "${OPEN_WEBUI_PORT:-3333}:8080"
+      - '${OPEN_WEBUI_PORT:-3333}:8080'
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
       - DATABASE_URL=postgresql://${POSTGRES_USER:-rmchatbot}:${POSTGRES_PASSWORD:-rmchatbot}@chatbot-db:5432/${POSTGRES_DB:-rmchatbot}
@@ -186,7 +189,7 @@ services:
     volumes:
       - chatbot-db-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rmchatbot}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-rmchatbot}']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -322,6 +325,7 @@ Open http://localhost:3333, click the model selector dropdown. Both models shoul
 ## Task 4: Configure Tailwind with RM Brand Colors
 
 **Files:**
+
 - Modify: `tailwind.config.js`
 
 - [ ] **Step 1: Read the current tailwind.config.js**
@@ -371,6 +375,7 @@ git commit -m "feat: add Ruimtemeesters brand colors to Tailwind config"
 ## Task 5: Apply CSS Theme Overrides
 
 **Files:**
+
 - Create: `src/lib/themes/ruimtemeesters.css`
 - Modify: `src/app.css`
 
@@ -403,16 +408,16 @@ Note how CSS variables and dark mode are structured.
 
 /* Light mode overrides */
 :root {
-  --color-primary: #002EA3;
-  --color-primary-hover: #0038c7;
-  --color-primary-foreground: #F7F4EF;
+	--color-primary: #002ea3;
+	--color-primary-hover: #0038c7;
+	--color-primary-foreground: #f7f4ef;
 }
 
 /* Dark mode overrides */
 .dark {
-  --color-primary: #002EA3;
-  --color-primary-hover: #0038c7;
-  --color-primary-foreground: #F7F4EF;
+	--color-primary: #002ea3;
+	--color-primary-hover: #0038c7;
+	--color-primary-foreground: #f7f4ef;
 }
 
 /* Sidebar dark background — RM raisin black */
@@ -420,46 +425,46 @@ aside,
 [data-sidebar],
 nav.sidebar,
 #sidebar {
-  background-color: #161620 !important;
+	background-color: #161620 !important;
 }
 
 /* Primary buttons and accents — RM klein blue */
 button.primary,
 [data-primary-button],
 .bg-primary {
-  background-color: #002EA3 !important;
+	background-color: #002ea3 !important;
 }
 
 button.primary:hover,
 [data-primary-button]:hover {
-  background-color: #0038c7 !important;
+	background-color: #0038c7 !important;
 }
 
 /* User message bubbles */
 .user-message,
-[data-role="user"] .message-content {
-  background-color: #002EA3 !important;
-  color: #F7F4EF !important;
+[data-role='user'] .message-content {
+	background-color: #002ea3 !important;
+	color: #f7f4ef !important;
 }
 
 /* Main background — RM smart white (light mode) */
 :root {
-  --color-background: #F7F4EF;
+	--color-background: #f7f4ef;
 }
 
 .dark {
-  --color-background: #0f0f17;
+	--color-background: #0f0f17;
 }
 
 /* Accent highlights — RM violet */
 a:hover,
 .text-accent {
-  color: #7F00FF;
+	color: #7f00ff;
 }
 
 /* Selection indicator */
 ::selection {
-  background-color: rgba(0, 46, 163, 0.3);
+	background-color: rgba(0, 46, 163, 0.3);
 }
 ```
 
@@ -497,6 +502,7 @@ git commit -m "feat: apply Ruimtemeesters brand theme CSS overrides"
 ## Task 6: Replace Logos, Favicon, and App Name
 
 **Files:**
+
 - Create: `static/brand-assets/` directory with logo files
 - Modify: `src/lib/constants.ts`
 
@@ -532,11 +538,13 @@ convert static/brand-assets/favicon.svg -resize 32x32 static/brand-assets/favico
 - [ ] **Step 4: Update APP_NAME in src/lib/constants.ts**
 
 Find the line:
+
 ```typescript
 export const APP_NAME = 'Open WebUI';
 ```
 
 Replace with:
+
 ```typescript
 export const APP_NAME = 'Ruimtemeesters AI';
 ```
@@ -560,6 +568,7 @@ docker compose up -d --build
 ```
 
 Open http://localhost:3333 — verify:
+
 - Page title says "Ruimtemeesters AI"
 - Favicon is the RM icon
 - Logo appears in the sidebar/header
@@ -576,6 +585,7 @@ git commit -m "feat: replace logos, favicon, and app name with Ruimtemeesters br
 ## Task 7: Customize Welcome Page
 
 **Files:**
+
 - Files depend on OpenWebUI version; the main chat page is likely in `src/routes/+page.svelte` or similar
 
 - [ ] **Step 1: Identify the welcome/landing page component**
@@ -602,6 +612,7 @@ Stel een vraag over beleid, data, kaarten, of prognoses
 ```
 
 Replace any default suggested prompts with RM-relevant examples:
+
 - "Zoek beleidsstukken over luchtkwaliteit in Den Haag"
 - "Wat is de bevolkingsprognose voor Utrecht in 2030?"
 - "Welke gemeenten hebben actieve contracten?"
@@ -645,6 +656,7 @@ Go to "OAuth applications" in the sidebar → "Add OAuth application".
 - [ ] **Step 3: Copy credentials**
 
 Save the following values — the Client Secret is shown only once:
+
 - Client ID
 - Client Secret
 - Discovery URL (format: `https://<your-clerk-domain>/.well-known/openid-configuration`)
@@ -655,7 +667,7 @@ For each Clerk user, set their `public_metadata` to include an RM role:
 
 ```json
 {
-  "rm_role": "admin"
+	"rm_role": "admin"
 }
 ```
 
@@ -682,11 +694,13 @@ docker compose up -d
 ## Task 9: Configure OpenWebUI to Use Clerk OIDC
 
 **Files:**
+
 - Modify: `backend/open_webui/config.py` (if needed beyond env vars)
 
 - [ ] **Step 1: Verify OpenWebUI's OAuth configuration via env vars**
 
 The `docker-compose.yml` already passes these env vars to the container:
+
 - `ENABLE_OAUTH_SIGNUP=true`
 - `OPENID_PROVIDER_URL=${CLERK_OIDC_DISCOVERY_URL}`
 - `OAUTH_CLIENT_ID=${CLERK_OAUTH_CLIENT_ID}`
@@ -699,6 +713,7 @@ grep -i "oauth\|openid\|oidc" backend/open_webui/config.py | head -40
 ```
 
 Review the output and ensure any required variables are set. Common ones to check:
+
 - `OAUTH_SCOPES` — should be `openid profile email`
 - `OAUTH_PROVIDER_NAME` — set to `Clerk` for the button label
 - `OAUTH_USERNAME_CLAIM` — likely `preferred_username` or `email`
@@ -709,10 +724,10 @@ Review the output and ensure any required variables are set. Common ones to chec
 Update the `environment` section of the `open-webui` service:
 
 ```yaml
-      - OAUTH_PROVIDER_NAME=Clerk
-      - OAUTH_SCOPES=openid profile email
-      - OAUTH_USERNAME_CLAIM=email
-      - OAUTH_EMAIL_CLAIM=email
+- OAUTH_PROVIDER_NAME=Clerk
+- OAUTH_SCOPES=openid profile email
+- OAUTH_USERNAME_CLAIM=email
+- OAUTH_EMAIL_CLAIM=email
 ```
 
 - [ ] **Step 4: Restart and test OAuth login**
@@ -739,6 +754,7 @@ git commit -m "feat: configure Clerk as OIDC provider for OpenWebUI"
 ## Task 10: Add Role Mapping Middleware
 
 **Files:**
+
 - Create: `backend/open_webui/test/test_rm_auth.py`
 - Create: `backend/open_webui/routers/rm_auth.py`
 - Modify: `backend/open_webui/main.py`
@@ -885,6 +901,7 @@ git commit -m "feat: add Clerk-to-OpenWebUI role mapping with tests"
 ## Task 11: Integrate Role Mapping into OAuth Flow
 
 **Files:**
+
 - Modify: `backend/open_webui/routers/auths.py` (or wherever OAuth callback is handled)
 - Modify: `backend/open_webui/main.py`
 
@@ -899,6 +916,7 @@ Identify the function that handles the OAuth callback and creates/updates the us
 - [ ] **Step 2: Read the OAuth callback handler**
 
 Read the relevant section of `backend/open_webui/routers/auths.py` to understand how it:
+
 - Extracts user info from the OIDC token
 - Creates or finds the user in OpenWebUI
 - Assigns a role
@@ -940,6 +958,7 @@ git commit -m "feat: integrate Clerk role mapping into OAuth login flow"
 ## Task 12: Add Token Forwarding Utility
 
 **Files:**
+
 - Create: `backend/open_webui/test/test_token_forwarding.py`
 - Create: `backend/open_webui/utils/token_forwarding.py`
 
@@ -1130,6 +1149,7 @@ git commit -m "feat: add token forwarding utility for RM app integrations"
 ## Task 13: Disable Password Auth (Clerk-Only Login)
 
 **Files:**
+
 - Modify: `docker-compose.yml`
 
 - [ ] **Step 1: Add env var to disable password-based signup**
@@ -1137,7 +1157,7 @@ git commit -m "feat: add token forwarding utility for RM app integrations"
 Once Clerk OIDC is confirmed working, add to the `open-webui` environment in `docker-compose.yml`:
 
 ```yaml
-      - ENABLE_PASSWORD_AUTH=false
+- ENABLE_PASSWORD_AUTH=false
 ```
 
 This ensures all users authenticate through Clerk. The initial admin account created in Task 2 remains functional for emergency access.
@@ -1149,6 +1169,7 @@ docker compose up -d
 ```
 
 Open http://localhost:3333 — verify:
+
 - The login page shows only the "Sign in with Clerk" button
 - No email/password form is visible
 - Clicking the button redirects to Clerk and back
@@ -1174,6 +1195,7 @@ docker compose up -d --build
 - [ ] **Step 2: Verify branding checklist**
 
 Open http://localhost:3333 and confirm:
+
 - [ ] Page title is "Ruimtemeesters AI"
 - [ ] Favicon is the RM icon
 - [ ] Sidebar background is raisin black (#161620)

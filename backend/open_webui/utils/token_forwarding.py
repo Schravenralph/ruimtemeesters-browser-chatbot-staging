@@ -22,12 +22,12 @@ from typing import Optional
 from fastapi import Request
 
 log = logging.getLogger(__name__)
-ALLOW_SESSION_COOKIE_FORWARDING = os.environ.get("ALLOW_SESSION_COOKIE_FORWARDING", "").lower() in {"1", "true", "yes"}
+ALLOW_SESSION_COOKIE_FORWARDING = os.environ.get('ALLOW_SESSION_COOKIE_FORWARDING', '').lower() in {'1', 'true', 'yes'}
 
 
 def get_auth_headers(
     request: Optional[Request] = None,
-    api_key: str = "",
+    api_key: str = '',
 ) -> dict:
     """
     Build auth headers for forwarding to RM app APIs.
@@ -46,20 +46,20 @@ def get_auth_headers(
     # Try Clerk token from the OIDC flow
     if request is not None:
         # The oauth_id_token cookie is set during OIDC callback
-        clerk_token = request.cookies.get("oauth_id_token")
+        clerk_token = request.cookies.get('oauth_id_token')
         if clerk_token:
-            headers["Authorization"] = f"Bearer {clerk_token}"
+            headers['Authorization'] = f'Bearer {clerk_token}'
             return headers
 
         # Shared browser session cookies are more sensitive than API tokens.
         # Only forward them when explicitly opted in for a trusted internal setup.
-        session_token = request.cookies.get("__session")
+        session_token = request.cookies.get('__session')
         if session_token and ALLOW_SESSION_COOKIE_FORWARDING:
-            headers["Authorization"] = f"Bearer {session_token}"
+            headers['Authorization'] = f'Bearer {session_token}'
             return headers
 
     # Fallback: service API key
     if api_key:
-        headers["X-API-Key"] = api_key
+        headers['X-API-Key'] = api_key
 
     return headers

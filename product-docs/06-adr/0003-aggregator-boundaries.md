@@ -17,12 +17,12 @@ The chatbot needs to access 8 apps. The Aggregator exists as a gateway but we do
 
 ## Aggregator adds value when
 
-| Use case | Why Aggregator |
-|----------|---------------|
+| Use case                                | Why Aggregator                          |
+| --------------------------------------- | --------------------------------------- |
 | Context at coordinate (beleid + regels) | Parallel queries to 2 DBs, spatial join |
-| Municipality overview (docs + rules) | Cross-database aggregation |
-| Knowledge graph traversal | Direct Neo4j access |
-| Solar potential analysis | PostGIS spatial aggregation |
+| Municipality overview (docs + rules)    | Cross-database aggregation              |
+| Knowledge graph traversal               | Direct Neo4j access                     |
+| Solar potential analysis                | PostGIS spatial aggregation             |
 
 ## Aggregator does NOT
 

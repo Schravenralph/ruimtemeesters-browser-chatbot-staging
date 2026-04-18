@@ -14,41 +14,41 @@
 
 This is the authoritative port map. All .env files must match these values.
 
-| Service | Host Port | Protocol | Notes |
-|---------|-----------|----------|-------|
-| Databank Backend | 4000 | HTTP | 127.0.0.1 only |
-| Databank Frontend | 5173 | HTTP | 127.0.0.1 only |
-| Databank PostgreSQL | 5432 | TCP | 127.0.0.1 only |
-| Databank Neo4j (bolt) | 7687 | TCP | internal |
-| Databank Neo4j (http) | 7474 | HTTP | internal |
-| Databank Redis | 6379 | TCP | internal |
-| Databank GraphDB | 7200 | HTTP | 127.0.0.1 only |
-| Geoportaal Backend | 5002 | HTTP | maps to container port 5000 |
-| Geoportaal Frontend | 3000 | HTTP | |
-| Geoportaal PostGIS | 5433 | TCP | |
-| Geoportaal GeoNode | 8001 | HTTP | maps to container port 8000 |
-| TSA Engine | 8100 | HTTP | |
-| TSA PostgreSQL | 6435 | TCP | DB name: dashboarding (shared) |
-| Dashboarding PostgreSQL | 6433 | TCP | DB name: dashboarding |
-| Dashboarding App | 5022 | HTTP | run locally, not containerized |
-| Riens Sales Viewer DB | 5434 | TCP | remapped from default 5432 |
-| Riens Sales Viewer API | 3001 | HTTP | on rm-network |
-| Riens Sales Viewer Frontend | 5176 | HTTP | |
-| Sales Predictor API | 8000 | HTTP | run locally, not containerized |
-| Opdrachten Scanner API | 6300 | HTTP | run locally, not containerized |
-| Opdrachten Cold Postgres | 5435 | TCP | |
-| Aggregator | 6000 | HTTP | on rm-network |
-| MCP Databank | 3101 | HTTP | internal to rm-network |
-| MCP Geoportaal | 3102 | HTTP | internal to rm-network |
-| MCP TSA | 3103 | HTTP | internal to rm-network |
-| MCP Dashboarding | 3104 | HTTP | internal to rm-network |
-| MCP Riens | 3105 | HTTP | internal to rm-network |
-| MCP Sales Predictor | 3106 | HTTP | internal to rm-network |
-| MCP Opdrachten | 3107 | HTTP | internal to rm-network |
-| MCP Aggregator | 3108 | HTTP | internal to rm-network |
-| Chatbot (OpenWebUI) | 3333 | HTTP | |
-| Chatbot Ollama | — | HTTP | internal to rm-internal |
-| Chatbot PostgreSQL | — | TCP | internal to rm-internal |
+| Service                     | Host Port | Protocol | Notes                          |
+| --------------------------- | --------- | -------- | ------------------------------ |
+| Databank Backend            | 4000      | HTTP     | 127.0.0.1 only                 |
+| Databank Frontend           | 5173      | HTTP     | 127.0.0.1 only                 |
+| Databank PostgreSQL         | 5432      | TCP      | 127.0.0.1 only                 |
+| Databank Neo4j (bolt)       | 7687      | TCP      | internal                       |
+| Databank Neo4j (http)       | 7474      | HTTP     | internal                       |
+| Databank Redis              | 6379      | TCP      | internal                       |
+| Databank GraphDB            | 7200      | HTTP     | 127.0.0.1 only                 |
+| Geoportaal Backend          | 5002      | HTTP     | maps to container port 5000    |
+| Geoportaal Frontend         | 3000      | HTTP     |                                |
+| Geoportaal PostGIS          | 5433      | TCP      |                                |
+| Geoportaal GeoNode          | 8001      | HTTP     | maps to container port 8000    |
+| TSA Engine                  | 8100      | HTTP     |                                |
+| TSA PostgreSQL              | 6435      | TCP      | DB name: dashboarding (shared) |
+| Dashboarding PostgreSQL     | 6433      | TCP      | DB name: dashboarding          |
+| Dashboarding App            | 5022      | HTTP     | run locally, not containerized |
+| Riens Sales Viewer DB       | 5434      | TCP      | remapped from default 5432     |
+| Riens Sales Viewer API      | 3001      | HTTP     | on rm-network                  |
+| Riens Sales Viewer Frontend | 5176      | HTTP     |                                |
+| Sales Predictor API         | 8000      | HTTP     | run locally, not containerized |
+| Opdrachten Scanner API      | 6300      | HTTP     | run locally, not containerized |
+| Opdrachten Cold Postgres    | 5435      | TCP      |                                |
+| Aggregator                  | 6000      | HTTP     | on rm-network                  |
+| MCP Databank                | 3101      | HTTP     | internal to rm-network         |
+| MCP Geoportaal              | 3102      | HTTP     | internal to rm-network         |
+| MCP TSA                     | 3103      | HTTP     | internal to rm-network         |
+| MCP Dashboarding            | 3104      | HTTP     | internal to rm-network         |
+| MCP Riens                   | 3105      | HTTP     | internal to rm-network         |
+| MCP Sales Predictor         | 3106      | HTTP     | internal to rm-network         |
+| MCP Opdrachten              | 3107      | HTTP     | internal to rm-network         |
+| MCP Aggregator              | 3108      | HTTP     | internal to rm-network         |
+| Chatbot (OpenWebUI)         | 3333      | HTTP     |                                |
+| Chatbot Ollama              | —         | HTTP     | internal to rm-internal        |
+| Chatbot PostgreSQL          | —         | TCP      | internal to rm-internal        |
 
 ---
 
@@ -57,6 +57,7 @@ This is the authoritative port map. All .env files must match these values.
 ### Task 1: Create Docker Networks
 
 **Files:**
+
 - Reference: `/home/ralph/Projects/Ruimtemeesters-Browser-Chatbot/docker-compose.rm.yaml`
 - Reference: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/docker-compose.yaml`
 - Reference: `/home/ralph/Projects/Ruimtemeesters-Databank/docker-compose.yml`
@@ -92,6 +93,7 @@ Note: Other networks (`ruimtemeesters-databank-network`, `geoportaal-network`, `
 ### Task 2: Set Up Databank Environment
 
 **Files:**
+
 - Copy: `/home/ralph/Projects/Ruimtemeesters-Databank/.env.example` -> `.env`
 
 - [ ] **Step 1: Copy .env.example to .env**
@@ -116,6 +118,7 @@ JWT_SECRET=dev_jwt_secret_2026
 Leave `OPENAI_API_KEY` and `OPENROUTER_API_KEY` empty — we're using Ollama instead.
 
 Set Ollama config:
+
 ```
 OLLAMA_API_URL=http://ollama:11434
 OLLAMA_MODEL=llama3.2
@@ -134,6 +137,7 @@ Confirm Databank Postgres is on `127.0.0.1:5432:5432`. This is fine because it's
 ### Task 3: Set Up Geoportaal Environment
 
 **Files:**
+
 - Copy: `/home/ralph/Projects/Ruimtemeesters-Geoportaal/.env.example` -> `.env`
 
 - [ ] **Step 1: Copy .env.example to .env**
@@ -164,6 +168,7 @@ Expected: `"5433:5432"` mapping confirmed.
 ### Task 4: Set Up TSA Environment
 
 **Files:**
+
 - Copy: `/home/ralph/Projects/Ruimtemeesters-TSA/.env.example` -> `.env`
 
 - [ ] **Step 1: Copy .env.example to .env**
@@ -193,6 +198,7 @@ Note: TSA and Dashboarding share the same DB name (`dashboarding`). TSA's Postgr
 ### Task 5: Set Up Dashboarding Environment
 
 **Files:**
+
 - Copy: `/home/ralph/Projects/Ruimtemeesters-Dashboarding/.env.example` -> `.env`
 
 - [ ] **Step 1: Copy .env.example to .env**
@@ -227,6 +233,7 @@ If docker-compose says `6433` and .env.example says `6432`, file an issue.
 ### Task 6: Set Up Riens Sales Viewer Environment
 
 **Files:**
+
 - Check: `/home/ralph/Projects/Riens-Sales-Viewer/.env` (already exists with real values)
 
 - [ ] **Step 1: Verify .env exists and has correct port**
@@ -258,6 +265,7 @@ Expected: `SERVICE_API_KEY=rm-riens-service-2026` (already set).
 ### Task 7: Set Up Sales Predictor Environment
 
 **Files:**
+
 - Copy: `/home/ralph/Projects/Sales-Predictor/.env.example` -> `.env`
 
 - [ ] **Step 1: Copy .env.example to .env**
@@ -280,6 +288,7 @@ The `OPENWEATHER_API_KEY` can be left empty for now — it's only needed for wea
 ### Task 8: Set Up Opdrachten Scanner Environment
 
 **Files:**
+
 - Check: `/home/ralph/Projects/Ruimtemeesters-Opdrachten-Scanner/.env`
 
 - [ ] **Step 1: Verify .env exists**
@@ -295,6 +304,7 @@ grep "API_PORT\|SERVICE_API_KEY\|DATABASE_URL" /home/ralph/Projects/Ruimtemeeste
 ```
 
 Expected:
+
 - `API_PORT=6300`
 - `SERVICE_API_KEY=rm-opdrachten-service-2026`
 - `DATABASE_URL=postgres://tracking:tracking@localhost:6432/opdrachten`
@@ -306,6 +316,7 @@ Note: The DATABASE_URL points to port 6432 which is the Workspace Postgres. Veri
 ### Task 9: Set Up Aggregator Environment
 
 **Files:**
+
 - Copy: `/home/ralph/Projects/Ruimtemeesters-Aggregator/.env.example` -> `.env`
 
 - [ ] **Step 1: Copy .env.example to .env**
@@ -339,6 +350,7 @@ Note: DB hosts use Docker container names because Aggregator runs on the same Do
 ### Task 10: Set Up MCP Servers Environment
 
 **Files:**
+
 - Copy: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/.env.example` -> `.env`
 
 - [ ] **Step 1: Copy .env.example to .env**
@@ -377,6 +389,7 @@ Note: URLs use Docker container names for services on rm-network (Databank, Rien
 ### Task 11: Set Up Chatbot Environment
 
 **Files:**
+
 - Copy: `/home/ralph/Projects/Ruimtemeesters-Browser-Chatbot/.env.rm.example` -> `.env`
 
 - [ ] **Step 1: Copy .env.rm.example to .env**
@@ -421,6 +434,7 @@ Expected: 8 occurrences (one per MCP server).
 ### Task 12: Start Databank Infrastructure
 
 **Files:**
+
 - Run: `/home/ralph/Projects/Ruimtemeesters-Databank/docker-compose.yml`
 
 - [ ] **Step 1: Start Databank data stores (no backend yet)**
@@ -475,6 +489,7 @@ Expected: JSON array (possibly empty).
 ### Task 13: Start Geoportaal Infrastructure
 
 **Files:**
+
 - Run: `/home/ralph/Projects/Ruimtemeesters-Geoportaal/docker-compose.yml`
 
 - [ ] **Step 1: Start PostGIS only**
@@ -658,6 +673,7 @@ git commit -m "docs: Phase 1 infrastructure issues from full-stack test round"
 ### Task 18: Start and Verify Databank Backend
 
 **Files:**
+
 - Reference: `/home/ralph/Projects/Ruimtemeesters-Databank/docker-compose.yml`
 
 - [ ] **Step 1: Start Databank backend**
@@ -939,11 +955,13 @@ docker run --rm --network rm-network curlimages/curl curl -s http://ruimtemeeste
 ### Task 26: Code Review — MCP Client
 
 **Files:**
+
 - Review: `/home/ralph/Projects/Ruimtemeesters-Browser-Chatbot/backend/open_webui/utils/mcp/client.py`
 
 - [ ] **Step 1: Read the MCP client code**
 
 Read the full file. Look for:
+
 - Error handling when MCP server is unreachable
 - SSL verification bypass logic (security concern)
 - Auth header forwarding
@@ -999,6 +1017,7 @@ git commit -m "docs: Phase 2 service layer issues from full-stack test round"
 ### Task 28: Start MCP Servers
 
 **Files:**
+
 - Run: `/home/ralph/Projects/Ruimtemeesters-MCP-Servers/docker-compose.yaml`
 
 - [ ] **Step 1: Install pnpm dependencies (needed for Docker build)**
@@ -1044,6 +1063,7 @@ Look for: "MCP server started on port XXXX" messages from each.
 ### Task 29: Start Chatbot
 
 **Files:**
+
 - Run: `/home/ralph/Projects/Ruimtemeesters-Browser-Chatbot/docker-compose.rm.yaml`
 
 - [ ] **Step 1: Build and start the chatbot**
@@ -1078,6 +1098,7 @@ Open `http://localhost:3333` in a web browser. You should see the OpenWebUI logi
 - [ ] **Step 5: Create a local admin account**
 
 Since Clerk is not configured, create a local account through the UI:
+
 1. Click "Sign Up"
 2. Enter name, email, password
 3. First account becomes admin automatically
@@ -1149,6 +1170,7 @@ docker compose -f docker-compose.rm.yaml exec rm-ollama ollama pull llama3.2
 ### Task 32: Register Assistants
 
 **Files:**
+
 - Run: `/home/ralph/Projects/Ruimtemeesters-Browser-Chatbot/rm-tools/register_assistants.py`
 
 - [ ] **Step 1: Check what the script needs**
@@ -1160,6 +1182,7 @@ head -50 /home/ralph/Projects/Ruimtemeesters-Browser-Chatbot/rm-tools/register_a
 - [ ] **Step 2: Get admin JWT token**
 
 After logging in to the chatbot UI, get the JWT from browser:
+
 1. Open browser DevTools > Application > Cookies
 2. Copy the `token` cookie value
 
@@ -1183,6 +1206,7 @@ Expected: 5 assistants + 8 prompt templates registered.
 - [ ] **Step 4: Verify assistants appear in the UI**
 
 In the chatbot, click the model dropdown. You should see:
+
 - Ruimtemeesters Assistant
 - Beleidsadviseur
 - Demografie-analist
@@ -1323,6 +1347,7 @@ Expected: auth rejection error, not a generic failure.
 - [ ] **Step 1: Create the manual test runbook**
 
 Write a file `product-docs/99-runbook/manual-test-runbook.md` with:
+
 - Prerequisites (Docker, Ollama, Node.js, Python)
 - Startup order (exact commands from this plan)
 - Port allocation map
@@ -1343,6 +1368,7 @@ git commit -m "docs: full-stack test round results — issues, runbook, findings
 - [ ] **Step 4: Print final summary**
 
 List:
+
 - Services that passed / failed
 - Total issues found by severity
 - Recommended next steps (fix critical/high issues, then re-test)

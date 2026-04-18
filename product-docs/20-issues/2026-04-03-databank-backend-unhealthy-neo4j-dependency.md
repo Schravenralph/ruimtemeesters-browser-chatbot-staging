@@ -35,6 +35,7 @@ Fix Neo4j first (see companion issue), then restart the backend. The backend req
 Root cause was the Neo4j crash-loop (see `2026-04-03-neo4j-crash-loop-duplicate-config.md`). Once Neo4j stays up, the backend's Neo4j driver connects and the FATAL no longer fires.
 
 **Verification 2026-04-17:**
+
 ```bash
 docker ps --format "{{.Names}}\t{{.Status}}" | grep -E "databank-(neo4j|backend)"
 #  ruimtemeesters-databank-neo4j     Up … (healthy)

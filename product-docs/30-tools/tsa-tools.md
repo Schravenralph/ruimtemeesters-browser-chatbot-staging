@@ -7,22 +7,22 @@
 
 ## Valves
 
-| Name | Default | Description |
-|------|---------|-------------|
-| tsa_api_url | http://tsa-api:8100 | Base URL |
-| tsa_api_key | | API key (X-API-Key header) |
-| timeout | 120 | Request timeout (forecasts are slow) |
+| Name        | Default             | Description                          |
+| ----------- | ------------------- | ------------------------------------ |
+| tsa_api_url | http://tsa-api:8100 | Base URL                             |
+| tsa_api_key |                     | API key (X-API-Key header)           |
+| timeout     | 120                 | Request timeout (forecasts are slow) |
 
 ## Tools
 
-| Method | Endpoint | Type | Description |
-|--------|----------|------|-------------|
-| run_population_forecast | POST /api/v1/forecast/bevolking | WRITE | ML ensemble forecast (Prophet, SARIMA, etc.) |
-| get_forecast_results | GET /api/v1/forecast/:geo_code | READ | Cached forecast results |
-| run_backtest | POST /api/v1/backtest/bevolking | WRITE | Walk-forward accuracy validation |
-| get_diagnostics | GET /api/v1/diagnostics/:geo_code | READ | Model performance and data quality |
-| list_gemeenten | GET /api/v1/gemeenten | READ | All Dutch municipalities with CBS codes |
-| get_model_status | GET /api/v1/models/status | READ | Available models and last run |
+| Method                  | Endpoint                          | Type  | Description                                  |
+| ----------------------- | --------------------------------- | ----- | -------------------------------------------- |
+| run_population_forecast | POST /api/v1/forecast/bevolking   | WRITE | ML ensemble forecast (Prophet, SARIMA, etc.) |
+| get_forecast_results    | GET /api/v1/forecast/:geo_code    | READ  | Cached forecast results                      |
+| run_backtest            | POST /api/v1/backtest/bevolking   | WRITE | Walk-forward accuracy validation             |
+| get_diagnostics         | GET /api/v1/diagnostics/:geo_code | READ  | Model performance and data quality           |
+| list_gemeenten          | GET /api/v1/gemeenten             | READ  | All Dutch municipalities with CBS codes      |
+| get_model_status        | GET /api/v1/models/status         | READ  | Available models and last run                |
 
 ## Notes
 

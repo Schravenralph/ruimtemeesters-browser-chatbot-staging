@@ -63,6 +63,7 @@ For a production system with heavy usage, this would benefit from connection poo
 ## Summary
 
 No critical issues. The MCP client is functional and correctly wired. The main improvements would be:
+
 1. Add timeouts to tool calls
 2. Add null check in disconnect
 3. Consider connection pooling for scale (future)

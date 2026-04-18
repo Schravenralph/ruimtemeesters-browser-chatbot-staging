@@ -14,11 +14,11 @@
 
 ## File Structure
 
-| File | Action | Responsibility |
-|---|---|---|
-| `scripts/chunk-metrics.ts` | Create | Compute chunk quality metrics from PostgreSQL, output markdown report |
+| File                         | Action | Responsibility                                                             |
+| ---------------------------- | ------ | -------------------------------------------------------------------------- |
+| `scripts/chunk-metrics.ts`   | Create | Compute chunk quality metrics from PostgreSQL, output markdown report      |
 | `scripts/rechunk-unified.ts` | Create | Re-chunk documents via UnifiedChunkingService + re-embed via VectorService |
-| `scripts/iplo-benchmark.ts` | Create | Run 5 IPLO questions against Databank search API, score and output report |
+| `scripts/iplo-benchmark.ts`  | Create | Run 5 IPLO questions against Databank search API, score and output report  |
 
 No existing files are modified. The scripts use existing services via their module exports.
 
@@ -27,6 +27,7 @@ No existing files are modified. The scripts use existing services via their modu
 ### Task 1: Baseline chunk quality metrics script
 
 **Files:**
+
 - Create: `scripts/chunk-metrics.ts`
 
 - [ ] **Step 1: Create the metrics script**
@@ -34,24 +35,22 @@ No existing files are modified. The scripts use existing services via their modu
 ```typescript
 /**
  * chunk-metrics.ts — Compute chunk quality metrics from canonical.chunks
- * 
+ *
  * Usage: npx tsx scripts/chunk-metrics.ts [--source DSO|IPLO|OB|...]
  */
 import 'dotenv/config';
 import { getPostgresPool } from '../src/server/config/postgres.js';
 
 async function main() {
-  const pool = getPostgresPool();
-  const sourceFilter = process.argv[2] === '--source' ? process.argv[3] : null;
-  const whereClause = sourceFilter
-    ? `WHERE d.source = '${sourceFilter}'`
-    : '';
-  const joinClause = sourceFilter
-    ? `JOIN canonical.documents d ON d.id = c.document_id ${whereClause}`
-    : '';
+	const pool = getPostgresPool();
+	const sourceFilter = process.argv[2] === '--source' ? process.argv[3] : null;
+	const whereClause = sourceFilter ? `WHERE d.source = '${sourceFilter}'` : '';
+	const joinClause = sourceFilter
+		? `JOIN canonical.documents d ON d.id = c.document_id ${whereClause}`
+		: '';
 
-  // 1. Size distribution
-  const sizeResult = await pool.query(`
+	// 1. Size distribution
+	const sizeResult = await pool.query(`
     SELECT
       CASE
         WHEN length(c.text) <= 500 THEN '<=500'
@@ -66,8 +65,8 @@ async function main() {
     GROUP BY 1 ORDER BY 1
   `);
 
-  // 2. Overall stats
-  const statsResult = await pool.query(`
+	// 2. Overall stats
+	const statsResult = await pool.query(`
     SELECT
       count(*)::int as total_chunks,
       min(length(c.text))::int as min_len,
@@ -78,8 +77,8 @@ async function main() {
     ${joinClause}
   `);
 
-  // 3. Sentence completeness: % ending with sentence-terminal punctuation
-  const sentenceResult = await pool.query(`
+	// 3. Sentence completeness: % ending with sentence-terminal punctuation
+	const sentenceResult = await pool.query(`
     SELECT
       count(*) FILTER (WHERE rtrim(c.text) ~ '[.!?)\"]$')::int as complete,
       count(*)::int as total
@@ -87,8 +86,8 @@ async function main() {
     ${joinClause}
   `);
 
-  // 4. Mid-word cuts: chunks starting with a lowercase letter (continuation)
-  const midWordResult = await pool.query(`
+	// 4. Mid-word cuts: chunks starting with a lowercase letter (continuation)
+	const midWordResult = await pool.query(`
     SELECT
       count(*) FILTER (WHERE c.text ~ '^[a-z]')::int as starts_lowercase,
       count(*)::int as total
@@ -96,8 +95,8 @@ async function main() {
     ${joinClause}
   `);
 
-  // 5. Per-source breakdown
-  const perSourceResult = await pool.query(`
+	// 5. Per-source breakdown
+	const perSourceResult = await pool.query(`
     SELECT d.source,
       count(DISTINCT c.document_id)::int as docs,
       count(c.id)::int as chunks,
@@ -107,47 +106,56 @@ async function main() {
     GROUP BY d.source ORDER BY chunks DESC
   `);
 
-  // Output markdown report
-  const stats = statsResult.rows[0];
-  const sent = sentenceResult.rows[0];
-  const mid = midWordResult.rows[0];
-  const sentPct = ((sent.complete / sent.total) * 100).toFixed(1);
-  const midPct = ((mid.starts_lowercase / mid.total) * 100).toFixed(1);
+	// Output markdown report
+	const stats = statsResult.rows[0];
+	const sent = sentenceResult.rows[0];
+	const mid = midWordResult.rows[0];
+	const sentPct = ((sent.complete / sent.total) * 100).toFixed(1);
+	const midPct = ((mid.starts_lowercase / mid.total) * 100).toFixed(1);
 
-  console.log(`# Chunk Quality Metrics`);
-  console.log(`\nDate: ${new Date().toISOString().split('T')[0]}`);
-  console.log(`Filter: ${sourceFilter || 'all sources'}\n`);
+	console.log(`# Chunk Quality Metrics`);
+	console.log(`\nDate: ${new Date().toISOString().split('T')[0]}`);
+	console.log(`Filter: ${sourceFilter || 'all sources'}\n`);
 
-  console.log(`## Overall Stats\n`);
-  console.log(`| Metric | Value |`);
-  console.log(`|---|---|`);
-  console.log(`| Total chunks | ${stats.total_chunks.toLocaleString()} |`);
-  console.log(`| Min size | ${stats.min_len} chars |`);
-  console.log(`| Max size | ${stats.max_len.toLocaleString()} chars |`);
-  console.log(`| Avg size | ${stats.avg_len} chars |`);
-  console.log(`| Median size | ${stats.median_len} chars |`);
-  console.log(`| Sentence completeness | ${sentPct}% (${sent.complete.toLocaleString()}/${sent.total.toLocaleString()}) |`);
-  console.log(`| Mid-word starts | ${midPct}% (${mid.starts_lowercase.toLocaleString()}/${mid.total.toLocaleString()}) |`);
+	console.log(`## Overall Stats\n`);
+	console.log(`| Metric | Value |`);
+	console.log(`|---|---|`);
+	console.log(`| Total chunks | ${stats.total_chunks.toLocaleString()} |`);
+	console.log(`| Min size | ${stats.min_len} chars |`);
+	console.log(`| Max size | ${stats.max_len.toLocaleString()} chars |`);
+	console.log(`| Avg size | ${stats.avg_len} chars |`);
+	console.log(`| Median size | ${stats.median_len} chars |`);
+	console.log(
+		`| Sentence completeness | ${sentPct}% (${sent.complete.toLocaleString()}/${sent.total.toLocaleString()}) |`
+	);
+	console.log(
+		`| Mid-word starts | ${midPct}% (${mid.starts_lowercase.toLocaleString()}/${mid.total.toLocaleString()}) |`
+	);
 
-  console.log(`\n## Size Distribution\n`);
-  console.log(`| Bucket | Count | % |`);
-  console.log(`|---|---|---|`);
-  for (const row of sizeResult.rows) {
-    const pct = ((row.cnt / stats.total_chunks) * 100).toFixed(1);
-    console.log(`| ${row.bucket} | ${row.cnt.toLocaleString()} | ${pct}% |`);
-  }
+	console.log(`\n## Size Distribution\n`);
+	console.log(`| Bucket | Count | % |`);
+	console.log(`|---|---|---|`);
+	for (const row of sizeResult.rows) {
+		const pct = ((row.cnt / stats.total_chunks) * 100).toFixed(1);
+		console.log(`| ${row.bucket} | ${row.cnt.toLocaleString()} | ${pct}% |`);
+	}
 
-  console.log(`\n## Per Source\n`);
-  console.log(`| Source | Docs | Chunks | Avg Size |`);
-  console.log(`|---|---|---|---|`);
-  for (const row of perSourceResult.rows) {
-    console.log(`| ${row.source} | ${row.docs.toLocaleString()} | ${row.chunks.toLocaleString()} | ${row.avg_len} |`);
-  }
+	console.log(`\n## Per Source\n`);
+	console.log(`| Source | Docs | Chunks | Avg Size |`);
+	console.log(`|---|---|---|---|`);
+	for (const row of perSourceResult.rows) {
+		console.log(
+			`| ${row.source} | ${row.docs.toLocaleString()} | ${row.chunks.toLocaleString()} | ${row.avg_len} |`
+		);
+	}
 
-  await pool.end();
+	await pool.end();
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch((err) => {
+	console.error(err);
+	process.exit(1);
+});
 ```
 
 - [ ] **Step 2: Run baseline metrics and save output**
@@ -173,6 +181,7 @@ git commit -m "feat: add chunk quality metrics script"
 ### Task 2: IPLO benchmark script
 
 **Files:**
+
 - Create: `scripts/iplo-benchmark.ts`
 
 - [ ] **Step 1: Create the benchmark script**
@@ -192,114 +201,167 @@ const DATABANK_URL = process.env.DATABANK_URL || 'http://localhost:4000';
 const API_KEY = process.env.SERVICE_API_KEY || 'rm-databank-service-2026';
 
 interface Question {
-  id: string;
-  question: string;
-  referenceAnswer: string;
-  keywords: string[];  // Key facts that should appear in retrieved chunks
+	id: string;
+	question: string;
+	referenceAnswer: string;
+	keywords: string[]; // Key facts that should appear in retrieved chunks
 }
 
 const QUESTIONS: Question[] = [
-  {
-    id: 'Q1',
-    question: 'Kan een gemeente de werkingssfeer van de bruidsschatregels omgevingsplan wijzigen?',
-    referenceAnswer: 'Ja. Per locatie en per regel laten vervallen. Vervangende regel moet noemer + geometrisch informatieobject krijgen. Moet voldoen aan instructieregels hoofdstuk 5 Bkl.',
-    keywords: ['bruidsschat', 'wijzigen', 'gemeente', 'noemer', 'geometrisch informatieobject', 'instructieregels', 'Besluit kwaliteit leefomgeving'],
-  },
-  {
-    id: 'Q2',
-    question: 'Wijzigt de Vangnetregeling Omgevingswet de bruidsschat omgevingsplan?',
-    referenceAnswer: 'Nee. Ministeriële regeling die aanvult/verduidelijkt maar niet wijzigt. Geen onderdeel van het omgevingsplan. Niet ontsloten via Regels op de kaart.',
-    keywords: ['Vangnetregeling', 'niet wijzigt', 'aanvult', 'verduidelijkt', 'ministeriële regeling', 'geen onderdeel'],
-  },
-  {
-    id: 'Q3',
-    question: 'Wat regelt artikel 22.36, bruidsschat omgevingsplan?',
-    referenceAnswer: 'Bijzondere gevallen bij omzetting Bijlage II Bor: bijbehorend bouwwerk, erfafscheiding 1-2m, mantelzorggebruik. Bij naleving 22.27 + 22.36 = van rechtswege in overeenstemming.',
-    keywords: ['22.36', 'bijbehorend bouwwerk', 'erfafscheiding', 'mantelzorg', 'van rechtswege', '22.27', 'Bijlage II'],
-  },
-  {
-    id: 'Q4',
-    question: 'Waar vind ik de bouwregels voor woningen?',
-    referenceAnswer: 'Omgevingsplan (bouwhoogte, oppervlakte, type bewoning), Bbl (technische regels), BW (burenrecht). Vergunningvrij bouwen in art. 2.29 Bbl.',
-    keywords: ['omgevingsplan', 'bouwhoogte', 'oppervlakte', 'Bbl', 'Besluit bouwwerken leefomgeving', 'burenrecht', 'Burgerlijk Wetboek'],
-  },
-  {
-    id: 'Q5',
-    question: 'Welke gebruiksregels gelden voor woningen in het omgevingsplan?',
-    referenceAnswer: 'Bruidsschat: geen overlast/hinder, bedrijf aan huis, hobbydieren. Bbl: brandveiligheid. APV: openbare orde. BW: burenrecht.',
-    keywords: ['gebruiksregels', 'overlast', 'hinder', 'bedrijf aan huis', 'brandveiligheid', 'APV', 'burenrecht'],
-  },
+	{
+		id: 'Q1',
+		question: 'Kan een gemeente de werkingssfeer van de bruidsschatregels omgevingsplan wijzigen?',
+		referenceAnswer:
+			'Ja. Per locatie en per regel laten vervallen. Vervangende regel moet noemer + geometrisch informatieobject krijgen. Moet voldoen aan instructieregels hoofdstuk 5 Bkl.',
+		keywords: [
+			'bruidsschat',
+			'wijzigen',
+			'gemeente',
+			'noemer',
+			'geometrisch informatieobject',
+			'instructieregels',
+			'Besluit kwaliteit leefomgeving'
+		]
+	},
+	{
+		id: 'Q2',
+		question: 'Wijzigt de Vangnetregeling Omgevingswet de bruidsschat omgevingsplan?',
+		referenceAnswer:
+			'Nee. Ministeriële regeling die aanvult/verduidelijkt maar niet wijzigt. Geen onderdeel van het omgevingsplan. Niet ontsloten via Regels op de kaart.',
+		keywords: [
+			'Vangnetregeling',
+			'niet wijzigt',
+			'aanvult',
+			'verduidelijkt',
+			'ministeriële regeling',
+			'geen onderdeel'
+		]
+	},
+	{
+		id: 'Q3',
+		question: 'Wat regelt artikel 22.36, bruidsschat omgevingsplan?',
+		referenceAnswer:
+			'Bijzondere gevallen bij omzetting Bijlage II Bor: bijbehorend bouwwerk, erfafscheiding 1-2m, mantelzorggebruik. Bij naleving 22.27 + 22.36 = van rechtswege in overeenstemming.',
+		keywords: [
+			'22.36',
+			'bijbehorend bouwwerk',
+			'erfafscheiding',
+			'mantelzorg',
+			'van rechtswege',
+			'22.27',
+			'Bijlage II'
+		]
+	},
+	{
+		id: 'Q4',
+		question: 'Waar vind ik de bouwregels voor woningen?',
+		referenceAnswer:
+			'Omgevingsplan (bouwhoogte, oppervlakte, type bewoning), Bbl (technische regels), BW (burenrecht). Vergunningvrij bouwen in art. 2.29 Bbl.',
+		keywords: [
+			'omgevingsplan',
+			'bouwhoogte',
+			'oppervlakte',
+			'Bbl',
+			'Besluit bouwwerken leefomgeving',
+			'burenrecht',
+			'Burgerlijk Wetboek'
+		]
+	},
+	{
+		id: 'Q5',
+		question: 'Welke gebruiksregels gelden voor woningen in het omgevingsplan?',
+		referenceAnswer:
+			'Bruidsschat: geen overlast/hinder, bedrijf aan huis, hobbydieren. Bbl: brandveiligheid. APV: openbare orde. BW: burenrecht.',
+		keywords: [
+			'gebruiksregels',
+			'overlast',
+			'hinder',
+			'bedrijf aan huis',
+			'brandveiligheid',
+			'APV',
+			'burenrecht'
+		]
+	}
 ];
 
 async function searchDatabank(query: string, limit: number = 5): Promise<any> {
-  const url = `${DATABANK_URL}/api/search?q=${encodeURIComponent(query)}&limit=${limit}`;
-  const res = await fetch(url, {
-    headers: { 'X-API-Key': API_KEY, 'Accept': 'application/json' },
-  });
-  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
-  return res.json();
+	const url = `${DATABANK_URL}/api/search?q=${encodeURIComponent(query)}&limit=${limit}`;
+	const res = await fetch(url, {
+		headers: { 'X-API-Key': API_KEY, Accept: 'application/json' }
+	});
+	if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+	return res.json();
 }
 
 function scoreKeywords(text: string, keywords: string[]): { found: string[]; missing: string[] } {
-  const lower = text.toLowerCase();
-  const found: string[] = [];
-  const missing: string[] = [];
-  for (const kw of keywords) {
-    if (lower.includes(kw.toLowerCase())) {
-      found.push(kw);
-    } else {
-      missing.push(kw);
-    }
-  }
-  return { found, missing };
+	const lower = text.toLowerCase();
+	const found: string[] = [];
+	const missing: string[] = [];
+	for (const kw of keywords) {
+		if (lower.includes(kw.toLowerCase())) {
+			found.push(kw);
+		} else {
+			missing.push(kw);
+		}
+	}
+	return { found, missing };
 }
 
 async function main() {
-  console.log(`# IPLO Retrieval Benchmark`);
-  console.log(`\nDate: ${new Date().toISOString().split('T')[0]}`);
-  console.log(`Endpoint: ${DATABANK_URL}/api/search\n`);
+	console.log(`# IPLO Retrieval Benchmark`);
+	console.log(`\nDate: ${new Date().toISOString().split('T')[0]}`);
+	console.log(`Endpoint: ${DATABANK_URL}/api/search\n`);
 
-  let totalFound = 0;
-  let totalKeywords = 0;
+	let totalFound = 0;
+	let totalKeywords = 0;
 
-  for (const q of QUESTIONS) {
-    const result = await searchDatabank(q.question);
-    const chunks = result.documents || [];
-    const concatenated = chunks.map((c: any) => c.content || c.text || '').join('\n\n');
-    const entities = result.relatedEntities || [];
+	for (const q of QUESTIONS) {
+		const result = await searchDatabank(q.question);
+		const chunks = result.documents || [];
+		const concatenated = chunks.map((c: any) => c.content || c.text || '').join('\n\n');
+		const entities = result.relatedEntities || [];
 
-    const { found, missing } = scoreKeywords(concatenated, q.keywords);
-    totalFound += found.length;
-    totalKeywords += q.keywords.length;
+		const { found, missing } = scoreKeywords(concatenated, q.keywords);
+		totalFound += found.length;
+		totalKeywords += q.keywords.length;
 
-    console.log(`## ${q.id}: ${q.question}\n`);
-    console.log(`**Reference:** ${q.referenceAnswer}\n`);
-    console.log(`**Chunks retrieved:** ${chunks.length} (total ${concatenated.length} chars)`);
-    console.log(`**KG entities:** ${entities.length}`);
-    console.log(`**Keywords found:** ${found.length}/${q.keywords.length} (${found.join(', ') || 'none'})`);
-    console.log(`**Keywords missing:** ${missing.join(', ') || 'none'}\n`);
+		console.log(`## ${q.id}: ${q.question}\n`);
+		console.log(`**Reference:** ${q.referenceAnswer}\n`);
+		console.log(`**Chunks retrieved:** ${chunks.length} (total ${concatenated.length} chars)`);
+		console.log(`**KG entities:** ${entities.length}`);
+		console.log(
+			`**Keywords found:** ${found.length}/${q.keywords.length} (${found.join(', ') || 'none'})`
+		);
+		console.log(`**Keywords missing:** ${missing.join(', ') || 'none'}\n`);
 
-    // Show first 300 chars of top chunk for inspection
-    if (chunks.length > 0) {
-      const topChunk = chunks[0].content || chunks[0].text || '';
-      console.log(`**Top chunk (${topChunk.length} chars):** ${topChunk.substring(0, 300)}...\n`);
-    }
+		// Show first 300 chars of top chunk for inspection
+		if (chunks.length > 0) {
+			const topChunk = chunks[0].content || chunks[0].text || '';
+			console.log(`**Top chunk (${topChunk.length} chars):** ${topChunk.substring(0, 300)}...\n`);
+		}
 
-    console.log('---\n');
-  }
+		console.log('---\n');
+	}
 
-  const overallPct = ((totalFound / totalKeywords) * 100).toFixed(1);
-  console.log(`## Summary\n`);
-  console.log(`| Metric | Value |`);
-  console.log(`|---|---|`);
-  console.log(`| Total keywords found | ${totalFound}/${totalKeywords} (${overallPct}%) |`);
-  console.log(`| Questions with >50% keywords | ${QUESTIONS.filter((q, i) => {
-    const result = scoreKeywords('', q.keywords); // placeholder - recalculate properly
-    return true; // Will be filled by actual run
-  }).length}/5 |`);
+	const overallPct = ((totalFound / totalKeywords) * 100).toFixed(1);
+	console.log(`## Summary\n`);
+	console.log(`| Metric | Value |`);
+	console.log(`|---|---|`);
+	console.log(`| Total keywords found | ${totalFound}/${totalKeywords} (${overallPct}%) |`);
+	console.log(
+		`| Questions with >50% keywords | ${
+			QUESTIONS.filter((q, i) => {
+				const result = scoreKeywords('', q.keywords); // placeholder - recalculate properly
+				return true; // Will be filled by actual run
+			}).length
+		}/5 |`
+	);
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch((err) => {
+	console.error(err);
+	process.exit(1);
+});
 ```
 
 - [ ] **Step 2: Run baseline IPLO benchmark and save output**
@@ -325,6 +387,7 @@ git commit -m "feat: add IPLO retrieval benchmark script"
 ### Task 3: Re-chunk script using UnifiedChunkingService
 
 **Files:**
+
 - Create: `scripts/rechunk-unified.ts`
 
 - [ ] **Step 1: Create the re-chunk script**
@@ -351,40 +414,40 @@ import type { CanonicalDocument, DocumentFamily } from '../src/server/contracts/
 const BATCH_SIZE = 10;
 
 function parseArgs(): { source?: string; limit?: number } {
-  const args: { source?: string; limit?: number } = {};
-  for (let i = 2; i < process.argv.length; i++) {
-    if (process.argv[i] === '--source' && process.argv[i + 1]) {
-      args.source = process.argv[++i];
-    }
-    if (process.argv[i] === '--limit' && process.argv[i + 1]) {
-      args.limit = parseInt(process.argv[++i], 10);
-    }
-  }
-  return args;
+	const args: { source?: string; limit?: number } = {};
+	for (let i = 2; i < process.argv.length; i++) {
+		if (process.argv[i] === '--source' && process.argv[i + 1]) {
+			args.source = process.argv[++i];
+		}
+		if (process.argv[i] === '--limit' && process.argv[i + 1]) {
+			args.limit = parseInt(process.argv[++i], 10);
+		}
+	}
+	return args;
 }
 
 async function main() {
-  const { source, limit } = parseArgs();
-  const pool = getPostgresPool();
-  const chunkingService = new UnifiedChunkingService();
-  const vectorService = new VectorService();
-  await vectorService.init();
+	const { source, limit } = parseArgs();
+	const pool = getPostgresPool();
+	const chunkingService = new UnifiedChunkingService();
+	const vectorService = new VectorService();
+	await vectorService.init();
 
-  // Query documents with full_text
-  const conditions = ["d.full_text IS NOT NULL", "LENGTH(d.full_text) > 100"];
-  const params: unknown[] = [];
-  let paramIdx = 1;
+	// Query documents with full_text
+	const conditions = ['d.full_text IS NOT NULL', 'LENGTH(d.full_text) > 100'];
+	const params: unknown[] = [];
+	let paramIdx = 1;
 
-  if (source) {
-    conditions.push(`d.source = $${paramIdx}`);
-    params.push(source);
-    paramIdx++;
-  }
+	if (source) {
+		conditions.push(`d.source = $${paramIdx}`);
+		params.push(source);
+		paramIdx++;
+	}
 
-  const limitClause = limit ? `LIMIT $${paramIdx}` : '';
-  if (limit) params.push(limit);
+	const limitClause = limit ? `LIMIT $${paramIdx}` : '';
+	if (limit) params.push(limit);
 
-  const query = `
+	const query = `
     SELECT d.id, d.source, d.source_id, d.title, d.document_family, d.document_type,
            d.full_text, d.content_fingerprint, d.language, d.publisher_authority,
            d.dates, d.source_metadata, d.artifact_refs,
@@ -395,76 +458,76 @@ async function main() {
     ${limitClause}
   `;
 
-  const result = await pool.query(query, params);
-  const docs = result.rows;
+	const result = await pool.query(query, params);
+	const docs = result.rows;
 
-  console.log(`Documents to re-chunk: ${docs.length}`);
-  if (source) console.log(`Source filter: ${source}`);
-  if (limit) console.log(`Limit: ${limit}`);
+	console.log(`Documents to re-chunk: ${docs.length}`);
+	if (source) console.log(`Source filter: ${source}`);
+	if (limit) console.log(`Limit: ${limit}`);
 
-  let processed = 0;
-  let totalOldChunks = 0;
-  let totalNewChunks = 0;
-  let errors = 0;
-  const startTime = Date.now();
+	let processed = 0;
+	let totalOldChunks = 0;
+	let totalNewChunks = 0;
+	let errors = 0;
+	const startTime = Date.now();
 
-  for (let i = 0; i < docs.length; i += BATCH_SIZE) {
-    const batch = docs.slice(i, i + BATCH_SIZE);
+	for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+		const batch = docs.slice(i, i + BATCH_SIZE);
 
-    for (const doc of batch) {
-      try {
-        // Build CanonicalDocument for the chunking service
-        const canonDoc: CanonicalDocument = {
-          _id: doc.id,
-          source: doc.source,
-          sourceId: doc.source_id,
-          title: doc.title,
-          documentFamily: doc.document_family as DocumentFamily,
-          documentType: doc.document_type,
-          fullText: doc.full_text,
-          contentFingerprint: doc.content_fingerprint,
-          language: doc.language || 'nl',
-          publisherAuthority: doc.publisher_authority,
-          dates: doc.dates || {},
-          sourceMetadata: doc.source_metadata || {},
-          artifactRefs: doc.artifact_refs || [],
-          enrichmentMetadata: doc.enrichment_metadata,
-          reviewStatus: doc.review_status || 'pending_review',
-        };
+		for (const doc of batch) {
+			try {
+				// Build CanonicalDocument for the chunking service
+				const canonDoc: CanonicalDocument = {
+					_id: doc.id,
+					source: doc.source,
+					sourceId: doc.source_id,
+					title: doc.title,
+					documentFamily: doc.document_family as DocumentFamily,
+					documentType: doc.document_type,
+					fullText: doc.full_text,
+					contentFingerprint: doc.content_fingerprint,
+					language: doc.language || 'nl',
+					publisherAuthority: doc.publisher_authority,
+					dates: doc.dates || {},
+					sourceMetadata: doc.source_metadata || {},
+					artifactRefs: doc.artifact_refs || [],
+					enrichmentMetadata: doc.enrichment_metadata,
+					reviewStatus: doc.review_status || 'pending_review'
+				};
 
-        // Count old chunks
-        const oldCount = await pool.query(
-          'SELECT count(*)::int as cnt FROM canonical.chunks WHERE document_id = $1',
-          [doc.id]
-        );
-        totalOldChunks += oldCount.rows[0].cnt;
+				// Count old chunks
+				const oldCount = await pool.query(
+					'SELECT count(*)::int as cnt FROM canonical.chunks WHERE document_id = $1',
+					[doc.id]
+				);
+				totalOldChunks += oldCount.rows[0].cnt;
 
-        // Delete old chunks and their embeddings
-        // Delete from pgvector first (references chunk_id)
-        const oldChunkIds = await pool.query(
-          'SELECT chunk_id FROM canonical.chunks WHERE document_id = $1',
-          [doc.id]
-        );
-        for (const row of oldChunkIds.rows) {
-          await pool.query(
-            'DELETE FROM embeddings WHERE chunk_id = $1',
-            [row.chunk_id]
-          ).catch(() => {}); // embeddings table may not use same column name
-        }
-        await pool.query('DELETE FROM canonical.chunks WHERE document_id = $1', [doc.id]);
+				// Delete old chunks and their embeddings
+				// Delete from pgvector first (references chunk_id)
+				const oldChunkIds = await pool.query(
+					'SELECT chunk_id FROM canonical.chunks WHERE document_id = $1',
+					[doc.id]
+				);
+				for (const row of oldChunkIds.rows) {
+					await pool
+						.query('DELETE FROM embeddings WHERE chunk_id = $1', [row.chunk_id])
+						.catch(() => {}); // embeddings table may not use same column name
+				}
+				await pool.query('DELETE FROM canonical.chunks WHERE document_id = $1', [doc.id]);
 
-        // Re-chunk with UnifiedChunkingService
-        const chunkingResult = await chunkingService.chunkDocument(canonDoc, {
-          chunkingVersion: 'v2',
-          minChunkSize: 1600,
-          maxChunkSize: 4800,
-          chunkOverlap: 200,
-        });
+				// Re-chunk with UnifiedChunkingService
+				const chunkingResult = await chunkingService.chunkDocument(canonDoc, {
+					chunkingVersion: 'v2',
+					minChunkSize: 1600,
+					maxChunkSize: 4800,
+					chunkOverlap: 200
+				});
 
-        // Insert new chunks
-        const now = new Date();
-        for (const chunk of chunkingResult.chunks) {
-          await pool.query(`
+				// Insert new chunks
+				const now = new Date();
+				for (const chunk of chunkingResult.chunks) {
+					await pool.query(
+						`
             INSERT INTO canonical.chunks (id, chunk_id, document_id, chunk_index, text, offsets,
               heading_path, legal_refs, chunk_fingerprint, created_at, updated_at)
             VALUES (encode(gen_random_bytes(12), 'hex'), $1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
@@ -472,60 +535,75 @@ async function main() {
               text = EXCLUDED.text, offsets = EXCLUDED.offsets,
               heading_path = EXCLUDED.heading_path, legal_refs = EXCLUDED.legal_refs,
               chunk_fingerprint = EXCLUDED.chunk_fingerprint, updated_at = EXCLUDED.updated_at
-          `, [
-            chunk.chunkId,
-            chunk.documentId,
-            chunk.chunkIndex,
-            chunk.text,
-            JSON.stringify(chunk.offsets),
-            chunk.headingPath ? JSON.stringify(chunk.headingPath) : null,
-            chunk.legalRefs ? JSON.stringify(chunk.legalRefs) : null,
-            chunk.chunkFingerprint,
-            now,
-          ]);
+          `,
+						[
+							chunk.chunkId,
+							chunk.documentId,
+							chunk.chunkIndex,
+							chunk.text,
+							JSON.stringify(chunk.offsets),
+							chunk.headingPath ? JSON.stringify(chunk.headingPath) : null,
+							chunk.legalRefs ? JSON.stringify(chunk.legalRefs) : null,
+							chunk.chunkFingerprint,
+							now
+						]
+					);
 
-          // Re-embed
-          const docType = doc.document_type || doc.document_family || 'Document';
-          const publisher = doc.publisher_authority || '';
-          const header = publisher
-            ? `[${docType} | ${(doc.title || '').substring(0, 80)} | ${publisher}]`
-            : `[${docType} | ${(doc.title || '').substring(0, 80)}]`;
-          const embeddingText = `${header}\n${chunk.text}`;
+					// Re-embed
+					const docType = doc.document_type || doc.document_family || 'Document';
+					const publisher = doc.publisher_authority || '';
+					const header = publisher
+						? `[${docType} | ${(doc.title || '').substring(0, 80)} | ${publisher}]`
+						: `[${docType} | ${(doc.title || '').substring(0, 80)}]`;
+					const embeddingText = `${header}\n${chunk.text}`;
 
-          await vectorService.addDocument(chunk.chunkId, chunk.text, {
-            documentId: doc.id, chunkIndex: chunk.chunkIndex, source: doc.source,
-          }, embeddingText);
-        }
+					await vectorService.addDocument(
+						chunk.chunkId,
+						chunk.text,
+						{
+							documentId: doc.id,
+							chunkIndex: chunk.chunkIndex,
+							source: doc.source
+						},
+						embeddingText
+					);
+				}
 
-        totalNewChunks += chunkingResult.chunks.length;
-        processed++;
+				totalNewChunks += chunkingResult.chunks.length;
+				processed++;
 
-        if (processed % 50 === 0) {
-          const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
-          const rate = (processed / parseFloat(elapsed)).toFixed(1);
-          console.log(
-            `[${elapsed}s] ${processed}/${docs.length} docs | ` +
-            `${totalOldChunks} old → ${totalNewChunks} new chunks | ${rate} docs/s`
-          );
-        }
-      } catch (err) {
-        errors++;
-        console.error(`Error processing doc ${doc.id} (${doc.source}/${doc.title?.substring(0, 50)}):`, err);
-      }
-    }
-  }
+				if (processed % 50 === 0) {
+					const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+					const rate = (processed / parseFloat(elapsed)).toFixed(1);
+					console.log(
+						`[${elapsed}s] ${processed}/${docs.length} docs | ` +
+							`${totalOldChunks} old → ${totalNewChunks} new chunks | ${rate} docs/s`
+					);
+				}
+			} catch (err) {
+				errors++;
+				console.error(
+					`Error processing doc ${doc.id} (${doc.source}/${doc.title?.substring(0, 50)}):`,
+					err
+				);
+			}
+		}
+	}
 
-  const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
-  console.log(`\n--- DONE ---`);
-  console.log(`Processed: ${processed}/${docs.length} documents in ${elapsed}s`);
-  console.log(`Old chunks: ${totalOldChunks} → New chunks: ${totalNewChunks}`);
-  console.log(`Ratio: ${(totalNewChunks / Math.max(totalOldChunks, 1)).toFixed(2)}x`);
-  console.log(`Errors: ${errors}`);
+	const elapsed = ((Date.now() - startTime) / 1000).toFixed(0);
+	console.log(`\n--- DONE ---`);
+	console.log(`Processed: ${processed}/${docs.length} documents in ${elapsed}s`);
+	console.log(`Old chunks: ${totalOldChunks} → New chunks: ${totalNewChunks}`);
+	console.log(`Ratio: ${(totalNewChunks / Math.max(totalOldChunks, 1)).toFixed(2)}x`);
+	console.log(`Errors: ${errors}`);
 
-  await pool.end();
+	await pool.end();
 }
 
-main().catch((err) => { console.error(err); process.exit(1); });
+main().catch((err) => {
+	console.error(err);
+	process.exit(1);
+});
 ```
 
 - [ ] **Step 2: Verify it compiles**
@@ -623,6 +701,7 @@ npx tsx scripts/rechunk-unified.ts --source Ruimtelijkeplannen
 ```
 
 Each source takes time proportional to doc count × embedding time. Estimated:
+
 - OB: ~15 min
 - Rechtspraak: ~20 min
 - DSO: ~30 min (larger docs)

@@ -7,19 +7,19 @@
 
 ## Valves
 
-| Name | Default | Description |
-|------|---------|-------------|
-| sales_predictor_api_url | http://sales-predictor-api:8000 | Base URL |
-| timeout | 120 | Request timeout (training is slow) |
+| Name                    | Default                         | Description                        |
+| ----------------------- | ------------------------------- | ---------------------------------- |
+| sales_predictor_api_url | http://sales-predictor-api:8000 | Base URL                           |
+| timeout                 | 120                             | Request timeout (training is slow) |
 
 ## Tools
 
-| Method | Endpoint | Type | Description |
-|--------|----------|------|-------------|
-| run_sales_forecast | POST /api/train | WRITE | Train model (prophet, sarima, holt_winters, etc.) |
-| get_predictions | POST /api/predict | READ | Latest predictions from trained models |
-| compare_models | GET /api/compare-models | READ | Model performance comparison (MAE, RMSE, MAPE) |
-| list_models | GET /api/models/status | READ | Available models and training status |
+| Method             | Endpoint                | Type  | Description                                       |
+| ------------------ | ----------------------- | ----- | ------------------------------------------------- |
+| run_sales_forecast | POST /api/train         | WRITE | Train model (prophet, sarima, holt_winters, etc.) |
+| get_predictions    | POST /api/predict       | READ  | Latest predictions from trained models            |
+| compare_models     | GET /api/compare-models | READ  | Model performance comparison (MAE, RMSE, MAPE)    |
+| list_models        | GET /api/models/status  | READ  | Available models and training status              |
 
 ## Notes
 

@@ -2461,36 +2461,48 @@ async def oauth_login_callback(
 
 @app.get('/manifest.json')
 async def get_manifest_json():
-    if app.state.EXTERNAL_PWA_MANIFEST_URL:
-        return requests.get(app.state.EXTERNAL_PWA_MANIFEST_URL).json()
-    else:
-        return {
-            'name': app.state.WEBUI_NAME,
-            'short_name': app.state.WEBUI_NAME,
-            'description': f'{app.state.WEBUI_NAME} is an open, extensible, user-friendly interface for AI that adapts to your workflow.',
-            'start_url': '/',
-            'display': 'standalone',
-            'background_color': '#343541',
-            'icons': [
-                {
-                    'src': '/static/logo.png',
-                    'type': 'image/png',
-                    'sizes': '500x500',
-                    'purpose': 'any',
-                },
-                {
-                    'src': '/static/logo.png',
-                    'type': 'image/png',
-                    'sizes': '500x500',
-                    'purpose': 'maskable',
-                },
-            ],
-            'share_target': {
-                'action': '/',
-                'method': 'GET',
-                'params': {'text': 'shared'},
+    # RM fork: support file paths in EXTERNAL_PWA_MANIFEST_URL — paths
+    # beginning with "/" resolve under the frontend build dir, avoiding
+    # the self-loop deadlock that occurs when a single-worker ASGI app
+    # tries to requests.get() back at its own uvicorn process.
+    external = app.state.EXTERNAL_PWA_MANIFEST_URL
+    if external:
+        if external.startswith('/'):
+            manifest_path = os.path.join(FRONTEND_BUILD_DIR, external.lstrip('/'))
+            try:
+                with open(manifest_path) as f:
+                    return json.load(f)
+            except (OSError, json.JSONDecodeError) as e:
+                log.warning(f'Could not read manifest at {manifest_path}: {e}; falling back to default')
+        else:
+            return requests.get(external).json()
+    return {
+        'name': app.state.WEBUI_NAME,
+        'short_name': app.state.WEBUI_NAME,
+        'description': f'{app.state.WEBUI_NAME} is an open, extensible, user-friendly interface for AI that adapts to your workflow.',
+        'start_url': '/',
+        'display': 'standalone',
+        'background_color': '#343541',
+        'icons': [
+            {
+                'src': '/static/logo.png',
+                'type': 'image/png',
+                'sizes': '500x500',
+                'purpose': 'any',
             },
-        }
+            {
+                'src': '/static/logo.png',
+                'type': 'image/png',
+                'sizes': '500x500',
+                'purpose': 'maskable',
+            },
+        ],
+        'share_target': {
+            'action': '/',
+            'method': 'GET',
+            'params': {'text': 'shared'},
+        },
+    }
 
 
 @app.get('/opensearch.xml')

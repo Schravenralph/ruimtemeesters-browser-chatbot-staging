@@ -7,19 +7,19 @@
 
 ## Valves
 
-| Name | Default | Description |
-|------|---------|-------------|
-| dashboarding_api_url | http://dashboarding-api:5022 | Base URL |
-| timeout | 30 | Request timeout seconds |
+| Name                 | Default                      | Description             |
+| -------------------- | ---------------------------- | ----------------------- |
+| dashboarding_api_url | http://dashboarding-api:5022 | Base URL                |
+| timeout              | 30                           | Request timeout seconds |
 
 ## Tools
 
-| Method | Endpoint | Type | Description |
-|--------|----------|------|-------------|
-| get_dashboard_data | GET /api/data/query | READ | Primos/CBS demographic data |
-| get_statistics | GET /api/stats/overview | READ | Summary statistics |
-| get_trends | GET /api/trends/overview | READ | Population growth and housing trends |
-| search_dashboard | GET /api/search | READ | Search across all dashboard data |
+| Method             | Endpoint                 | Type | Description                          |
+| ------------------ | ------------------------ | ---- | ------------------------------------ |
+| get_dashboard_data | GET /api/data/query      | READ | Primos/CBS demographic data          |
+| get_statistics     | GET /api/stats/overview  | READ | Summary statistics                   |
+| get_trends         | GET /api/trends/overview | READ | Population growth and housing trends |
+| search_dashboard   | GET /api/search          | READ | Search across all dashboard data     |
 
 ## Notes
 

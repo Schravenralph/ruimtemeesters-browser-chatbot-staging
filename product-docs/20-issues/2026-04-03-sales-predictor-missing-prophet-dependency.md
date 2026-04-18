@@ -37,11 +37,11 @@ The Sales Predictor MCP server will not function until this is resolved.
 
 **Status:** FIX PROPOSED 2026-04-17 across three coordinated PRs.
 
-| Repo | PR | Change |
-|---|---|---|
-| Sales-Predictor | [#1](https://github.com/Schravenralph/Sales-Predictor/pull/1) | Add missing deps (pmdarima, filterpy, statsmodels); clean up broken `requirements.txt`; move `dev:backend` to uv-managed venv; default port 8000 → 8050 |
-| Ruimtemeesters-MCP-Servers | [#3](https://github.com/Schravenralph/Ruimtemeesters-MCP-Servers/pull/3) | Update default `SALES_PREDICTOR_API_URL` to `http://host.docker.internal:8050` |
-| Ruimtemeesters-Platform | [#2](https://github.com/Schravenralph/Ruimtemeesters-Platform/pull/2) | Register 8050 for Sales-Predictor in ADR-0003 port register |
+| Repo                       | PR                                                                       | Change                                                                                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sales-Predictor            | [#1](https://github.com/Schravenralph/Sales-Predictor/pull/1)            | Add missing deps (pmdarima, filterpy, statsmodels); clean up broken `requirements.txt`; move `dev:backend` to uv-managed venv; default port 8000 → 8050 |
+| Ruimtemeesters-MCP-Servers | [#3](https://github.com/Schravenralph/Ruimtemeesters-MCP-Servers/pull/3) | Update default `SALES_PREDICTOR_API_URL` to `http://host.docker.internal:8050`                                                                          |
+| Ruimtemeesters-Platform    | [#2](https://github.com/Schravenralph/Ruimtemeesters-Platform/pull/2)    | Register 8050 for Sales-Predictor in ADR-0003 port register                                                                                             |
 
 ### Root cause
 
@@ -69,6 +69,7 @@ Backend exposes 16 routes (`/api/predict`, `/api/compare-models`, `/api/inventor
 ### Ops follow-up
 
 After the three PRs merge + MCP-Servers container recreates:
+
 1. Developer starts Sales-Predictor locally with `npm run dev:backend` (first run takes ~60s for uv to build the cached venv; subsequent runs are instant).
 2. Sales-Adviseur assistant's sales-forecast tool should start returning real predictions instead of timing out.
 3. Suggest adding Sales-Predictor to the compose stack eventually (containerize so it auto-starts alongside the MCP fleet) — left as a separate improvement, not blocking this close.
