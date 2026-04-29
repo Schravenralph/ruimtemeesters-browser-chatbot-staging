@@ -73,6 +73,10 @@ services:
       - WEBUI_AUTH_COOKIE_SECURE=${WEBUI_AUTH_COOKIE_SECURE:-false}
       # --- Auth (Clerk OIDC) ---
       - ENABLE_OAUTH_SIGNUP=${ENABLE_OAUTH_SIGNUP:-true}
+      # Clerk auth IS the auth: a verified Clerk OIDC token means the user is in.
+      # Override OpenWebUI's "pending" default so first-time OIDC signups land active,
+      # matching the trust model in projectbeheer / other RM apps.
+      - DEFAULT_USER_ROLE=${DEFAULT_USER_ROLE:-user}
       - OPENID_PROVIDER_URL=${CLERK_OIDC_DISCOVERY_URL:-}
       - OAUTH_CLIENT_ID=${CLERK_OAUTH_CLIENT_ID:-}
       - OAUTH_CLIENT_SECRET=${CLERK_OAUTH_CLIENT_SECRET:-}
