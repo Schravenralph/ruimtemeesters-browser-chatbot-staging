@@ -1,9 +1,11 @@
 # Security: never expose databases publicly
 
 ## Status
+
 Accepted — 2026-04-17
 
 ## Context
+
 On 2026-04-17 a dev `docker-compose.yml` in `Ruimtemeesters-Transcriber`
 published MongoDB on `0.0.0.0:27017` with no authentication. The AKIRA
 ransomware group connected over the public internet, wiped the
@@ -16,6 +18,7 @@ window that led to this incident was short; the attack chain is fully
 automated.
 
 ## Decision
+
 Databases MUST NOT be published on `0.0.0.0` — in any compose file,
 systemd unit, or deployment configuration, in dev or prod, on this
 server or any other. This applies to MongoDB, PostgreSQL, Redis,
@@ -46,6 +49,7 @@ endpoints, Redis without `requirepass`, etc.
 - Dev convenience is never a reason to skip any of the above.
 
 ## References
+
 - Incident write-up: `Ruimtemeesters-Transcriber` PR #34.
 - MongoDB security checklist:
   https://www.mongodb.com/docs/manual/administration/security-checklist/
