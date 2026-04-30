@@ -147,12 +147,15 @@ async def register_oauth_client(
 
 class ToolServerConnection(BaseModel):
     url: str
-    path: str
+    # MCP entries loaded from TOOL_SERVER_CONNECTIONS env typically omit
+    # `path` and `key` — keep them defaulted so GET /tool_servers doesn't
+    # 500 on response validation when no admin has touched the config.
+    path: str = ''
     type: Optional[str] = 'openapi'  # openapi, mcp
-    auth_type: Optional[str]
+    auth_type: Optional[str] = None
     headers: Optional[dict | str] = None
-    key: Optional[str]
-    config: Optional[dict]
+    key: Optional[str] = None
+    config: Optional[dict] = None
 
     model_config = ConfigDict(extra='allow')
 

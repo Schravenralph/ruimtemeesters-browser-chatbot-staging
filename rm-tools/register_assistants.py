@@ -187,6 +187,7 @@ Richtlijnen:
                 'server:mcp:rm-sales-predictor',
                 'server:mcp:rm-opdrachten',
                 'server:mcp:rm-aggregator',
+                'server:mcp:rm-memory',
             ],
         },
         'params': {
