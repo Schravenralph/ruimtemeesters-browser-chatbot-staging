@@ -588,7 +588,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "Tài liệu",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "không thực hiện bất kỳ kết nối ngoài nào, và dữ liệu của bạn vẫn được lưu trữ an toàn trên máy chủ lưu trữ cục bộ của bạn.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "Danh sách Lọc Tên miền",
 	"don't fetch random pipelines from sources you don't trust.": "Đừng lấy các pipelines ngẫu nhiên từ nguồn không đáng tin cậy.",
 	"Don't have an account?": "Không có tài khoản?",

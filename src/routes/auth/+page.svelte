@@ -151,15 +151,15 @@
 
 			if (isDarkMode) {
 				const darkImage = new Image();
-				darkImage.src = `${WEBUI_BASE_URL}/static/favicon-dark.png`;
+				darkImage.src = `${WEBUI_BASE_URL}/brand-assets/icon-white.png`;
 
 				darkImage.onload = () => {
-					logo.src = `${WEBUI_BASE_URL}/static/favicon-dark.png`;
-					logo.style.filter = ''; // Ensure no inversion is applied if favicon-dark.png exists
+					logo.src = `${WEBUI_BASE_URL}/brand-assets/icon-white.png`;
+					logo.style.filter = '';
 				};
 
 				darkImage.onerror = () => {
-					logo.style.filter = 'invert(1)'; // Invert image if favicon-dark.png is missing
+					logo.style.filter = 'invert(1)';
 				};
 			}
 		}
@@ -258,7 +258,7 @@
 									<img
 										id="logo"
 										crossorigin="anonymous"
-										src="{WEBUI_BASE_URL}/static/favicon.png"
+										src="{WEBUI_BASE_URL}/brand-assets/icon-blue.png"
 										class="size-24 rounded-full"
 										alt="{$WEBUI_NAME} logo"
 									/>
@@ -610,9 +610,9 @@
 						<img
 							id="logo"
 							crossorigin="anonymous"
-							src="{WEBUI_BASE_URL}/static/favicon.png"
+							src="{WEBUI_BASE_URL}/brand-assets/icon-blue.png"
 							class=" w-6 rounded-full"
-							alt=""
+							alt="{$WEBUI_NAME} logo"
 						/>
 					</div>
 				</div>

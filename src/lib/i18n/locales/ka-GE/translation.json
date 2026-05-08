@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "დოკუმენტაცია",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "არ ამყარებს გარე კავშირებს და თქვენი მონაცემები უსაფრთხოდ რჩება თქვენს ლოკალურ სერვერზე.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "დომენის ფილტრების სია",
 	"don't fetch random pipelines from sources you don't trust.": "არ ჩამოტვირთოთ შემთხვევითი pipelines არასანდო წყაროებიდან.",
 	"Don't have an account?": "არ გაქვთ ანგარიში?",

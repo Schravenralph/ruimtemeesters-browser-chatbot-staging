@@ -588,7 +588,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "ドキュメント",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "は外部接続を行わず、データはローカルでホストされているサーバー上に安全に保持されます。",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "ドメインフィルターリスト",
 	"don't fetch random pipelines from sources you don't trust.": "信頼できないソースからやみくもにパイプラインを取得しないでください。",
 	"Don't have an account?": "アカウントをお持ちではありませんか？",

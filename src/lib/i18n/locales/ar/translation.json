@@ -598,7 +598,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "التوثيق",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "لا يجري أي اتصالات خارجية، وتظل بياناتك آمنة على الخادم المستضاف محليًا.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "قائمة تصفية النطاقات",
 	"don't fetch random pipelines from sources you don't trust.": "لا تجلب خطوط أنابيب عشوائية من مصادر غير موثوقة.",
 	"Don't have an account?": "ليس لديك حساب؟",

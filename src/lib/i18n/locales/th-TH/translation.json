@@ -588,7 +588,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "เอกสารประกอบ",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "ไม่เชื่อมต่อกับภายนอกใดๆ และข้อมูลของคุณจะถูกเก็บไว้อย่างปลอดภัยบนเซิร์ฟเวอร์ภายในเครื่องของคุณ",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "รายการตัวกรองโดเมน",
 	"don't fetch random pipelines from sources you don't trust.": "อย่าดึง Pipeline แบบสุ่มจากแหล่งที่ไม่น่าเชื่อถือ",
 	"Don't have an account?": "ยังไม่มีบัญชี?",

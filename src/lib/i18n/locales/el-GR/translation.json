@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "Τεκμηρίωση",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "δεν κάνει καμία εξωτερική σύνδεση, και τα δεδομένα σας παραμένουν ασφαλή στον τοπικά φιλοξενούμενο διακομιστή σας.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "Λίστα Φίλτρων Domain",
 	"don't fetch random pipelines from sources you don't trust.": "Μην ανακτάτε τυχαία pipelines από μη αξιόπιστες πηγές.",
 	"Don't have an account?": "Δεν έχετε λογαριασμό;",

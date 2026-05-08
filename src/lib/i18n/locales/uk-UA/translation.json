@@ -594,7 +594,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "Документація",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "не встановлює жодних зовнішніх з'єднань, і ваші дані залишаються в безпеці на вашому локальному сервері.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "Список фільтрів доменів",
 	"don't fetch random pipelines from sources you don't trust.": "Не отримуйте випадкові pipelines із джерел, яким ви не довіряєте.",
 	"Don't have an account?": "Немає облікового запису?",

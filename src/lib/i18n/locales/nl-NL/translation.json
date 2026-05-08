@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "Documentatie",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "maakt geen externe verbindingen, en je gegevens blijven veilig op je lokaal gehoste server.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "is een besloten werkomgeving — je gegevens worden nooit gebruikt om externe LLMs te trainen.",
 	"Domain Filter List": "Domein-filterlijst",
 	"don't fetch random pipelines from sources you don't trust.": "Haal geen willekeurige pipelines op van onbetrouwbare bronnen.",
 	"Don't have an account?": "Heb je geen account?",

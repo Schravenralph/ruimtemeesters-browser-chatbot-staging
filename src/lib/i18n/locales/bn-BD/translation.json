@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "কোন এক্সটার্নাল কানেকশন তৈরি করে না, এবং আপনার ডেটা আর লোকালি হোস্টেড সার্ভারেই নিরাপদে থাকে।",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "",
 	"don't fetch random pipelines from sources you don't trust.": "যে উৎসে আপনি ভরসা করেন না সেখান থেকে এলোমেলো পাইপলাইন আনবেন না।",
 	"Don't have an account?": "একাউন্ট নেই?",

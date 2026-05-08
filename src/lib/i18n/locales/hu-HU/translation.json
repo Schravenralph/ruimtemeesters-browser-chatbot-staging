@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "Dokumentáció",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "nem létesít külső kapcsolatokat, és az adataid biztonságban maradnak a helyileg hosztolt szervereden.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "Domain szűrőlista",
 	"don't fetch random pipelines from sources you don't trust.": "Ne tölts le véletlenszerű pipeline-okat megbízhatatlan forrásokból.",
 	"Don't have an account?": "Nincs még fiókod?",

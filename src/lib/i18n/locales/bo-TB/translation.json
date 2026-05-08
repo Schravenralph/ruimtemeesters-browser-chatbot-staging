@@ -588,7 +588,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "ཡིག་ཆ།",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "ཕྱི་རོལ་གྱི་སྦྲེལ་མཐུད་གང་ཡང་མི་བྱེད། དེ་མིན་ཁྱེད་ཀྱི་གནས་ཚུལ་དེ་ཁྱེད་ཀྱི་ས་གནས་སུ་བཀོད་སྒྲིག་བྱས་པའི་སར་བར་སྟེང་བདེ་འཇགས་ངང་གནས་ངེས།",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "ཁྱབ་ཁོངས་འཚག་མའི་ཐོ་གཞུང་།",
 	"don't fetch random pipelines from sources you don't trust.": "རྟོགས་མེད་པའི་ཁུངས་ནས་ pipelines གང་འརྒྱུར་མ་འབྱོར་",
 	"Don't have an account?": "རྩིས་ཁྲ་མེད་དམ།",

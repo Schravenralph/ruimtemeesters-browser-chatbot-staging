@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "مستندات",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "هیچ اتصال خارجی ایجاد نمی کند و داده های شما به طور ایمن در سرور میزبان محلی شما باقی می ماند.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "لیست فیلتر دامنه",
 	"don't fetch random pipelines from sources you don't trust.": "pipelineهای تصادفی را از منابع غیرقابل اعتماد دریافت نکنید.",
 	"Don't have an account?": "حساب کاربری ندارید؟",

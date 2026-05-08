@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "Document Intelligence model",
 	"Documentation": "Dokumentation",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "laver ikke eksterne kald, og din data bliver sikkert på din egen lokalt hostede server.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "Domæne filterliste",
 	"don't fetch random pipelines from sources you don't trust.": "Hent ikke tilfældige pipelines fra kilder, du ikke stoler på.",
 	"Don't have an account?": "Har du ikke en profil?",

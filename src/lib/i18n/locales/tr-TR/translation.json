@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "Document Intelligence Modeli",
 	"Documentation": "Dökümantasyon",
 	"Documents": "Belgeler",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "herhangi bir harici bağlantı yapmaz ve verileriniz güvenli bir şekilde yerel olarak barındırılan sunucunuzda kalır.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "Alan Adı Filtre Listesi",
 	"don't fetch random pipelines from sources you don't trust.": "Güvenmediğiniz kaynaklardan rastgele pipelines getirmeyin.",
 	"Don't have an account?": "Hesabınız yok mu?",

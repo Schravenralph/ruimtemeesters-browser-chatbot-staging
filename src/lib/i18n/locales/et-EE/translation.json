@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "Dokumendi intelligentsuse mudel",
 	"Documentation": "Dokumentatsioon",
 	"Documents": "Dokumendid",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "ei loo väliseid ühendusi ja teie andmed jäävad turvaliselt teie kohalikult majutatud serverisse.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "Domeeni filtri nimekiri",
 	"don't fetch random pipelines from sources you don't trust.": "Ära tõmba juhuslikke pipelines allikatest, mida sa ei usalda.",
 	"Don't have an account?": "Pole kontot?",

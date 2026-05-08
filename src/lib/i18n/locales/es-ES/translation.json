@@ -592,7 +592,7 @@
 	"Document Intelligence Model": "Modelo para Doc Intelligence",
 	"Documentation": "Documentación",
 	"Documents": "Documentos",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "no se realiza ninguna conexión externa y tus datos permanecen seguros alojados localmente en tu servidor.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "Lista de Filtrado de Dominio",
 	"don't fetch random pipelines from sources you don't trust.": "No obtengas pipelines aleatorias de fuentes no confiables.",
 	"Don't have an account?": "¿No tienes una cuenta?",

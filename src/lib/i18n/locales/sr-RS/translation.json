@@ -592,7 +592,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "Документација",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "не отвара никакве спољне везе и ваши подаци остају сигурно на вашем локално хостованом серверу.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "",
 	"don't fetch random pipelines from sources you don't trust.": "Не преузимајте насумичне pipelines са извора којима не верујете.",
 	"Don't have an account?": "Немате налог?",

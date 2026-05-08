@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "Sənəd intellekti modeli",
 	"Documentation": "Sənədləşmə",
 	"Documents": "Sənədlər",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "heç bir xarici bağlantı qurmur və məlumatlarınız yerli serverinizdə təhlükəsiz şəkildə qalır.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "Domen filtr siyahısı",
 	"don't fetch random pipelines from sources you don't trust.": "etibar etmədiyiniz mənbələrdən təsadüfi pipeline-lar gətirməyin.",
 	"Don't have an account?": "Hesabınız yoxdur?",

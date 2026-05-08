@@ -588,7 +588,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "문서",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "외부와 어떠한 연결도 하지 않으며, 데이터는 로컬에서 호스팅되는 서버에 안전하게 유지됩니다.",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
 	"Domain Filter List": "도메인 필터 목록",
 	"don't fetch random pipelines from sources you don't trust.": "신뢰하지 않는 출처에서 임의의 파이프라인을 가져오지 마세요.",
 	"Don't have an account?": "계정이 없으신가요?",

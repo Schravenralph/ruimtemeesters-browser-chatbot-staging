@@ -590,7 +590,7 @@
 	"Document Intelligence Model": "",
 	"Documentation": "",
 	"Documents": "",
-	"does not make any external connections, and your data stays securely on your locally hosted server.": "",
+	"does not make any external connections, and your data stays securely on your locally hosted server.": "is a private workspace — your data is never used to train external LLMs.",
 	"Domain Filter List": "",
 	"don't fetch random pipelines from sources you don't trust.": "",
 	"Don't have an account?": "",
