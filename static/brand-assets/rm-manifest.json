@@ -8,15 +8,15 @@
 	"theme_color": "#002EA3",
 	"icons": [
 		{
-			"src": "/brand-assets/icon-blue.png",
+			"src": "/brand-assets/icon-512.png",
 			"type": "image/png",
-			"sizes": "500x500",
+			"sizes": "512x512",
 			"purpose": "any"
 		},
 		{
-			"src": "/brand-assets/icon-blue.png",
+			"src": "/brand-assets/icon-maskable-512.png",
 			"type": "image/png",
-			"sizes": "500x500",
+			"sizes": "512x512",
 			"purpose": "maskable"
 		}
 	],
