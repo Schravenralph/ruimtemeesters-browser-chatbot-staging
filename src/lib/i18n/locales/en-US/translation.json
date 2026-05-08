@@ -1453,7 +1453,7 @@
 	"Open WebUI uses faster-whisper internally.": "Speech recognition uses faster-whisper internally.",
 	"Open WebUI uses SpeechT5 and CMU Arctic speaker embeddings.": "Text-to-speech uses SpeechT5 with CMU Arctic speaker embeddings.",
 	"Open WebUI version": "Application version",
-	"Open WebUI version (v{{OPEN_WEBUI_VERSION}}) is lower than required version (v{{REQUIRED_VERSION}})": "Application core version (v{{OPEN_WEBUI_VERSION}}) is lower than required version (v{{REQUIRED_VERSION}})",
+	"Open WebUI version (v{{OPEN_WEBUI_VERSION}}) is lower than required version (v{{REQUIRED_VERSION}})": "Application version (v{{OPEN_WEBUI_VERSION}}) is lower than required version (v{{REQUIRED_VERSION}})",
 	"OpenAI": "",
 	"OpenAI API": "",
 	"OpenAI API Base URL": "",
