@@ -201,7 +201,12 @@ services:
     volumes:
       - ./litellm/config.yaml:/app/config.yaml:ro
     environment:
-      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:?set LITELLM_MASTER_KEY in .env.rm — see .env.rm.example}
+      # `:-` (not `:?`) — fail-soft on missing key so a missing
+      # LITELLM_MASTER_KEY only breaks the litellm service, not the whole
+      # compose stack. LiteLLM itself refuses to start without master_key,
+      # so the failure mode is a loud crashloop on rm-litellm while
+      # rm-chatbot, rm-ollama, and rm-chatbot-db keep running.
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-}
       # IMPORTANT: this MUST point at the dedicated `litellm` database, never
       # at the OWUI database (rmchatbot). LiteLLM's prisma migrations will
       # drop any non-LiteLLM tables it finds. See ADR-0010 "Postmortem".
