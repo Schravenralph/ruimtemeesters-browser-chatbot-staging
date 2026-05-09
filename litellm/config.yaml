@@ -1,0 +1,60 @@
+# LiteLLM proxy config for Ruimtemeesters AI
+#
+# After cutover (ADR-0010 build order step 2), this is the single endpoint
+# OpenWebUI talks to. All provider keys live here, not in OpenWebUI.
+#
+# Curated model list intentionally omits preview / experimental snapshots
+# (e.g. gemini-3.1-*-preview, o1-preview) — see brand-roadmap.md for the
+# Phase 1 model-curation rationale.
+
+model_list:
+  # --- Anthropic (native) ------------------------------------------------
+  - model_name: claude-opus-4-7
+    litellm_params:
+      model: anthropic/claude-opus-4-7
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: claude-sonnet-4-6
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  # --- OpenAI ------------------------------------------------------------
+  - model_name: gpt-4.1
+    litellm_params:
+      model: openai/gpt-4.1
+      api_key: os.environ/OPENAI_API_KEY
+
+  # --- Gemini (Google AI Studio) -----------------------------------------
+  - model_name: gemini-2.5-pro
+    litellm_params:
+      model: gemini/gemini-2.5-pro
+      api_key: os.environ/GEMINI_API_KEY
+
+  - model_name: gemini-2.5-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+  - model_name: gemini-2.5-flash-lite
+    litellm_params:
+      model: gemini/gemini-2.5-flash-lite
+      api_key: os.environ/GEMINI_API_KEY
+
+litellm_settings:
+  # Tolerate OpenAI-shaped requests against non-OpenAI providers.
+  # OpenWebUI emits OpenAI-shaped chat completions; LiteLLM drops unsupported
+  # params silently rather than 422-ing the request.
+  drop_params: true
+
+general_settings:
+  # OpenWebUI authenticates against LiteLLM with this key (single key surface
+  # post-cutover). Must be set in the environment; LiteLLM refuses to start
+  # without one — preventing an accidental no-auth deploy.
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+  # Spend tracking + virtual-key issuance live in postgres. Sharing the
+  # existing chatbot-db instance — LiteLLM auto-creates LiteLLM_* tables on
+  # first boot. Migrate to a dedicated DB if/when LiteLLM's load justifies
+  # isolation.
+  database_url: os.environ/DATABASE_URL
