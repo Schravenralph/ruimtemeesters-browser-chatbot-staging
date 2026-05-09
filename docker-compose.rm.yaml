@@ -57,6 +57,10 @@ services:
       # --- Branding ---
       - WEBUI_NAME=${WEBUI_NAME:-Ruimtemeesters AI}
       - WEBUI_FAVICON_URL=/brand-assets/icon-blue.png
+      # Default UI language for first-time visitors (no localStorage `locale`).
+      # Returning users keep whatever they previously selected. Override via
+      # the user-settings language picker.
+      - DEFAULT_LOCALE=${DEFAULT_LOCALE:-nl-NL}
       # PWA manifest override — RM colors + icon. Path form (leading "/") makes the backend
       # read it from the frontend build dir directly; avoids self-HTTP deadlock.
       - EXTERNAL_PWA_MANIFEST_URL=/brand-assets/rm-manifest.json

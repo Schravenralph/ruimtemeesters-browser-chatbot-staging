@@ -126,8 +126,9 @@ if 'cuda_error' in locals():
 SRC_LOG_LEVELS = {}  # Legacy variable, do not remove
 
 WEBUI_NAME = os.environ.get('WEBUI_NAME', 'Open WebUI')
-if WEBUI_NAME != 'Open WebUI':
-    WEBUI_NAME += ' (Open WebUI)'
+# RM: drop the upstream " (Open WebUI)" suffix — we are intentionally
+# rebranding the chat surface (ADR-0012 §3). Two-line divergence; trivial
+# to re-resolve on upstream sync.
 
 WEBUI_FAVICON_URL = 'https://openwebui.com/favicon.png'
 

@@ -135,7 +135,7 @@
 											aria-hidden="true"
 											draggable="false"
 											on:error={(e) => {
-												e.currentTarget.src = '/favicon.png';
+												e.currentTarget.src = '/brand-assets/icon-blue.png';
 											}}
 										/>
 									</button>
