@@ -45,6 +45,13 @@ fi
 
 mkdir -p "$DEST"
 
+# Track failures across the loop so cron sees a non-zero exit if any
+# database dump failed. The previous version `if pg_dump; then ... else
+# log; fi`-shape swallowed failures into the script's eventual exit 0,
+# meaning cron alerted only on hard infrastructure errors and silently
+# accepted partial-success runs.
+FAILURES=0
+
 # Dump each known database — skip silently if it does not yet exist (e.g. a
 # fresh install before LiteLLM has been provisioned for the first time).
 for DB in "${DBS[@]}"; do
@@ -68,6 +75,7 @@ for DB in "${DBS[@]}"; do
   else
     log "ERROR: pg_dump failed for '${DB}'"
     rm -f "$OUT"
+    FAILURES=$((FAILURES + 1))
   fi
 done
 
@@ -81,5 +89,10 @@ done
     -print -delete 2>>"$LOG" \
     | while read -r f; do log "pruned: $f"; done
 } || log "WARN: prune step failed (non-fatal; backups above succeeded)"
+
+if [[ "$FAILURES" -gt 0 ]]; then
+  log "FAILURE: $FAILURES dump(s) failed — exiting non-zero so cron reports the failure"
+  exit 1
+fi
 
 log "complete"
