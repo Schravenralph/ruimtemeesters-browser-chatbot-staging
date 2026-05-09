@@ -6,13 +6,13 @@
 
 ## Shipped Features
 
-| #   | Feature                                  | PR  | Status                  | Issue closed | Size |
-| --- | ---------------------------------------- | --- | ----------------------- | ------------ | ---- |
-| 0   | /embed route for Geoportaal iframe panel | #54 | merged                  | #53          | M    |
-| 1   | /bopa-omgevingsaspecten slash prompt     | #55 | merged                  | #44          | M    |
-| 2   | Admin memory adoption-stats BFF          | #56 | open (bugbot pending)   | part of #48  | M    |
-| 3   | Admin memory adoption-stats frontend     | #57 | open (stacked on #56)   | rest of #48  | M    |
-| 4   | rm-memory user-facing list BFF           | #58 | open (stacked on #56)   | foundation for #47 | M    |
+| #   | Feature                                  | PR  | Status                | Issue closed       | Size |
+| --- | ---------------------------------------- | --- | --------------------- | ------------------ | ---- |
+| 0   | /embed route for Geoportaal iframe panel | #54 | merged                | #53                | M    |
+| 1   | /bopa-omgevingsaspecten slash prompt     | #55 | merged                | #44                | M    |
+| 2   | Admin memory adoption-stats BFF          | #56 | open (bugbot pending) | part of #48        | M    |
+| 3   | Admin memory adoption-stats frontend     | #57 | open (stacked on #56) | rest of #48        | M    |
+| 4   | rm-memory user-facing list BFF           | #58 | open (stacked on #56) | foundation for #47 | M    |
 
 PR #54 was opened just before the forge run started. The remaining 4 are forge cycles 1–4.
 
@@ -36,13 +36,13 @@ PR #54 was opened just before the forge run started. The remaining 4 are forge c
 
 ## Unfinished / Next Session
 
-| Priority | Feature                                  | Why                                                              | Est. size |
-| -------- | ---------------------------------------- | ---------------------------------------------------------------- | --------- |
-| 1        | Merge #56 / #57 / #58 once bugbot clears | All have local tests passing; review-pipeline gating only        | n/a       |
-| 2        | rm-memory CRUD BFF (POST/DELETE)         | Cycle 4 is read-only; user-facing edit/forget needs the writes   | M         |
-| 3        | User memory panel (#47, frontend)        | Read BFF is shipped; panel reads `/api/v1/rm-memory/list`        | M-L       |
-| 4        | BOPA Phase 5/6 (chatbot side, #45/#46)   | Blocked on MCP-Servers#73/#74 (`save_onderbouwing_section`, `score_onderbouwing`). Could ship the MCP tools first cross-repo | L         |
-| 5        | #51 tool-call failure surfacing (model-side) | Prompt-side landed on PR #52; Gemini doesn't yet honor it. Needs deeper model-side guard or output-postprocess | M         |
+| Priority | Feature                                      | Why                                                                                                                          | Est. size |
+| -------- | -------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------- |
+| 1        | Merge #56 / #57 / #58 once bugbot clears     | All have local tests passing; review-pipeline gating only                                                                    | n/a       |
+| 2        | rm-memory CRUD BFF (POST/DELETE)             | Cycle 4 is read-only; user-facing edit/forget needs the writes                                                               | M         |
+| 3        | User memory panel (#47, frontend)            | Read BFF is shipped; panel reads `/api/v1/rm-memory/list`                                                                    | M-L       |
+| 4        | BOPA Phase 5/6 (chatbot side, #45/#46)       | Blocked on MCP-Servers#73/#74 (`save_onderbouwing_section`, `score_onderbouwing`). Could ship the MCP tools first cross-repo | L         |
+| 5        | #51 tool-call failure surfacing (model-side) | Prompt-side landed on PR #52; Gemini doesn't yet honor it. Needs deeper model-side guard or output-postprocess               | M         |
 
 ## Observations
 

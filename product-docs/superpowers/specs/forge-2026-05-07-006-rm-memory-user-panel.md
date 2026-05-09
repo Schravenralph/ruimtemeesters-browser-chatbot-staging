@@ -27,7 +27,7 @@ The OSS evaluation (mem0 / Letta / Zep / OpenWebUI native / Cognee / LangMem) se
 
 1. Visiting `/memory/user` while signed in renders the panel; visiting unauth → redirects to login (the `(app)` layout already enforces this).
 2. The panel calls `GET /api/v1/rm-memory` on mount and lists entries grouped by `type` (user, feedback, project, reference, session-summary). Each row shows: name, description, scope badge, `updated_at` formatted with `toLocaleString`, edit + delete actions.
-3. Empty state copy is verbatim from #47: *"The assistant will save things here automatically as you chat."*
+3. Empty state copy is verbatim from #47: _"The assistant will save things here automatically as you chat."_
 4. Edit action opens a modal pre-populated with the entry's current `description` and `content` (from `GET /api/v1/rm-memory/{name}`). Save → `DELETE /{name}` → `POST /` with the new payload. Optimistic update in the list.
 5. Delete action confirms (native confirm or modal) → `DELETE /{name}` → optimistic removal from the list.
 6. Loading + error states match the admin/memory page pattern: spinner during fetch, red callout on error with the upstream `detail`.
