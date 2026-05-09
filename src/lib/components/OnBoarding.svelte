@@ -3,6 +3,7 @@
 	const i18n = getContext('i18n');
 
 	import { WEBUI_BASE_URL } from '$lib/constants';
+	import { WEBUI_NAME } from '$lib/stores';
 
 	import Marquee from './common/Marquee.svelte';
 	import SlideShow from './common/SlideShow.svelte';
@@ -48,7 +49,7 @@
 						crossorigin="anonymous"
 						src="{WEBUI_BASE_URL}/brand-assets/icon-blue.png"
 						class=" w-6 rounded-full"
-						alt="Ruimtemeesters AI logo"
+						alt="{$WEBUI_NAME} logo"
 					/>
 				</div>
 			</div>
