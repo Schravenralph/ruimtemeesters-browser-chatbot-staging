@@ -32,10 +32,16 @@ mountpoint -q /mnt/storagebox || {
   exit 1
 }
 
-docker inspect "$CONTAINER" >/dev/null 2>&1 || {
-  log "ERROR: container $CONTAINER not running; aborting"
+# `docker inspect` succeeds for any state (running, exited, paused) — only
+# .State.Running tells us we can actually exec against it. Without this
+# stricter check, a stopped container would let the loop "skip" every DB
+# (because exec fails silently into the EXISTS=`` branch) and the script
+# would exit 0 with zero backups produced — silent data-loss risk.
+RUNNING=$(docker inspect --format '{{.State.Running}}' "$CONTAINER" 2>/dev/null || echo "false")
+if [[ "$RUNNING" != "true" ]]; then
+  log "ERROR: container $CONTAINER not running (state='$RUNNING'); aborting"
   exit 2
-}
+fi
 
 mkdir -p "$DEST"
 
@@ -65,9 +71,15 @@ for DB in "${DBS[@]}"; do
   fi
 done
 
-# Prune dumps older than RETENTION_DAYS days
-find "$DEST" -name "${CONTAINER}_*.sql.gz" -type f -mtime "+${RETENTION_DAYS}" \
-  -print -delete 2>>"$LOG" \
-  | while read -r f; do log "pruned: $f"; done
+# Prune dumps older than RETENTION_DAYS days. Wrap the whole pipeline in
+# `|| log "WARN..."` so a transient prune failure (network-mount glitch on
+# the storagebox, stale handle, etc.) does NOT mask the success of the
+# backups above. Cron should report failure only when the actual dumps
+# fail, not when housekeeping does.
+{
+  find "$DEST" -name "${CONTAINER}_*.sql.gz" -type f -mtime "+${RETENTION_DAYS}" \
+    -print -delete 2>>"$LOG" \
+    | while read -r f; do log "pruned: $f"; done
+} || log "WARN: prune step failed (non-fatal; backups above succeeded)"
 
 log "complete"
