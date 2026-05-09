@@ -51,6 +51,7 @@ mkdir -p "$DEST"
 # meaning cron alerted only on hard infrastructure errors and silently
 # accepted partial-success runs.
 FAILURES=0
+SUCCESSES=0
 
 # Dump each known database — skip silently if it does not yet exist (e.g. a
 # fresh install before LiteLLM has been provisioned for the first time).
@@ -72,6 +73,7 @@ for DB in "${DBS[@]}"; do
        | gzip > "$OUT"; then
     SIZE=$(du -h "$OUT" | cut -f1)
     log "ok: ${DB} → ${OUT} (${SIZE})"
+    SUCCESSES=$((SUCCESSES + 1))
   else
     log "ERROR: pg_dump failed for '${DB}'"
     rm -f "$OUT"
@@ -92,6 +94,16 @@ done
 
 if [[ "$FAILURES" -gt 0 ]]; then
   log "FAILURE: $FAILURES dump(s) failed — exiting non-zero so cron reports the failure"
+  exit 1
+fi
+
+# If every database was skipped (none existed), something is wrong — the
+# chatbot-db is up but contains none of the expected databases. Likely the
+# container is mid-init, the DB names drifted, or someone ran a destructive
+# migration. Exit non-zero so cron alerts; the alternative is a silent
+# zero-backup run that looks healthy to monitoring.
+if [[ "$SUCCESSES" -eq 0 ]]; then
+  log "FAILURE: zero databases dumped (all skipped) — verify chatbot-db contains rmchatbot/litellm"
   exit 1
 fi
 
