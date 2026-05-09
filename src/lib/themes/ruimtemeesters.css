@@ -116,6 +116,43 @@ input[type='checkbox']:checked {
 }
 
 /* ============================================
+   ACTIVE / SELECTED CHAT ITEM
+   ChatItem.svelte adds a `.selected` class when the chat is active.
+   Layer a Klein-Blue accent stripe so the brand colour appears in
+   the surface users look at most.
+   ============================================ */
+
+#sidebar-chat-item.selected {
+	box-shadow: inset 3px 0 0 0 var(--rm-primary) !important;
+}
+
+/* ============================================
+   TOASTS — bring Pumpkin (warning) and Mystified (success) to life
+   svelte-sonner emits [data-sonner-toast][data-type="..."]; brand
+   the four standard variants without touching its base styling.
+   ============================================ */
+
+[data-sonner-toast][data-type='success'] {
+	border-color: var(--rm-mystified) !important;
+}
+
+[data-sonner-toast][data-type='success'] [data-icon] {
+	color: var(--rm-mystified) !important;
+}
+
+[data-sonner-toast][data-type='warning'] {
+	border-color: var(--rm-pumpkin) !important;
+}
+
+[data-sonner-toast][data-type='warning'] [data-icon] {
+	color: var(--rm-pumpkin) !important;
+}
+
+[data-sonner-toast][data-type='info'] [data-icon] {
+	color: var(--rm-primary) !important;
+}
+
+/* ============================================
    SHIMMER — brand-colored loading animation
    ============================================ */
 
