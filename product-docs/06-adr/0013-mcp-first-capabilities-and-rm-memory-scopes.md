@@ -7,7 +7,7 @@
 
 Two related commitments coming out of the 2026-05-08 architecture session:
 
-1. **Capability layering.** ADR-0012 deferred the Anthropic-native pipeline (Skills, Memory tool, etc.). That means there are capabilities the model cannot reach via Anthropic primitives in our current setup. We need an explicit principle for *how those capabilities get expressed* until the Pipe arrives.
+1. **Capability layering.** ADR-0012 deferred the Anthropic-native pipeline (Skills, Memory tool, etc.). That means there are capabilities the model cannot reach via Anthropic primitives in our current setup. We need an explicit principle for _how those capabilities get expressed_ until the Pipe arrives.
 
 2. **Memory scoping.** ADR-0002 (in `Ruimtemeesters-MCP-Servers/docs/adr/0002-memory-architecture.md`) established a three-value scope model: `user`, `project`, `global`. After working through the pipeline questions in this session — what gets saved, where it lives, who can see it — the three-value model is too coarse: there's no shape for "facts that apply to everyone at Ruimtemeesters but aren't universal truths." That gap matters because brand voice, RM-specific conventions, and shared procedural knowledge all live there.
 
@@ -41,12 +41,12 @@ The rule isn't "MCP for everything forever." It's "MCP for everything we can't g
 
 We commit to building **RM-Memory** as the durable memory layer for the chatbot and (eventually) sibling surfaces. RM-Memory has **four scope tiers**, refining ADR-0002's three:
 
-| Scope | Visible to | Example |
-|---|---|---|
-| **User** | Only the owning user | "I prefer concise responses", "I'm an advisor specialising in archeologie" |
-| **Project** | Anyone with access to that project | "This BOPA used Utrecht conventions", "Last time we ran the AERIUS calc, X happened" |
-| **Brand** | Everyone at Ruimtemeesters (org-wide) | "RM cites Lycens precedent first", "Our standard BOPA template structure is …", "Default report tone is direct, Dutch" |
-| **Global** | Universally readable, even across orgs | "Phase 5 of a BOPA is the onderbouwing", "DSO is the Digitaal Stelsel Omgevingswet" |
+| Scope       | Visible to                             | Example                                                                                                                |
+| ----------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| **User**    | Only the owning user                   | "I prefer concise responses", "I'm an advisor specialising in archeologie"                                             |
+| **Project** | Anyone with access to that project     | "This BOPA used Utrecht conventions", "Last time we ran the AERIUS calc, X happened"                                   |
+| **Brand**   | Everyone at Ruimtemeesters (org-wide)  | "RM cites Lycens precedent first", "Our standard BOPA template structure is …", "Default report tone is direct, Dutch" |
+| **Global**  | Universally readable, even across orgs | "Phase 5 of a BOPA is the onderbouwing", "DSO is the Digitaal Stelsel Omgevingswet"                                    |
 
 The new tier is **Brand**. It's the one ADR-0002 implicitly missed because the read predicate was "any authenticated caller" for both project and global — fine for one-org-and-everyone-else-public, but it conflated org-internal conventions with universal facts. Splitting them gives us:
 
@@ -67,7 +67,7 @@ Which preserves ADR-0002's "tightening is a query diff, not a migration" propert
 
 ### 3. Implementation engine — open
 
-This ADR commits to *what* RM-Memory is (the four-scope model and the MCP-first principle), not *how* it's built. Three implementation paths remain open:
+This ADR commits to _what_ RM-Memory is (the four-scope model and the MCP-first principle), not _how_ it's built. Three implementation paths remain open:
 
 - **(a) Extend the existing `@rm-mcp/memory` package.** Already implements the three-scope model from ADR-0002, has the BFF + filter inlets + admin stats wired in. Adding `brand` is additive: one schema change, one read-predicate update, one UI label. Lowest blast radius.
 - **(b) Fork Hindsight, brand it RM-Memory, extend with the four-scope model.** Bigger commitment, more capability (entity extraction, multi-strategy retrieval, mental models), but requires migrating data and adapting Hindsight's tagging/namespace model to our scope semantics. The fork-vs-vendor-vs-wrap conversation from earlier in this session applies.
@@ -78,12 +78,14 @@ Engine choice is a deliberate next decision and gets its own ADR (likely the nex
 ## Rationale
 
 **Why MCP-first, not waiting for Pipe:**
+
 - Pipe is months of work and pushes against ADR-0012's "preserve OWUI investment" principle
 - MCP works today, against any model, with our existing infrastructure
 - The cost of MCP-vs-Skills (extra tool round-trip, no progressive loading) is small compared to the cost of building and maintaining a Pipe
 - When the Pipe eventually arrives, the MCP capabilities we shipped don't go away — they keep working alongside whatever native primitives we add
 
 **Why a four-scope memory model:**
+
 - Three scopes conflated "RM-internal conventions" with "universal facts." Adding brand fixes this without breaking the existing predicate shape
 - Brand is the scope that's most useful and most missing — most of what we'd want to remember about Ruimtemeesters as an organisation lives there
 - Multi-org future is preserved by making brand explicit (`owner_org_id`) rather than implicit ("any authenticated caller")
@@ -92,12 +94,14 @@ Engine choice is a deliberate next decision and gets its own ADR (likely the nex
 ## Consequences
 
 **Positive:**
+
 - New capabilities ship without blocking on the Pipe decision
 - Memory has a real home for RM-internal conventions, which today either don't get saved or pollute the global scope
 - Engine choice for RM-Memory (a vs b vs c) becomes a clean next decision rather than entangled with the principle decision
 - Multi-org future is one schema migration away, not a rewrite
 
 **Negative:**
+
 - MCP-first capabilities cost an extra round-trip per invocation. Latency-sensitive flows might feel it
 - Brand scope adds one more concept to teach the model and explain to users — "what goes in brand vs global" will need clear authoring guidance in the memory skill
 - Until the implementation engine ADR lands, RM-Memory is conceptually defined but not yet built — risk of decision drift if we leave it open too long
@@ -127,12 +131,12 @@ Engine choice is a deliberate next decision and gets its own ADR (likely the nex
 
 The authoring guide written under §2 needs to reach the LLM somehow. Four delivery options were on the table:
 
-| Option | Mechanism | Trade-off |
-|---|---|---|
-| **(a)** Static skill file | `packages/memory/skills/memory.md`, loaded into system prompt at session start (same pattern as existing `bopa.md`) | Always in context; modest token cost; no per-tool-call freshness |
-| (b) ADR / doc only | Lives in `product-docs/` for humans | Doesn't reach the model — rejected |
-| (c) MCP-loaded on every tool call | Tool description includes the criteria, or a separate MCP fetch on each save | Always fresh; per-call latency; more tool surface |
-| (d) Database row of type=reference | Loaded dynamically via recall | Couples the guide to memory data; rejected as over-clever |
+| Option                             | Mechanism                                                                                                           | Trade-off                                                        |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| **(a)** Static skill file          | `packages/memory/skills/memory.md`, loaded into system prompt at session start (same pattern as existing `bopa.md`) | Always in context; modest token cost; no per-tool-call freshness |
+| (b) ADR / doc only                 | Lives in `product-docs/` for humans                                                                                 | Doesn't reach the model — rejected                               |
+| (c) MCP-loaded on every tool call  | Tool description includes the criteria, or a separate MCP fetch on each save                                        | Always fresh; per-call latency; more tool surface                |
+| (d) Database row of type=reference | Loaded dynamically via recall                                                                                       | Couples the guide to memory data; rejected as over-clever        |
 
 **Decision: (a) — static skill file.** Mirrors the existing `bopa.md` pattern, gets the criteria into the model's view at every session start, and avoids per-tool-call latency. Token cost is modest (the skill file is a few KB).
 

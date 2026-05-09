@@ -11,7 +11,7 @@ Two observations drove the simplification:
 
 1. **Skills don't need an approval queue.** Memories need pending/approve because the model can auto-save. Skills (per the v1 save policy) are explicit-ask-only — by the time `save_skill` is called, a human has already authorised it. A queue solves a problem that doesn't exist here.
 
-2. **The scope axis collapses for skills.** Memories have four scopes because they distill observations across personal / project / org / universal layers. Skills don't behave that way — most skills are either *one user's personal procedure* (User) or *organisation-wide canonical procedure* (Company). Project-scoped skills and Global skills both turned out to be edge cases nobody concretely needed.
+2. **The scope axis collapses for skills.** Memories have four scopes because they distill observations across personal / project / org / universal layers. Skills don't behave that way — most skills are either _one user's personal procedure_ (User) or _organisation-wide canonical procedure_ (Company). Project-scoped skills and Global skills both turned out to be edge cases nobody concretely needed.
 
 This ADR records the simplified design.
 
@@ -21,9 +21,9 @@ This ADR records the simplified design.
 
 Skills come from exactly two places:
 
-| Source | Storage | Mutability | Authored by |
-|---|---|---|---|
-| **User skills** | `memory.skills` table (Postgres) | Fully mutable by the owner | The owning user (via the chatbot or panel) |
+| Source             | Storage                                                                               | Mutability                                             | Authored by                                           |
+| ------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------- |
+| **User skills**    | `memory.skills` table (Postgres)                                                      | Fully mutable by the owner                             | The owning user (via the chatbot or panel)            |
 | **Company skills** | Markdown files in `Ruimtemeesters-MCP-Servers/packages/memory/skills/company/` (repo) | **Immutable at runtime** — modified only via PR review | Ruimtemeesters as an organisation, via source control |
 
 This mirrors the way Anthropic's "superpowers" (the bundled Claude Code skills like `init`, `security-review`) work: shipped as files, version controlled, never touched at runtime by any caller. User skills are the additional layer the user owns.
@@ -34,19 +34,19 @@ The existing skill files `packages/memory/skills/bopa.md` and `packages/memory/s
 
 The `memory.skills` table holds **only** User skills. No scope column, no project_id, no owner_org_id, no status. Just:
 
-| Column | Purpose |
-|---|---|
-| `id UUID PK` | Stable identifier |
-| `owner_user_id TEXT NOT NULL REFERENCES memory.users(id)` | Owner — sole reader and writer |
-| `name TEXT NOT NULL` | Stable identifier (lowercase-dashes, ≤120 chars) |
-| `description TEXT NOT NULL` | One-line catalog entry (≤200 chars) |
-| `body_md TEXT NOT NULL` | Human-readable procedure (markdown, ≤65 KB) |
-| `steps JSONB NOT NULL DEFAULT '[]'` | Optional structured steps: `[{description, expected_output, tool_calls?}]` |
-| `examples JSONB NOT NULL DEFAULT '[]'` | Optional input/output illustrations |
-| `parameters_shape JSONB` | Optional JSON Schema for typed inputs (forward-looking, see "Out of scope") |
-| `requires_tools TEXT[] NOT NULL DEFAULT '{}'` | MCP tool names the skill expects to be available |
-| `created_at`, `updated_at`, `deleted_at` | Timestamps + tombstone |
-| `session_id`, `emitted_at` | Provenance from the conversation that authored the skill |
+| Column                                                    | Purpose                                                                     |
+| --------------------------------------------------------- | --------------------------------------------------------------------------- |
+| `id UUID PK`                                              | Stable identifier                                                           |
+| `owner_user_id TEXT NOT NULL REFERENCES memory.users(id)` | Owner — sole reader and writer                                              |
+| `name TEXT NOT NULL`                                      | Stable identifier (lowercase-dashes, ≤120 chars)                            |
+| `description TEXT NOT NULL`                               | One-line catalog entry (≤200 chars)                                         |
+| `body_md TEXT NOT NULL`                                   | Human-readable procedure (markdown, ≤65 KB)                                 |
+| `steps JSONB NOT NULL DEFAULT '[]'`                       | Optional structured steps: `[{description, expected_output, tool_calls?}]`  |
+| `examples JSONB NOT NULL DEFAULT '[]'`                    | Optional input/output illustrations                                         |
+| `parameters_shape JSONB`                                  | Optional JSON Schema for typed inputs (forward-looking, see "Out of scope") |
+| `requires_tools TEXT[] NOT NULL DEFAULT '{}'`             | MCP tool names the skill expects to be available                            |
+| `created_at`, `updated_at`, `deleted_at`                  | Timestamps + tombstone                                                      |
+| `session_id`, `emitted_at`                                | Provenance from the conversation that authored the skill                    |
 
 Upsert key: `UNIQUE (owner_user_id, name)` — the user's namespace is theirs alone.
 
@@ -78,10 +78,12 @@ parameters_shape:
 [procedure body in markdown]
 
 ## Steps
+
 1. ...
 2. ...
 
 ## Examples
+
 ...
 ```
 
@@ -91,12 +93,12 @@ Reload happens on MCP server restart. There is no runtime mutation path for Comp
 
 ### 4. Tool surface — three tools
 
-| Tool | Purpose | Operates on |
-|---|---|---|
-| `list_skills()` | Returns the full catalog: `{name, description, source, requires_tools[]}[]` where `source ∈ {'user', 'company'}` | Both sources, merged |
-| `get_skill(name, source?)` | Returns one skill with full body + structured fields. `source` disambiguates if a user has a personal skill with the same name as a company skill (rare; user shadow wins by default) | Both sources |
-| `save_skill({name, description, body_md, steps?, examples?, parameters_shape?, requires_tools?})` | Upsert into `memory.skills` for the calling user. Cannot write Company skills | User skills only |
-| `forget_skill(name)` | Tombstone the user's own skill (same semantics as `forget_memory`) | User skills only |
+| Tool                                                                                              | Purpose                                                                                                                                                                               | Operates on          |
+| ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `list_skills()`                                                                                   | Returns the full catalog: `{name, description, source, requires_tools[]}[]` where `source ∈ {'user', 'company'}`                                                                      | Both sources, merged |
+| `get_skill(name, source?)`                                                                        | Returns one skill with full body + structured fields. `source` disambiguates if a user has a personal skill with the same name as a company skill (rare; user shadow wins by default) | Both sources         |
+| `save_skill({name, description, body_md, steps?, examples?, parameters_shape?, requires_tools?})` | Upsert into `memory.skills` for the calling user. Cannot write Company skills                                                                                                         | User skills only     |
+| `forget_skill(name)`                                                                              | Tombstone the user's own skill (same semantics as `forget_memory`)                                                                                                                    | User skills only     |
 
 That's it. No admin tools, no approval tools, no scope variants. The caller's identity (the one user) determines what they can write to. Company skills require a PR — there is no MCP write path.
 
@@ -118,7 +120,7 @@ Sort order: User skills first (most specific to caller), then Company skills, th
 
 ### 6. Save-from-conversation UX
 
-Unchanged from the original brainstorm: explicit user ask only for v1 (*"make this a skill called X"*). The model summarises the conversation into the skill body + structured fields, calls `save_skill`. No scope decision needed (always User; it's the user's table). No approval (the user is the owner).
+Unchanged from the original brainstorm: explicit user ask only for v1 (_"make this a skill called X"_). The model summarises the conversation into the skill body + structured fields, calls `save_skill`. No scope decision needed (always User; it's the user's table). No approval (the user is the owner).
 
 Auto-detection of recurring workflows and post-success suggestions deferred to v2.
 
@@ -187,7 +189,7 @@ Order of work:
 ## Related ADRs
 
 - **ADR-0013** — MCP-first capability strategy. This ADR is the implementation of §1's `rm-skills` reference. Skills diverge from §2's four-scope model deliberately
-- **ADR-0014** — RM-Memory engine. The approval workflow built there is *not* reused for skills (§"What's intentionally absent")
+- **ADR-0014** — RM-Memory engine. The approval workflow built there is _not_ reused for skills (§"What's intentionally absent")
 - **ADR-0012** — Frontend strategy. Anthropic Pipe deferral is what makes catalog-injection-via-filter the right delivery mechanism today
 - **ADR-0011** — Service-pattern AI surfaces. When Geoportaal's custom UI surfaces skills (e.g. "available BOPA skills" panel), it pulls from `list_skills` — same tool, both User and Company sources flow naturally
 

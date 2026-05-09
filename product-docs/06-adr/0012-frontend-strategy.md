@@ -59,7 +59,7 @@ The rebrand should be reversible at the `git revert` level — kept on a single 
 
 ### 4. Custom service-pattern UI on Geoportaal (committed — see ADR-0011)
 
-Geoportaal will receive a fully custom AI experience, *not* an iframe of `chatbot.datameesters.nl/embed`. The custom UI calls OpenWebUI's HTTP API (`/api/chat/completions`, `/api/v1/chats`, `/api/v1/memories`) with the shared Clerk session cookie. Domain-aware affordances (proactive contextual bubbles, in-canvas tool result rendering, deeply embedded interactions) are the goal.
+Geoportaal will receive a fully custom AI experience, _not_ an iframe of `chatbot.datameesters.nl/embed`. The custom UI calls OpenWebUI's HTTP API (`/api/chat/completions`, `/api/v1/chats`, `/api/v1/memories`) with the shared Clerk session cookie. Domain-aware affordances (proactive contextual bubbles, in-canvas tool result rendering, deeply embedded interactions) are the goal.
 
 Detailed scope, build order, trade-offs, and the explicit "what this does NOT unlock" caveat are in **ADR-0011: Service-pattern AI surfaces in sibling apps**.
 
@@ -78,12 +78,14 @@ The four decisions cohere around one principle: **preserve the OpenWebUI investm
 ## Consequences
 
 **Positive:**
+
 - We continue shipping product features against a stable frontend
 - Branded chat starts to feel like our product
 - Geoportaal becomes a category-leading AI surface for spatial planning, distinct from "another chat box"
 - Two patterns (iframe + service) lets us right-size each sibling-app integration
 
 **Negative:**
+
 - Anthropic-native features remain absent from `chatbot.datameesters.nl` until we revisit the Pipe decision
 - Branding work has to be redone (or re-merged) on each upstream OpenWebUI sync
 - Geoportaal's custom UI is real engineering work; the first proof point will reveal unexpected costs (CORS quirks, SSE rendering edge cases, tool-result rendering scope)
@@ -100,7 +102,7 @@ The four decisions cohere around one principle: **preserve the OpenWebUI investm
 ## Related ADRs
 
 - **ADR-0001** — Fork OpenWebUI (parent decision; this ADR continues the commitment)
-- **ADR-0007** — Multi-surface platform (OpenWebUI as backend-of-record; this ADR refines the *surface* layer of that)
+- **ADR-0007** — Multi-surface platform (OpenWebUI as backend-of-record; this ADR refines the _surface_ layer of that)
 - **ADR-0008** — Embedded chat via API (the API contract sibling apps consume)
 - **ADR-0009** — Shared session cookie domain (the auth mechanism that makes service pattern possible)
 - **ADR-0011** — Service-pattern AI surfaces in sibling apps (the implementation pattern for §4)

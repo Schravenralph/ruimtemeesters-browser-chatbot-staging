@@ -5,13 +5,13 @@
 
 ## Context
 
-ADR-0013 committed to RM-Memory with a four-scope model (User / Project / Brand / Global) under an MCP-first capability strategy. It deliberately left the *engine* question open — the principle was decided, but how RM-Memory actually gets built was tracked as a follow-up.
+ADR-0013 committed to RM-Memory with a four-scope model (User / Project / Brand / Global) under an MCP-first capability strategy. It deliberately left the _engine_ question open — the principle was decided, but how RM-Memory actually gets built was tracked as a follow-up.
 
 This ADR closes that follow-up.
 
 The session walked through a long arc on this question. Initial direction was "fork Hindsight." That direction softened as we identified:
 
-- Hindsight's value sits in *prose-extraction* and *multi-strategy retrieval* — capabilities that solve problems we don't yet have at our scale (handful of users, ~hundreds of memories at most)
+- Hindsight's value sits in _prose-extraction_ and _multi-strategy retrieval_ — capabilities that solve problems we don't yet have at our scale (handful of users, ~hundreds of memories at most)
 - Cross-surface memory continuity is already solved by the iframe + service-pattern architecture (ADR-0011 / ADR-0012) — both share OpenWebUI's backend, so no external memory hub is required to make sibling apps see the same memory
 - Structured project state (BOPA sessions, typed entities) belongs in our existing typed MCP, not in any prose-extraction tool
 - We already have ~80% of the engine in `@rm-mcp/memory` (per ADR-0002 in the MCP-Servers repo): identity model, three-scope predicate, FTS, tombstones, session-events provenance, BFF, filter inlet, admin stats
@@ -37,6 +37,7 @@ What changes concretely:
 Total: roughly a week of focused work end-to-end with tests. The largest line-count is the migration + tests; the predicate change is ~5 lines.
 
 **Pros:**
+
 - Smallest blast radius
 - Preserves existing investment (BFF, filter inlet, admin stats, BOPA-session state, Dutch FTS, identity model)
 - No data migration
@@ -44,6 +45,7 @@ Total: roughly a week of focused work end-to-end with tests. The largest line-co
 - Works with our existing skill/tooling
 
 **Cons:**
+
 - We don't get Hindsight's extraction, multi-strategy retrieval, mental models, or cross-encoder reranking
 - FTS-only retrieval will eventually hit a quality ceiling (probably at thousands-of-memories scale we don't have yet)
 - Drift / dedup remain unaddressed in v1 of RM-Memory (same as today)
@@ -73,11 +75,13 @@ Hindsight's capabilities we'd inherit:
 - 91.4% LongMemEval per their published number
 
 **Pros:**
+
 - Significantly more capable engine for retrieval and dedup
 - Anticipates problems we'd otherwise have to build solutions for ourselves (entity resolution, drift handling)
 - The fork itself is free (MIT license) — branding work is small
 
 **Cons:**
+
 - Weeks-to-months of integration work
 - Lossy migration of existing memory data (extraction reshapes things)
 - Loses our typed scoping primitives — they get re-expressed as tags, with the predicate enforcement moving from Postgres CHECK constraints to application-level conventions
@@ -91,10 +95,12 @@ Hindsight's capabilities we'd inherit:
 Build from scratch — neither extending `@rm-mcp/memory` nor forking Hindsight. Take Hindsight's design ideas (multi-strategy retrieval, mental models, autoDream consolidation) and reimplement them on our schema.
 
 **Pros:**
+
 - Maximum control
 - No upstream-fork chore
 
 **Cons:**
+
 - Months of work
 - We'd be writing what Hindsight already wrote, badly, slower
 - Justified only if both (a) and (b) fail — and they don't
@@ -137,7 +143,7 @@ Order of work (each is a self-contained PR-sized chunk):
 
 4. **Filter changes** in `rm-tools/filters/`:
    - `memory_recall_context.py` — no logic change; brand-scope rows flow automatically once the MCP serves them
-   - **New** `memory_pending_notice.py` (filter outlet) — when the active user has pending memories awaiting their approval, append a one-line note to the assistant response: *"(You have N pending memories awaiting your approval — review them in the memory panel.)"* Cheap, throttled (e.g. once per N turns), respects user opt-out
+   - **New** `memory_pending_notice.py` (filter outlet) — when the active user has pending memories awaiting their approval, append a one-line note to the assistant response: _"(You have N pending memories awaiting your approval — review them in the memory panel.)"_ Cheap, throttled (e.g. once per N turns), respects user opt-out
 
 5. **UI work** (separate cycle — not part of the migration PR):
    - Memory panel surfaces pending status, with inline approve/reject buttons for the user's own project memories
@@ -170,12 +176,14 @@ When any of these fires, this ADR gets revised: we add a "Migration plan to Hind
 ## Consequences
 
 **Positive:**
+
 - Engine question is settled with the smallest committed work
 - The four-scope model ships fast — brand scope becomes available for memory authoring soon
 - Existing investment is preserved
 - The (b) option stays cleanly on the table for a future inflection point — this ADR captures the trigger conditions explicitly so we don't re-litigate from scratch
 
 **Negative:**
+
 - We accept current FTS-recall behaviour and the absence of drift/dedup machinery for the foreseeable future
 - Hindsight's marketing-published 91.4% LongMemEval gap stays a gap until/unless (b) triggers
 - We continue to pay the small ongoing tax of "rolling our own" on a category where opinionated platforms exist
