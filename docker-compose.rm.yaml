@@ -179,9 +179,26 @@ services:
         condition: service_healthy
     environment:
       - PGPASSWORD=${POSTGRES_PASSWORD:-rmchatbot}
+      - LITELLM_MASTER_KEY=${LITELLM_MASTER_KEY:-}
     entrypoint: ['/bin/sh', '-c']
     command:
+      # Two jobs in one shot:
+      # 1. Refuse to proceed if LITELLM_MASTER_KEY is empty. LiteLLM's
+      #    upstream master_key validation was removed in their PR #16453,
+      #    so an empty key would otherwise produce a working but
+      #    UNAUTHENTICATED proxy on rm-internal — every container on that
+      #    network could call it and exfiltrate provider API keys.
+      #    Failing the init container here gates the whole LiteLLM stack
+      #    behind a real key (LiteLLM `depends_on: condition: service_completed_successfully`).
+      # 2. Idempotently CREATE DATABASE litellm so prisma migrations stay
+      #    isolated from OWUI's database (see ADR-0010 Postmortem).
       - >
+        if [ -z "$$LITELLM_MASTER_KEY" ]; then
+          echo "ERROR: LITELLM_MASTER_KEY is empty.";
+          echo "Generate one with: openssl rand -hex 32";
+          echo "Set it in .env (prefixed sk- so OpenWebUI accepts it).";
+          exit 1;
+        fi;
         psql -h chatbot-db -U ${POSTGRES_USER:-rmchatbot} -d postgres -tc
         "SELECT 1 FROM pg_database WHERE datname='litellm'" | grep -q 1 ||
         psql -h chatbot-db -U ${POSTGRES_USER:-rmchatbot} -d postgres -c
