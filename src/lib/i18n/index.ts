@@ -41,6 +41,24 @@ const createIsLoadingStore = (i18n: i18nType) => {
 };
 
 export const initI18n = (defaultLocale?: string | undefined) => {
+	// When DEFAULT_LOCALE is set on the server (compose env), the product
+	// chooses the language for users instead of letting per-browser locale
+	// detection win. Without this override, a user whose browser was set to
+	// en-US during a previous visit (or whose localStorage `locale` was
+	// auto-cached as en-US) keeps seeing English even after we ship full
+	// Dutch translations. We don't want that here — the UI is meant to be
+	// Dutch by default, with the language picker still available for
+	// explicit per-user override (which writes localStorage and survives).
+	if (defaultLocale && typeof localStorage !== 'undefined') {
+		const stored = localStorage.getItem('locale');
+		// Treat en-US as "the OWUI shipped default that was never explicitly
+		// chosen", and override to defaultLocale. Any other localStorage
+		// value (e.g. user picked en-GB or fr-FR) is preserved.
+		if (!stored || stored === 'en-US') {
+			localStorage.setItem('locale', defaultLocale);
+		}
+	}
+
 	const detectionOrder = defaultLocale
 		? ['querystring', 'localStorage']
 		: ['querystring', 'localStorage', 'navigator'];

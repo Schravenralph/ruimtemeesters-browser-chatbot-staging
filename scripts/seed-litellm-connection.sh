@@ -221,9 +221,19 @@ seed_persona() {
   local body
   body=$(ID="$id" NAME="$display_name" DESC="$description" SYS="$system_prompt" python3 - <<'PY'
 import json, os
+# `base_model_id: None` is critical: it puts this Model row in OWUI's
+# *override* branch (utils/models.py:150 — "Override applied directly to
+# a base model (shares the same ID)"), which mutates the LiteLLM-discovered
+# base model's `name` field to the long display string. Setting
+# base_model_id to the same id sends the row down the *new model* branch
+# instead, where utils/models.py:177 short-circuits with `continue`
+# because the id already exists in the LiteLLM-discovered list — so the
+# row exists in DB but its long name never reaches the dropdown.
+# System prompt still reaches the chat path either way (read directly
+# from the Model row at request time).
 print(json.dumps({
     'id': os.environ['ID'],
-    'base_model_id': os.environ['ID'],   # routes to the LiteLLM alias of the same name
+    'base_model_id': None,
     'name': os.environ['NAME'],
     'meta': {
         'description': os.environ['DESC'],
@@ -231,8 +241,8 @@ print(json.dumps({
         # model without a custom URL — no need to set one here.
     },
     'params': {
-        # OpenWebUI prepends `params.system` as a system message before
-        # the user's chat history when sending to the underlying model.
+        # OpenWebUI reads params.system at chat time and prepends it as a
+        # system message before the user's history.
         'system': os.environ['SYS'],
     },
     'is_active': True,
