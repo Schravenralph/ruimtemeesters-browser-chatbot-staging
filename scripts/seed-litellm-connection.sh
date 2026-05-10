@@ -218,6 +218,10 @@ seed_persona() {
   local display_name="$2"
   local description="$3"
   local system_prompt="$4"
+  # 5th arg: comma-separated list of MCP tool ids (without the
+  # `server:mcp:` prefix) — e.g. "rm-databank,rm-geoportaal,rm-memory".
+  # Empty / missing = no curation (model gets default tool surface).
+  local tool_ids_csv="${5:-}"
 
   # Best-effort delete first so re-runs apply prompt edits cleanly.
   # Body shape is `{"id": "..."}` per ModelIdForm in routers/models.py;
@@ -228,7 +232,7 @@ seed_persona() {
     -d "{\"id\": \"$id\"}" >/dev/null 2>&1 || true
 
   local body
-  body=$(ID="$id" NAME="$display_name" DESC="$description" SYS="$system_prompt" python3 - <<'PY'
+  body=$(ID="$id" NAME="$display_name" DESC="$description" SYS="$system_prompt" TOOLS="$tool_ids_csv" python3 - <<'PY'
 import json, os
 # `base_model_id: None` is critical: it puts this Model row in OWUI's
 # *override* branch (utils/models.py:150 — "Override applied directly to
@@ -240,15 +244,27 @@ import json, os
 # row exists in DB but its long name never reaches the dropdown.
 # System prompt still reaches the chat path either way (read directly
 # from the Model row at request time).
+meta = {
+    'description': os.environ['DESC'],
+    # Profile image fallback already serves the Ralph mascot for any
+    # model without a custom URL — no need to set one here.
+}
+# Per-persona tool curation. `meta.toolIds` is the list of tools that
+# get pre-selected when the user opens a chat with this model. They can
+# still toggle additional ones via the picker, but the persona's defaults
+# steer the model toward its domain (RO -> Geoportaal/Databank,
+# Juridisch -> Databank only, Commercieel -> Riens/Opdrachten/Sales).
+# MCP tool ids in OWUI use the `server:mcp:<id>` prefix — see
+# backend/open_webui/utils/middleware.py:2475.
+tools_csv = os.environ.get('TOOLS', '').strip()
+if tools_csv:
+    meta['toolIds'] = [f'server:mcp:{t.strip()}' for t in tools_csv.split(',') if t.strip()]
+
 print(json.dumps({
     'id': os.environ['ID'],
     'base_model_id': None,
     'name': os.environ['NAME'],
-    'meta': {
-        'description': os.environ['DESC'],
-        # Profile image fallback already serves the Ralph mascot for any
-        # model without a custom URL — no need to set one here.
-    },
+    'meta': meta,
     'params': {
         # OpenWebUI reads params.system at chat time and prepends it as a
         # system message before the user's history.
@@ -289,14 +305,40 @@ echo "Seeding persona Model rows..."
 
 seed_persona "RO-Assistent" "RO Assistent" \
   "Sparringpartner voor ruimtelijke ordening — BOPA, omgevingsplannen, beleidsdocumenten en ruimtelijke vraagstukken." \
-  "Je bent de RO Assistent voor adviseurs bij Ruimtemeesters. Je helpt met BOPA-onderbouwingen, omgevingsplannen, beleidsdocumenten en ruimtelijke vraagstukken in Nederland onder de Omgevingswet. Antwoord beknopt en in het Nederlands. Gebruik vakjargon waar passend, en verwijs zo concreet mogelijk naar artikelen, beleidsbronnen of locaties. Wees expliciet over onzekerheid wanneer informatie ontbreekt of wanneer een ruimtelijke afweging om aanvullend onderzoek vraagt."
+  "Je bent de RO Assistent voor adviseurs bij Ruimtemeesters. Je helpt met BOPA-onderbouwingen, omgevingsplannen, beleidsdocumenten en ruimtelijke vraagstukken in Nederland onder de Omgevingswet. Antwoord beknopt en in het Nederlands. Gebruik vakjargon waar passend, en verwijs zo concreet mogelijk naar artikelen, beleidsbronnen of locaties.
+
+Tooluse-richtlijnen:
+- Voor adres-vragen begin met bopa_scan_at_address (Geoportaal) — die ketent geocoding en de zes BOPA-relevante PDOK-lagen in één call.
+- Voor beleidsdocumenten van een gemeente of cross-document vraagstukken zoek via de Databank.
+- Voor demografische context (bevolking, prognoses) gebruik Dashboarding of TSA.
+- Voor cross-app context of memory van eerdere sessies gebruik Aggregator of Memory.
+
+Wees expliciet over onzekerheid wanneer informatie ontbreekt of wanneer een ruimtelijke afweging om aanvullend onderzoek vraagt." \
+  "rm-databank,rm-geoportaal,rm-tsa,rm-dashboarding,rm-aggregator,rm-memory"
 
 seed_persona "Juridisch-Assistent" "Juridisch Assistent" \
   "Juridische sparringpartner voor adviseurs — Omgevingswet, Awb, Wro en jurisprudentie." \
-  "Je bent de Juridisch Assistent voor adviseurs bij Ruimtemeesters. Je analyseert wet- en regelgeving (met name de Omgevingswet, Awb, en Wet ruimtelijke ordening), jurisprudentie en bestuurlijke besluiten. Antwoord precies en in het Nederlands. Citeer concrete artikelen of uitspraken (met vindplaats), maak onderscheid tussen vaste lijn en open normen, en wees expliciet over onzekerheid of bandbreedte in interpretatie. Geef geen advies dat een gemachtigd jurist zou moeten geven; markeer dat duidelijk als de vraag dat raakt."
+  "Je bent de Juridisch Assistent voor adviseurs bij Ruimtemeesters. Je analyseert wet- en regelgeving (met name de Omgevingswet, Awb, en Wet ruimtelijke ordening), jurisprudentie en bestuurlijke besluiten. Antwoord precies en in het Nederlands. Citeer concrete artikelen of uitspraken (met vindplaats), maak onderscheid tussen vaste lijn en open normen, en wees expliciet over onzekerheid of bandbreedte in interpretatie.
+
+Tooluse-richtlijnen:
+- Zoek juridische bronnen (jurisprudentie, beleidsdocumenten, omgevingsplanregels) via de Databank.
+- Voor cross-referentie tussen meerdere bronnen of project-context gebruik Aggregator.
+- Memory voor eerdere juridische analyses van dezelfde casus.
+
+Geef geen advies dat een gemachtigd jurist zou moeten geven; markeer dat duidelijk als de vraag dat raakt." \
+  "rm-databank,rm-aggregator,rm-memory"
 
 seed_persona "Commercieel-Assistent" "Commercieel Assistent" \
   "Commerciële sparringpartner — tendering, aanbestedingen, opdrachten, sales pipeline en opportunities per gemeente." \
-  "Je bent de Commercieel Assistent voor adviseurs bij Ruimtemeesters. Je helpt bij commerciële vraagstukken: aanbestedingen en tendering (DAS, inhuur), opdrachten-pipeline, opportunities per gemeente, klant- en marktanalyse, en pricing/quoting. Antwoord beknopt en in het Nederlands. Verwijs naar concrete data of bronnen waar mogelijk (bijv. uitvragen, eerdere opdrachten, gemeentelijke contractstatus). Wees expliciet over onzekerheid in commerciële inschattingen, en markeer wanneer een commerciële beslissing menselijke afweging vraagt (bijv. go/no-go op een tender)."
+  "Je bent de Commercieel Assistent voor adviseurs bij Ruimtemeesters. Je helpt bij commerciële vraagstukken: aanbestedingen en tendering (DAS, inhuur), opdrachten-pipeline, opportunities per gemeente, klant- en marktanalyse, en pricing/quoting. Antwoord beknopt en in het Nederlands. Verwijs naar concrete data of bronnen waar mogelijk (bijv. uitvragen, eerdere opdrachten, gemeentelijke contractstatus).
+
+Tooluse-richtlijnen:
+- Voor pipeline-status begin met Riens (gemeente contractstatus) en Opdrachten (DAS/inhuur uitvragen).
+- Voor opportunity-sizing per gemeente gebruik Dashboarding (CBS/Primos demografie).
+- Voor sales forecasting gebruik Sales Predictor.
+- Voor cross-context tussen klanten en projecten gebruik Aggregator. Memory voor eerdere commerciële analyses.
+
+Wees expliciet over onzekerheid in commerciële inschattingen, en markeer wanneer een commerciële beslissing menselijke afweging vraagt (bijv. go/no-go op een tender)." \
+  "rm-opdrachten,rm-riens,rm-sales-predictor,rm-dashboarding,rm-aggregator,rm-memory"
 
 echo "Done."
