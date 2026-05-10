@@ -201,7 +201,7 @@
 								alt={item?.data?.name ?? item.id}
 								class="rounded-full size-5 items-center mr-2"
 								on:error={(e) => {
-									e.currentTarget.src = '/favicon.png';
+									e.currentTarget.src = '/brand-assets/ralph-generic.jpg';
 								}}
 							/>
 						{:else if item.type === 'user'}
@@ -210,7 +210,7 @@
 								alt={item?.label ?? item.id}
 								class="rounded-full size-5 items-center mr-2"
 								on:error={(e) => {
-									e.currentTarget.src = '/favicon.png';
+									e.currentTarget.src = '/brand-assets/ralph-generic.jpg';
 								}}
 							/>
 						{/if}

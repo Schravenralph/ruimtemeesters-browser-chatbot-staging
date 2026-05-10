@@ -182,7 +182,7 @@
 									alt={model.name}
 									class="size-5 rounded-full object-cover shrink-0"
 									on:error={(e) => {
-										e.target.src = '/favicon.png';
+										e.target.src = '/brand-assets/ralph-generic.jpg';
 									}}
 								/>
 								<Tooltip content={`${model.name} (${model.id})`} placement="top-start">

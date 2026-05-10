@@ -379,7 +379,7 @@
 										src={`${WEBUI_API_BASE_URL}/users/${user.id}/profile/image`}
 										alt="user"
 										on:error={(e) => {
-											e.currentTarget.src = '/favicon.png';
+											e.currentTarget.src = '/brand-assets/ralph-generic.jpg';
 										}}
 									/>
 								</ProfilePreview>

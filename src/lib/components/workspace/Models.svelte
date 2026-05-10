@@ -602,7 +602,7 @@
 												alt="modelfile profile"
 												class=" rounded-2xl size-12 object-cover"
 												on:error={(e) => {
-													e.target.src = '/favicon.png';
+													e.target.src = '/brand-assets/ralph-generic.jpg';
 												}}
 											/>
 										</div>

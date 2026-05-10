@@ -87,7 +87,7 @@
 						alt={model?.name ?? model.id}
 						class="rounded-full size-5 items-center mr-2"
 						on:error={(e) => {
-							e.currentTarget.src = '/favicon.png';
+							e.currentTarget.src = '/brand-assets/ralph-generic.jpg';
 						}}
 					/>
 					<div class="truncate">

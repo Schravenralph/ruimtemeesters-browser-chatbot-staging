@@ -243,7 +243,7 @@
 								message.reply_to_message.meta.model_id}
 							class="size-4 ml-0.5 rounded-full object-cover"
 							on:error={(e) => {
-								e.currentTarget.src = '/favicon.png';
+								e.currentTarget.src = '/brand-assets/ralph-generic.jpg';
 							}}
 						/>
 					{:else}
@@ -282,7 +282,7 @@
 							alt={message.meta.model_name ?? message.meta.model_id}
 							class="size-8 translate-y-1 ml-0.5 object-cover rounded-full"
 							on:error={(e) => {
-								e.currentTarget.src = '/favicon.png';
+								e.currentTarget.src = '/brand-assets/ralph-generic.jpg';
 							}}
 						/>
 					{:else if message.user?.role === 'webhook'}
