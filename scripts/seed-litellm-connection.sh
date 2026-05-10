@@ -215,8 +215,12 @@ seed_persona() {
   local system_prompt="$4"
 
   # Best-effort delete first so re-runs apply prompt edits cleanly.
-  curl -sS -X POST "$HOST/api/v1/models/model/delete?id=$id" \
-    -H "Authorization: Bearer $TOKEN" >/dev/null 2>&1 || true
+  # Body shape is `{"id": "..."}` per ModelIdForm in routers/models.py;
+  # the earlier query-string variant returned 401 silently.
+  curl -sS -X POST "$HOST/api/v1/models/model/delete" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"id\": \"$id\"}" >/dev/null 2>&1 || true
 
   local body
   body=$(ID="$id" NAME="$display_name" DESC="$description" SYS="$system_prompt" python3 - <<'PY'
