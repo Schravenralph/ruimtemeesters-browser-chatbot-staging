@@ -3,27 +3,36 @@
 # After cutover (ADR-0010 build order step 2), this is the single endpoint
 # OpenWebUI talks to. All provider keys live here, not in OpenWebUI.
 #
-# Two RM personas, both backed by Claude Opus 4.7 — the persona difference
-# (system prompt, name, description) is set on the OpenWebUI Model row,
-# not at this layer. LiteLLM only does the routing.
+# Three RM personas, all backed by Claude Opus 4.7 — the persona difference
+# (display name, description, system prompt) lives on the OpenWebUI Model
+# row, not at this layer. LiteLLM only does the routing.
 #
-#   - `RO-Bot`: assistent voor RO-adviseurs (ruimtelijke ordening / BOPA /
-#     omgevingsplannen).
-#   - `JURA`: juridisch uitmuntende robot-assistent (Omgevingswet, Awb,
+#   - `RO-Assistent`: ruimtelijke ordening (BOPA, omgevingsplannen).
+#   - `Juridisch-Assistent`: juridische zaken (Omgevingswet, Awb, Wro,
 #     jurisprudentie).
+#   - `Commercieel-Assistent`: commercieel (tendering, aanbestedingen,
+#     sales pipeline, opportunities per gemeente).
 #
-# No extended-thinking config here — both run Opus in default mode (no
-# `thinking` block) which is the cost-effective sweet spot. Per-model
-# tuning (thinking budget, etc.) is a follow-up; tracked in the GH issue
-# linked from this commit.
+# Routing keys use hyphens (no spaces) for safe URL handling. Display
+# names ("RO Assistent", "Juridisch Assistent", "Commercieel Assistent")
+# are set on the OWUI Model rows by scripts/seed-litellm-connection.sh.
+#
+# No extended-thinking config here — all three run Opus in default mode
+# (no `thinking` block) which is the cost-effective sweet spot. Per-model
+# tuning (thinking budget, etc.) is a follow-up tracked in #79.
 
 model_list:
-  - model_name: RO-Bot
+  - model_name: RO-Assistent
     litellm_params:
       model: anthropic/claude-opus-4-7
       api_key: os.environ/ANTHROPIC_API_KEY
 
-  - model_name: JURA
+  - model_name: Juridisch-Assistent
+    litellm_params:
+      model: anthropic/claude-opus-4-7
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: Commercieel-Assistent
     litellm_params:
       model: anthropic/claude-opus-4-7
       api_key: os.environ/ANTHROPIC_API_KEY

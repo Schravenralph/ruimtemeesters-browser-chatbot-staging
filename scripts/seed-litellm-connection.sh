@@ -34,14 +34,19 @@
 #   APP_CONTAINER=rm-chatbot
 #   DB_CONTAINER=rm-chatbot-db
 #   ADMIN_USER_ID=<uuid>             (defaults to first admin row in DB)
-#   DEFAULT_MODEL=RO-Bot              (must match a model_name in litellm/config.yaml)
+#   DEFAULT_MODEL=RO-Assistent        (must match a model_name in litellm/config.yaml)
 
 set -euo pipefail
 
 HOST="${HOST:-http://localhost:3333}"
 APP_CONTAINER="${APP_CONTAINER:-rm-chatbot}"
 DB_CONTAINER="${DB_CONTAINER:-rm-chatbot-db}"
-DEFAULT_MODEL="${DEFAULT_MODEL:-RO-Bot}"
+DEFAULT_MODEL="${DEFAULT_MODEL:-RO-Assistent}"
+
+# Persona Model rows we no longer want around. Cleared at the start of the
+# persona-seeding phase below so they don't linger in the dropdown after
+# a rename. Add to this list whenever a persona id is retired.
+LEGACY_PERSONA_IDS="RO-Bot JURA Schets Meester"
 
 # Resolve admin user id from DB if not provided.
 ADMIN_USER_ID="${ADMIN_USER_ID:-}"
@@ -95,11 +100,11 @@ configs = {
         'enable': True,
         'connection_type': 'external',
         'tags': [{'name': 'Ruimtemeesters AI'}],
-        # Two RM personas. IDs must match `model_name` keys in
+        # Three RM personas. IDs must match `model_name` keys in
         # litellm/config.yaml (LiteLLM uses these as routing keys).
         # The display name + system prompt come from the OWUI Model rows
         # seeded later in this script.
-        'model_ids': ['RO-Bot', 'JURA'],
+        'model_ids': ['RO-Assistent', 'Juridisch-Assistent', 'Commercieel-Assistent'],
     },
 }
 
@@ -133,8 +138,8 @@ models = cfgs.get('0', {}).get('model_ids', [])
 if urls != ['http://litellm:4000/v1']:
     print(f'ERROR: expected single litellm URL, got {urls}', file=sys.stderr)
     sys.exit(2)
-if len(models) != 2:
-    print(f'ERROR: expected 2 codenamed models, got {len(models)}', file=sys.stderr)
+if len(models) != 3:
+    print(f'ERROR: expected 3 personas, got {len(models)}', file=sys.stderr)
     sys.exit(2)
 
 print('seeded litellm connection: ' + ', '.join(models))
@@ -167,7 +172,7 @@ cfg.setdefault('ui', {})['default_models'] = os.environ['DEFAULT_MODEL']
 # Without these, an existing DB has `ollama.enable=true` (auto-discovers
 # any local Ollama models like qwen) and `evaluation.arena.enable=true`
 # (admin A/B-comparison models), both of which would surface in the user
-# picker alongside RO-Bot/JURA.
+# picker alongside RO/Juridisch/Commercieel Assistent.
 cfg.setdefault('ollama', {})['enable'] = False
 cfg.setdefault('evaluation', {}).setdefault('arena', {})['enable'] = False
 print(json.dumps({'config': cfg}))
@@ -267,14 +272,31 @@ print(f\"  seeded persona: {r.get('id')} -> {r.get('name')}\")
 "
 }
 
+echo "Cleaning up legacy persona Model rows..."
+for legacy_id in $LEGACY_PERSONA_IDS; do
+  resp=$(curl -sS -X POST "$HOST/api/v1/models/model/delete" \
+    -H "Authorization: Bearer $TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"id\": \"$legacy_id\"}" 2>&1 || true)
+  # `True` = a row was deleted, anything else (incl. 401 NOT_FOUND) means
+  # the legacy id wasn't around — silent skip rather than spam.
+  case "$resp" in
+    true) echo "  deleted legacy persona: $legacy_id" ;;
+  esac
+done
+
 echo "Seeding persona Model rows..."
 
-seed_persona "RO-Bot" "RO-Bot: Assistent voor RO-Adviseurs" \
+seed_persona "RO-Assistent" "RO Assistent" \
   "Sparringpartner voor ruimtelijke ordening — BOPA, omgevingsplannen, beleidsdocumenten en ruimtelijke vraagstukken." \
-  "Je bent RO-Bot, een AI-assistent voor RO-adviseurs (ruimtelijke ordening) bij Ruimtemeesters. Je helpt met BOPA-onderbouwingen, omgevingsplannen, beleidsdocumenten en ruimtelijke vraagstukken in Nederland onder de Omgevingswet. Antwoord beknopt en in het Nederlands. Gebruik vakjargon waar passend, en verwijs zo concreet mogelijk naar artikelen, beleidsbronnen of locaties. Wees expliciet over onzekerheid wanneer informatie ontbreekt of wanneer een ruimtelijke afweging om aanvullend onderzoek vraagt."
+  "Je bent de RO Assistent voor adviseurs bij Ruimtemeesters. Je helpt met BOPA-onderbouwingen, omgevingsplannen, beleidsdocumenten en ruimtelijke vraagstukken in Nederland onder de Omgevingswet. Antwoord beknopt en in het Nederlands. Gebruik vakjargon waar passend, en verwijs zo concreet mogelijk naar artikelen, beleidsbronnen of locaties. Wees expliciet over onzekerheid wanneer informatie ontbreekt of wanneer een ruimtelijke afweging om aanvullend onderzoek vraagt."
 
-seed_persona "JURA" "JURA: Juridisch Uitmuntende Robot-Assistent" \
+seed_persona "Juridisch-Assistent" "Juridisch Assistent" \
   "Juridische sparringpartner voor adviseurs — Omgevingswet, Awb, Wro en jurisprudentie." \
-  "Je bent JURA, een juridische AI-assistent voor adviseurs bij Ruimtemeesters. Je analyseert wet- en regelgeving (met name de Omgevingswet, Awb, en Wet ruimtelijke ordening), jurisprudentie en bestuurlijke besluiten. Antwoord precies en in het Nederlands. Citeer concrete artikelen of uitspraken (met vindplaats), maak onderscheid tussen vaste lijn en open normen, en wees expliciet over onzekerheid of bandbreedte in interpretatie. Geef geen advies dat een gemachtigd jurist zou moeten geven; markeer dat duidelijk als de vraag dat raakt."
+  "Je bent de Juridisch Assistent voor adviseurs bij Ruimtemeesters. Je analyseert wet- en regelgeving (met name de Omgevingswet, Awb, en Wet ruimtelijke ordening), jurisprudentie en bestuurlijke besluiten. Antwoord precies en in het Nederlands. Citeer concrete artikelen of uitspraken (met vindplaats), maak onderscheid tussen vaste lijn en open normen, en wees expliciet over onzekerheid of bandbreedte in interpretatie. Geef geen advies dat een gemachtigd jurist zou moeten geven; markeer dat duidelijk als de vraag dat raakt."
+
+seed_persona "Commercieel-Assistent" "Commercieel Assistent" \
+  "Commerciële sparringpartner — tendering, aanbestedingen, opdrachten, sales pipeline en opportunities per gemeente." \
+  "Je bent de Commercieel Assistent voor adviseurs bij Ruimtemeesters. Je helpt bij commerciële vraagstukken: aanbestedingen en tendering (DAS, inhuur), opdrachten-pipeline, opportunities per gemeente, klant- en marktanalyse, en pricing/quoting. Antwoord beknopt en in het Nederlands. Verwijs naar concrete data of bronnen waar mogelijk (bijv. uitvragen, eerdere opdrachten, gemeentelijke contractstatus). Wees expliciet over onzekerheid in commerciële inschattingen, en markeer wanneer een commerciële beslissing menselijke afweging vraagt (bijv. go/no-go op een tender)."
 
 echo "Done."

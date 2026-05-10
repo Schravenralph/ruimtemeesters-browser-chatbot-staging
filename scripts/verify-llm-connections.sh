@@ -16,7 +16,7 @@
 #   DB_CONTAINER=rm-chatbot-db
 #   ADMIN_USER_ID=<uuid>             (defaults to first admin row in DB)
 #   EXPECT_LITELLM_URL=http://litellm:4000/v1
-#   EXPECT_MODEL_COUNT=2     (codenamed surface: Schets + Meester)
+#   EXPECT_MODEL_COUNT=3     (RO + Juridisch + Commercieel Assistent)
 
 set -uo pipefail
 
@@ -24,7 +24,7 @@ HOST="${HOST:-http://localhost:3333}"
 APP_CONTAINER="${APP_CONTAINER:-rm-chatbot}"
 DB_CONTAINER="${DB_CONTAINER:-rm-chatbot-db}"
 EXPECT_LITELLM_URL="${EXPECT_LITELLM_URL:-http://litellm:4000/v1}"
-EXPECT_MODEL_COUNT="${EXPECT_MODEL_COUNT:-2}"
+EXPECT_MODEL_COUNT="${EXPECT_MODEL_COUNT:-3}"
 
 # Resolve admin user id from DB if not provided.
 ADMIN_USER_ID="${ADMIN_USER_ID:-}"
