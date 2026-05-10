@@ -407,9 +407,15 @@ def get_model_profile_image(id: str, user=Depends(get_verified_user)):
                 except Exception as e:
                     pass
 
-        return FileResponse(f'{STATIC_DIR}/favicon.png')
+        # RM brand fallback: env-shaped models (LiteLLM-proxied codenames
+        # like Schets / Meester) have no `model` DB row to carry a custom
+        # profile_image_url, so they fall through to here. Showing the
+        # OpenWebUI favicon next to the model name on the central
+        # placeholder gives away the white-label fork — serve the RM
+        # mascot instead so the welcome screen stays branded.
+        return FileResponse(f'{STATIC_DIR}/brand-assets/ralph-generic.jpg')
     else:
-        return FileResponse(f'{STATIC_DIR}/favicon.png')
+        return FileResponse(f'{STATIC_DIR}/brand-assets/ralph-generic.jpg')
 
 
 ############################
