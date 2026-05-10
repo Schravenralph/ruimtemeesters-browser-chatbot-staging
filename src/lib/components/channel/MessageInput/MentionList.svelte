@@ -210,7 +210,7 @@
 								alt={item?.label ?? item.id}
 								class="rounded-full size-5 items-center mr-2"
 								on:error={(e) => {
-									e.currentTarget.src = '/brand-assets/ralph-generic.jpg';
+									e.currentTarget.src = '/user.png';
 								}}
 							/>
 						{/if}
