@@ -12,14 +12,14 @@ Skills in `MCP-Servers/packages/memory/skills/company/` resolve a thema slug (e.
 
 ## Decision
 
-| # | Decision | Detail |
-|---|----------|--------|
-| 1 | **`RM_SCANS_ROOT` env var points to the Scan-repos parent directory** | Default in dev: `~/Projects/Ruimtemeesters-Thematische-Beleidsscans/`. In Docker: a mounted volume path, e.g. `/srv/rm-scans/`. The env var is the only configuration point. |
-| 2 | **The manifest lives at `${RM_SCANS_ROOT}/00-Scanmethode/themas.yaml`** | Single source of truth for slug → repo → persona → folder mapping. Resolved once per skill invocation. |
-| 3 | **Manifest schema is typed and versioned** | YAML with a `version` field. Schema documented in Scanmethode README; future changes are backwards-compatible or require a `version` bump. |
-| 4 | **Resolution helper lives in `MCP-Servers/packages/memory/`** | A single resolver module (TypeScript) the Company skills can call: `resolveThema(slug) → { repoName, persona, localPath, githubUrl }`. No skill markdown re-implements resolution. |
-| 5 | **Missing manifest or missing thema-repo is a hard error** | Skills that depend on a thema-repo MUST refuse to scan if the corpus isn't available, surfacing a clear message to the user. No silent degradation. Aligns with the "active nudging against premature conclusions" decision in Beleidsscan design. |
-| 6 | **Skill markdown declares thema dependencies in frontmatter** | A skill that needs thema-corpus content declares `requires_themas: ["{slug}"] \| "any"` so the runtime can pre-check availability before the conversation starts. |
+| #   | Decision                                                                | Detail                                                                                                                                                                                                                                             |
+| --- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **`RM_SCANS_ROOT` env var points to the Scan-repos parent directory**   | Default in dev: `~/Projects/Ruimtemeesters-Thematische-Beleidsscans/`. In Docker: a mounted volume path, e.g. `/srv/rm-scans/`. The env var is the only configuration point.                                                                       |
+| 2   | **The manifest lives at `${RM_SCANS_ROOT}/00-Scanmethode/themas.yaml`** | Single source of truth for slug → repo → persona → folder mapping. Resolved once per skill invocation.                                                                                                                                             |
+| 3   | **Manifest schema is typed and versioned**                              | YAML with a `version` field. Schema documented in Scanmethode README; future changes are backwards-compatible or require a `version` bump.                                                                                                         |
+| 4   | **Resolution helper lives in `MCP-Servers/packages/memory/`**           | A single resolver module (TypeScript) the Company skills can call: `resolveThema(slug) → { repoName, persona, localPath, githubUrl }`. No skill markdown re-implements resolution.                                                                 |
+| 5   | **Missing manifest or missing thema-repo is a hard error**              | Skills that depend on a thema-repo MUST refuse to scan if the corpus isn't available, surfacing a clear message to the user. No silent degradation. Aligns with the "active nudging against premature conclusions" decision in Beleidsscan design. |
+| 6   | **Skill markdown declares thema dependencies in frontmatter**           | A skill that needs thema-corpus content declares `requires_themas: ["{slug}"] \| "any"` so the runtime can pre-check availability before the conversation starts.                                                                                  |
 
 ### Manifest shape (informative — exact schema in Scanmethode)
 
@@ -28,14 +28,14 @@ version: 1
 themas:
   - slug: volkshuisvesting
     number: 1
-    title: "Wonen / Volkshuisvesting"
+    title: 'Wonen / Volkshuisvesting'
     github_repo: Ruimtemeesters-Scan-Volkshuisvesting
     local_folder: 01-Scan-Volkshuisvesting
     persona: ro-adviseur
     cross_refs: [arbeidsmigranten-huisvesting]
   - slug: omgevingsplan
     number: 15
-    title: "Omgevingsplan"
+    title: 'Omgevingsplan'
     github_repo: Ruimtemeesters-Scan-Omgevingsplan
     local_folder: 15-Scan-Omgevingsplan
     persona: juridisch-adviseur
@@ -73,15 +73,15 @@ Step 5's check is per-invocation; in Docker prod this catches "thema-repo not sy
 
 ## Consequences
 
-| Area | Consequence |
-|---|---|
-| Skill markdown | Each thema-consuming skill declares `requires_themas` in frontmatter. Skills never read absolute paths. |
-| MCP-Servers | New resolver module in `packages/memory/`. Unit-tested with a fixture manifest. |
-| Scanmethode meta-repo | Maintains `themas.yaml` as the canonical manifest. Updates to it are version-controlled. Schema doc in the repo's README. |
-| Browser-Chatbot Docker compose | Adds `RM_SCANS_ROOT` env var with a sensible default mount path; documents the mount in compose comments. |
-| Dev environment | Developers clone the 18 + Scanmethode into `~/Projects/Ruimtemeesters-Thematische-Beleidsscans/` and set `RM_SCANS_ROOT` (or use the default). |
-| Prod deployment | The corpus needs to be available at `$RM_SCANS_ROOT` inside the container. Mechanism deferred — but the contract (env var + manifest + folder layout) is locked. |
-| Reviewers | New check: thema-consuming skill PRs declare `requires_themas` and call `resolveThema`; raw filesystem reads against thema paths are flagged. |
+| Area                           | Consequence                                                                                                                                                      |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Skill markdown                 | Each thema-consuming skill declares `requires_themas` in frontmatter. Skills never read absolute paths.                                                          |
+| MCP-Servers                    | New resolver module in `packages/memory/`. Unit-tested with a fixture manifest.                                                                                  |
+| Scanmethode meta-repo          | Maintains `themas.yaml` as the canonical manifest. Updates to it are version-controlled. Schema doc in the repo's README.                                        |
+| Browser-Chatbot Docker compose | Adds `RM_SCANS_ROOT` env var with a sensible default mount path; documents the mount in compose comments.                                                        |
+| Dev environment                | Developers clone the 18 + Scanmethode into `~/Projects/Ruimtemeesters-Thematische-Beleidsscans/` and set `RM_SCANS_ROOT` (or use the default).                   |
+| Prod deployment                | The corpus needs to be available at `$RM_SCANS_ROOT` inside the container. Mechanism deferred — but the contract (env var + manifest + folder layout) is locked. |
+| Reviewers                      | New check: thema-consuming skill PRs declare `requires_themas` and call `resolveThema`; raw filesystem reads against thema paths are flagged.                    |
 
 ## Open items (not blocked by this ADR)
 
