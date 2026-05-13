@@ -72,7 +72,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-rmchatbot}:${POSTGRES_PASSWORD:-rmchatbot}@chatbot-db:5432/${POSTGRES_DB:-rmchatbot}
       - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY}
       # --- Branding ---
-      - WEBUI_NAME=${WEBUI_NAME:-Ruimtemeesters AI Chat}
+      - WEBUI_NAME=${WEBUI_NAME:-Ruimtemeesters AI Chatbot}
       - WEBUI_FAVICON_URL=/brand-assets/icon-blue.png
       # Default UI language for first-time visitors (no localStorage `locale`).
       # Returning users keep whatever they previously selected. Override via
