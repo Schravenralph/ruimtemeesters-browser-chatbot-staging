@@ -41,7 +41,11 @@ from open_webui.models.users import UserModel
 from open_webui.models.groups import Groups
 from open_webui.models.access_grants import AccessGrants
 from open_webui.utils.plugin import load_tool_module_by_id
-from open_webui.utils.access_control import has_access, has_connection_access
+from open_webui.utils.access_control import (
+    has_access,
+    has_connection_access,
+    has_tool_server_connection_access,
+)
 from open_webui.config import BYPASS_ADMIN_ACCESS_CONTROL
 from open_webui.env import (
     AIOHTTP_CLIENT_TIMEOUT,
@@ -277,8 +281,10 @@ async def get_tools(request: Request, tool_ids: list[str], user: UserModel, extr
                         continue
                     tool_server_connection = connections[tool_server_idx]
 
-                    # Check access control for tool server
-                    if not has_connection_access(user, tool_server_connection, user_group_ids):
+                    # Check access control for tool server (tool-server-scoped;
+                    # honours TOOL_SERVERS_DEFAULT_PUBLIC for env-wired MCPs
+                    # without explicit grants)
+                    if not has_tool_server_connection_access(user, tool_server_connection, user_group_ids):
                         log.warning(f'Access denied to tool server {server_id} for user {user.id}')
                         continue
 

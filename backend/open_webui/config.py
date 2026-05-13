@@ -1585,9 +1585,7 @@ BYPASS_ADMIN_ACCESS_CONTROL = (
 # upstream "no grants = admin-only" semantics; the RM deployment opts in via
 # docker-compose.rm.yaml so env-wired MCPs work for non-admin users without
 # requiring DB writes.
-TOOL_SERVERS_DEFAULT_PUBLIC = (
-    os.environ.get('TOOL_SERVERS_DEFAULT_PUBLIC', 'False').lower() == 'true'
-)
+TOOL_SERVERS_DEFAULT_PUBLIC = os.environ.get('TOOL_SERVERS_DEFAULT_PUBLIC', 'False').lower() == 'true'
 
 ENABLE_ADMIN_CHAT_ACCESS = os.environ.get('ENABLE_ADMIN_CHAT_ACCESS', 'True').lower() == 'true'
 
