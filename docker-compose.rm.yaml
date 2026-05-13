@@ -169,6 +169,14 @@ services:
       - SCARF_NO_ANALYTICS=true
       - DO_NOT_TRACK=true
       - ANONYMIZED_TELEMETRY=false
+      # --- Web search (RAG over the open web) ---
+      # Default: duckduckgo (no API key). Upgrade by setting WEB_SEARCH_ENGINE=brave
+      # plus BRAVE_SEARCH_API_KEY in .env — see .env.rm.example.
+      # PersistentConfig: env wins only when the DB row is unset (fresh install).
+      # For existing instances, flip via Admin → Settings → Web Search after restart.
+      - ENABLE_WEB_SEARCH=${ENABLE_WEB_SEARCH:-True}
+      - WEB_SEARCH_ENGINE=${WEB_SEARCH_ENGINE:-duckduckgo}
+      - BRAVE_SEARCH_API_KEY=${BRAVE_SEARCH_API_KEY:-}
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
