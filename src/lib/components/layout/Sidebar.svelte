@@ -962,18 +962,18 @@
 					<div class="px-[0.4375rem] flex justify-center text-gray-800 dark:text-gray-200">
 						<a
 							id="sidebar-new-chat-button"
-							class="group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none"
+							class="group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none"
 							href="/"
 							draggable="false"
 							on:click={newChatHandler}
 							aria-label={$i18n.t('New Chat')}
 						>
 							<div class="self-center">
-								<PencilSquare className=" size-4.5" strokeWidth="2" />
+								<PencilSquare className=" size-6" strokeWidth="2" />
 							</div>
 
 							<div class="flex flex-1 self-center translate-y-[0.5px]">
-								<div class=" self-center text-sm font-primary">{$i18n.t('New Chat')}</div>
+								<div class=" self-center text-lg font-primary">{$i18n.t('New Chat')}</div>
 							</div>
 
 							<HotkeyHint name="newChat" className=" group-hover:visible invisible" />
@@ -983,7 +983,7 @@
 					<div class="px-[0.4375rem] flex justify-center text-gray-800 dark:text-gray-200">
 						<button
 							id="sidebar-search-button"
-							class="group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none"
+							class="group grow flex items-center space-x-3 rounded-2xl px-2.5 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-900 transition outline-none"
 							on:click={() => {
 								showSearch.set(true);
 							}}
@@ -991,11 +991,11 @@
 							aria-label={$i18n.t('Search')}
 						>
 							<div class="self-center">
-								<Search strokeWidth="2" className="size-4.5" />
+								<Search strokeWidth="2" className="size-6" />
 							</div>
 
 							<div class="flex flex-1 self-center translate-y-[0.5px]">
-								<div class=" self-center text-sm font-primary">{$i18n.t('Search')}</div>
+								<div class=" self-center text-lg font-primary">{$i18n.t('Search')}</div>
 							</div>
 							<HotkeyHint name="search" className=" group-hover:visible invisible" />
 						</button>
@@ -1005,18 +1005,18 @@
 						<div class="px-[0.4375rem] flex justify-center text-gray-800 dark:text-gray-200">
 							<a
 								id="sidebar-notes-button"
-								class="grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
+								class="grow flex items-center space-x-3 rounded-2xl px-2.5 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
 								href="/notes"
 								on:click={itemClickHandler}
 								draggable="false"
 								aria-label={$i18n.t('Notes')}
 							>
 								<div class="self-center">
-									<Note className="size-4.5" strokeWidth="2" />
+									<Note className="size-6" strokeWidth="2" />
 								</div>
 
 								<div class="flex self-center translate-y-[0.5px]">
-									<div class=" self-center text-sm font-primary">{$i18n.t('Notes')}</div>
+									<div class=" self-center text-lg font-primary">{$i18n.t('Notes')}</div>
 								</div>
 							</a>
 						</div>
@@ -1026,7 +1026,7 @@
 						<div class="px-[0.4375rem] flex justify-center text-gray-800 dark:text-gray-200">
 							<a
 								id="sidebar-workspace-button"
-								class="grow flex items-center space-x-3 rounded-2xl px-2.5 py-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
+								class="grow flex items-center space-x-3 rounded-2xl px-2.5 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-900 transition"
 								href="/workspace"
 								on:click={itemClickHandler}
 								draggable="false"
@@ -1039,7 +1039,7 @@
 										viewBox="0 0 24 24"
 										stroke-width="2"
 										stroke="currentColor"
-										class="size-4.5"
+										class="size-6"
 									>
 										<path
 											stroke-linecap="round"
@@ -1050,7 +1050,7 @@
 								</div>
 
 								<div class="flex self-center translate-y-[0.5px]">
-									<div class=" self-center text-sm font-primary">{$i18n.t('Workspace')}</div>
+									<div class=" self-center text-lg font-primary">{$i18n.t('Workspace')}</div>
 								</div>
 							</a>
 						</div>

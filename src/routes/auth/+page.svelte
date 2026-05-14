@@ -252,18 +252,7 @@
 					</div>
 				{:else}
 					<div class="my-auto flex flex-col justify-center items-center">
-						<div class=" sm:max-w-md my-auto pb-10 w-full dark:text-gray-100">
-							{#if $config?.metadata?.auth_logo_position === 'center'}
-								<div class="flex justify-center mb-6">
-									<img
-										id="logo"
-										crossorigin="anonymous"
-										src="{WEBUI_BASE_URL}/brand-assets/icon-blue.png"
-										class="size-24 rounded-full"
-										alt="{$WEBUI_NAME} logo"
-									/>
-								</div>
-							{/if}
+						<div class=" sm:max-w-xl my-auto pb-10 w-full dark:text-gray-100">
 							<form
 								class=" flex flex-col justify-center"
 								on:submit={(e) => {
@@ -271,8 +260,15 @@
 									submitHandler();
 								}}
 							>
-								<div class="mb-1">
-									<div class="brand-display text-3xl lg:text-4xl">
+								<div class="mb-4 flex items-center gap-5">
+									<img
+										id="logo"
+										crossorigin="anonymous"
+										src="{WEBUI_BASE_URL}/brand-assets/icon-blue.png"
+										class="size-20 lg:size-24 shrink-0 rounded-full"
+										alt="{$WEBUI_NAME} logo"
+									/>
+									<div class="brand-display text-5xl lg:text-7xl leading-[1.05]">
 										{#if $config?.onboarding ?? false}
 											{$i18n.t(`Get started with {{WEBUI_NAME}}`, { WEBUI_NAME: $WEBUI_NAME })}
 										{:else if mode === 'ldap'}
@@ -283,6 +279,8 @@
 											{$i18n.t(`Sign up to {{WEBUI_NAME}}`, { WEBUI_NAME: $WEBUI_NAME })}
 										{/if}
 									</div>
+								</div>
+								<div class="mb-1">
 
 									{#if $config?.onboarding ?? false}
 										<div class="mt-1 text-xs font-medium text-gray-600 dark:text-gray-500">
