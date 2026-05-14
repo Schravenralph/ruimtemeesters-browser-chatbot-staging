@@ -6,32 +6,19 @@
 	import { WEBUI_NAME } from '$lib/stores';
 
 	import Marquee from './common/Marquee.svelte';
-	import SlideShow from './common/SlideShow.svelte';
 	import ArrowRightCircle from './icons/ArrowRightCircle.svelte';
 
 	export let show = true;
 	export let getStartedHandler = () => {};
 
+	let logoSrc = `${WEBUI_BASE_URL}/brand-assets/logo-blue.png`;
+
 	function setLogoImage() {
-		const logo = document.getElementById('logo');
-
-		if (logo) {
-			const isDarkMode = document.documentElement.classList.contains('dark');
-
-			if (isDarkMode) {
-				const darkImage = new Image();
-				darkImage.src = `${WEBUI_BASE_URL}/brand-assets/icon-white.png`;
-
-				darkImage.onload = () => {
-					logo.src = `${WEBUI_BASE_URL}/brand-assets/icon-white.png`;
-					logo.style.filter = '';
-				};
-
-				darkImage.onerror = () => {
-					logo.style.filter = 'invert(1)';
-				};
-			}
-		}
+		if (typeof document === 'undefined') return;
+		const isDarkMode = document.documentElement.classList.contains('dark');
+		logoSrc = isDarkMode
+			? `${WEBUI_BASE_URL}/brand-assets/logo-white.png`
+			: `${WEBUI_BASE_URL}/brand-assets/logo-blue.png`;
 	}
 
 	$: if (show) {
@@ -40,65 +27,56 @@
 </script>
 
 {#if show}
-	<div class="w-full h-screen max-h-[100dvh] text-white relative">
-		<div class="fixed m-10 z-50">
-			<div class="flex space-x-2">
-				<div class=" self-center">
+	<div
+		class="w-full h-screen max-h-[100dvh] relative bg-rm-white text-rm-raisin dark:bg-rm-raisin dark:text-rm-white"
+	>
+		<div class="relative w-full h-screen max-h-[100dvh] flex z-10">
+			<div class="flex flex-col w-full items-center justify-between py-16 lg:py-20 text-center">
+				<!-- Big centered wordmark -->
+				<div class="flex flex-col items-center gap-6 mt-8">
 					<img
-						id="logo"
 						crossorigin="anonymous"
-						src="{WEBUI_BASE_URL}/brand-assets/icon-blue.png"
-						class=" w-6 rounded-full"
+						src={logoSrc}
+						class="h-20 lg:h-28 w-auto"
 						alt="{$WEBUI_NAME} logo"
 					/>
 				</div>
-			</div>
-		</div>
 
-		<SlideShow duration={5000} />
-
-		<div
-			class="w-full h-full absolute top-0 left-0 bg-linear-to-t from-20% from-black to-transparent"
-		></div>
-
-		<div class="w-full h-full absolute top-0 left-0 backdrop-blur-xs bg-black/50"></div>
-
-		<div class="relative bg-transparent w-full h-screen max-h-[100dvh] flex z-10">
-			<div class="flex flex-col justify-end w-full items-center pb-10 text-center">
-				<div class="text-5xl lg:text-7xl font-secondary">
-					<Marquee
-						duration={5000}
-						words={[
-							$i18n.t('Explore the cosmos'),
-							$i18n.t('Unlock mysteries'),
-							$i18n.t('Chart new frontiers'),
-							$i18n.t('Dive into knowledge'),
-							$i18n.t('Discover wonders'),
-							$i18n.t('Ignite curiosity'),
-							$i18n.t('Forge new paths'),
-							$i18n.t('Unravel secrets'),
-							$i18n.t('Pioneer insights'),
-							$i18n.t('Embark on adventures')
-						]}
-					/>
-
-					<div class="mt-0.5">{$i18n.t(`wherever you are`)}</div>
+				<!-- Display title — Abhaya Libre Extra Bold -->
+				<div class="flex flex-col items-center gap-3 max-w-3xl px-6">
+					<h1 class="brand-display text-5xl lg:text-7xl leading-[1.05]">
+						{$WEBUI_NAME}
+					</h1>
+					<div class="font-secondary text-3xl lg:text-4xl text-rm-blue dark:text-rm-pumpkin">
+						<Marquee
+							duration={4000}
+							words={[
+								$i18n.t('Ruimtelijke onderbouwingen, sneller.'),
+								$i18n.t('Beleid lezen. Antwoorden geven.'),
+								$i18n.t('Toetsen, motiveren, doorzetten.'),
+								$i18n.t('Van regelwerk naar besluit.'),
+								$i18n.t('Een collega die meekijkt — 24/7.')
+							]}
+						/>
+					</div>
+					<p class="font-primary text-base lg:text-lg opacity-80 mt-2">
+						{$i18n.t('Kleine acties. Grote impact.')}
+					</p>
 				</div>
 
-				<div class="flex justify-center mt-8">
-					<div class="flex flex-col justify-center items-center">
-						<button
-							aria-label={$i18n.t('Get started')}
-							class="relative z-20 flex p-1 rounded-full bg-white/5 hover:bg-white/10 transition font-medium text-sm"
-							on:click={() => {
-								getStartedHandler();
-							}}
-						>
-							<ArrowRightCircle className="size-6" aria-hidden="true" />
-						</button>
-						<div class="mt-1.5 font-primary text-base font-medium" aria-hidden="true">
-							{$i18n.t(`Get started`)}
-						</div>
+				<!-- CTA -->
+				<div class="flex flex-col items-center">
+					<button
+						aria-label={$i18n.t('Get started')}
+						class="relative z-20 inline-flex items-center justify-center w-14 h-14 rounded-full bg-rm-blue text-white hover:bg-rm-pumpkin transition-colors shadow-lg"
+						on:click={() => {
+							getStartedHandler();
+						}}
+					>
+						<ArrowRightCircle className="size-7" aria-hidden="true" />
+					</button>
+					<div class="mt-2 font-primary text-sm uppercase tracking-widest" aria-hidden="true">
+						{$i18n.t(`Get started`)}
 					</div>
 				</div>
 			</div>

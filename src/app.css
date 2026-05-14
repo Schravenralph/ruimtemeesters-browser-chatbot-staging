@@ -1,6 +1,12 @@
 @reference "./tailwind.css";
 
 @font-face {
+	font-family: 'Futura PT Book';
+	src: url('/assets/fonts/FuturaPT-Book.ttf') format('truetype');
+	font-display: swap;
+}
+
+@font-face {
 	font-family: 'Inter';
 	src: url('/assets/fonts/Inter-Variable.ttf');
 	font-display: swap;
@@ -71,7 +77,13 @@ code {
 }
 
 .font-secondary {
-	font-family: 'InstrumentSerif', sans-serif;
+	font-family: 'Abhaya Libre', 'InstrumentSerif', serif;
+}
+
+.brand-display {
+	font-family: 'Abhaya Libre', 'InstrumentSerif', serif;
+	font-weight: 800;
+	letter-spacing: 0.01em;
 }
 
 .marked a {
@@ -119,7 +131,7 @@ textarea::placeholder {
 }
 
 .font-primary {
-	font-family: 'Archivo', 'Vazirmatn', sans-serif;
+	font-family: 'Futura PT Book', 'Archivo', 'Vazirmatn', sans-serif;
 }
 
 .drag-region {

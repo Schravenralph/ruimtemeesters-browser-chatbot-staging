@@ -22,6 +22,16 @@
 		<meta name="theme-color" content="#161620" />
 		<meta name="robots" content="noindex,nofollow" />
 
+		<!-- Brand display face: Abhaya Libre Extra Bold (weight 800) for the
+		     "Ruimtemeesters AI Chatbot" title and onboarding marquee. Body face
+		     (Futura PT Book) is self-hosted from /assets/fonts/. -->
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=Abhaya+Libre:wght@400;600;700;800&display=swap"
+			rel="stylesheet"
+		/>
+
 		<script src="/static/loader.js" defer crossorigin="use-credentials"></script>
 		<link rel="stylesheet" href="/static/custom.css" crossorigin="use-credentials" />
 
@@ -80,7 +90,7 @@
 				const logo = document.createElement('img');
 				logo.id = 'logo';
 				logo.style =
-					'position: absolute; width: auto; height: 6rem; top: 44%; left: 50%; transform: translateX(-50%); display:block;';
+					'position: absolute; width: auto; height: 9rem; top: 42%; left: 50%; transform: translateX(-50%); display:block;';
 				logo.src = isDarkMode ? '/brand-assets/logo-white.png' : '/brand-assets/logo-blue.png';
 
 				document.addEventListener('DOMContentLoaded', function () {
