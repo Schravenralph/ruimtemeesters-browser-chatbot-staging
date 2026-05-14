@@ -901,7 +901,7 @@
 				class="sidebar px-[0.5625rem] pt-2 pb-1.5 flex justify-between space-x-1 text-gray-600 dark:text-gray-400 sticky top-0 z-10 -mb-3"
 			>
 				<a
-					class="flex items-center rounded-xl size-9 h-full justify-center hover:bg-gray-100/50 dark:hover:bg-gray-850/50 transition no-drag-region"
+					class="flex items-center rounded-xl size-14 h-full justify-center hover:bg-gray-100/50 dark:hover:bg-gray-850/50 transition no-drag-region"
 					href="/"
 					draggable="false"
 					on:click={newChatHandler}
@@ -909,7 +909,7 @@
 					<img
 						crossorigin="anonymous"
 						src="{WEBUI_BASE_URL}/brand-assets/icon-blue.png"
-						class="sidebar-new-chat-icon size-9 rounded-full"
+						class="sidebar-new-chat-icon size-14 rounded-full"
 						alt="{$WEBUI_NAME} logo"
 					/>
 				</a>
@@ -917,7 +917,7 @@
 				<a href="/" class="flex flex-1 px-1.5" on:click={newChatHandler}>
 					<div
 						id="sidebar-webui-name"
-						class=" self-center text-gray-850 dark:text-white brand-display text-base"
+						class=" self-center text-gray-850 dark:text-white brand-display text-2xl leading-tight"
 					>
 						{$WEBUI_NAME}
 					</div>
