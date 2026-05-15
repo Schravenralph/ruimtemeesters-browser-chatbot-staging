@@ -31,9 +31,14 @@
 #   0  all stages pass (strict mode: all hard + soft)
 #   1  stage 1 (services) failed
 #   2  stage 2 (skill injection) failed
-#   3  stage 3 (project binding) failed
 #   4  stage 4 (output canon) failed
 #   5  setup / auth failure
+#   6  one or more soft assertions failed (only in STRICT=1; can come
+#      from any of stages 2, 3, or 4 — see preceding WARN lines for which)
+#
+# Note: stage 3 (project binding) is currently soft-only — it never
+# returns a non-zero stage exit. A stage-3 binding miss surfaces as
+# exit 6 in STRICT mode, alongside any other soft fails.
 
 set -uo pipefail
 
@@ -241,6 +246,10 @@ stage3() {
 JSON
 )
 
+  # Normalize: prod default already ends in /mcp, local does not.
+  # Strip any trailing /mcp before appending so we always hit exactly one.
+  local mcp_endpoint="${MEMORY_MCP_URL%/mcp}/mcp"
+
   local mcp_resp
   mcp_resp=$(curl -sS --max-time 10 \
     -H "Authorization: Bearer ${MEMORY_MCP_TOKEN:-$TOKEN}" \
@@ -248,7 +257,7 @@ JSON
     -H "Accept: application/json, text/event-stream" \
     -H "X-Thread-Id: $CHAT_ID" \
     -d "$mcp_payload" \
-    "$MEMORY_MCP_URL/mcp" 2>&1 || true)
+    "$mcp_endpoint" 2>&1 || true)
 
   local project_id
   project_id=$(echo "$mcp_resp" \
@@ -354,7 +363,7 @@ echo
 
 if [ "$SOFT_FAILS" -gt 0 ]; then
   if [ "$STRICT" = "1" ]; then
-    fail "$SOFT_FAILS soft assertions failed (STRICT=1)"; exit 3
+    fail "$SOFT_FAILS soft assertions failed (STRICT=1)"; exit 6
   else
     warn "$SOFT_FAILS soft assertions failed (set STRICT=1 to fail)"
   fi
