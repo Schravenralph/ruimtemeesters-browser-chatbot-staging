@@ -209,7 +209,7 @@ Richtlijnen:
             # unchanged if rm-memory is unreachable. The save-prompt filter
             # makes no RPCs; it only injects a system instruction at threshold
             # crossings. v1 attaches only here; extending to specialists is a follow-up.
-            'filterIds': ['bopa_session_context', 'memory_recall_context', 'memory_save_prompt'],
+            'filterIds': ['bopa_session_context', 'memory_recall_context', 'memory_save_prompt', 'skills_context'],
         },
         'params': {
             'system': """Je bent de Ruimtemeesters AI Assistent — de centrale toegangspoort tot alle Ruimtemeesters applicaties en data.
@@ -436,6 +436,22 @@ FILTERS = [
         'source_path': 'memory_save_prompt.py',
         'needs_memory_token': False,
     },
+    {
+        'id': 'skills_context',
+        'name': 'Skills Context',
+        'description': (
+            "Inlet filter that fetches the active persona's mandatory skills from "
+            'rm-skills (http://rm-skills:4101) at chat start and injects each body '
+            "as a <skill name='...'> block in the system prompt. Read-only, "
+            'fail-open. Cached per (persona, user_id) for 60s.'
+        ),
+        'source_path': 'skills_context.py',
+        # rm-skills uses its own bearer token, distinct from the rm-memory
+        # MEMORY_GATEWAY_TOKEN. Seed it via SKILLS_GATEWAY_TOKEN — see the
+        # register_filter / _seed_filter_valves path below for the valve key.
+        'needs_memory_token': False,
+        'needs_skills_token': True,
+    },
 ]
 
 
@@ -520,7 +536,13 @@ def _read_filter_source(filter_def: dict) -> str:
     return path.read_text(encoding='utf-8')
 
 
-def _seed_filter_valves(base_url: str, token: str, filter_def: dict, memory_token: str) -> bool:
+def _seed_filter_valves(
+    base_url: str,
+    token: str,
+    filter_def: dict,
+    memory_token: str,
+    skills_token: str = '',
+) -> bool:
     """Seed the filter's valves via /api/v1/functions/id/{id}/valves/update.
 
     Filters that talk to rm-memory (`bopa_session_context`,
@@ -528,7 +550,11 @@ def _seed_filter_valves(base_url: str, token: str, filter_def: dict, memory_toke
     401s — see Issue #49. We seed it on every registration run so the
     deploy step can't drift from the source.
 
-    Filters that don't have an `mcp_token` field (e.g. `memory_save_prompt`,
+    Filters that talk to rm-skills (`skills_context`) use a separate
+    `skills_token` valve; rm-skills runs its own bearer (SKILLS_GATEWAY_TOKEN)
+    rather than reusing the memory gateway secret.
+
+    Filters that don't have a token field (e.g. `memory_save_prompt`,
     which makes no outbound calls) get `valves_extras` only or nothing at
     all — caller's choice via `valves_extras` in FILTERS entry.
     """
@@ -536,6 +562,8 @@ def _seed_filter_valves(base_url: str, token: str, filter_def: dict, memory_toke
     valves: dict = {**extras}
     if filter_def.get('needs_memory_token') and memory_token:
         valves['mcp_token'] = memory_token
+    if filter_def.get('needs_skills_token') and skills_token:
+        valves['skills_token'] = skills_token
     if not valves:
         return True
     headers = {'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
@@ -552,7 +580,13 @@ def _seed_filter_valves(base_url: str, token: str, filter_def: dict, memory_toke
     return False
 
 
-def register_filter(base_url: str, token: str, filter_def: dict, memory_token: str = '') -> bool:
+def register_filter(
+    base_url: str,
+    token: str,
+    filter_def: dict,
+    memory_token: str = '',
+    skills_token: str = '',
+) -> bool:
     """Register or update an OpenWebUI filter (Function with type='filter').
 
     The server infers `type` from the module's class definition (Pipe / Filter /
@@ -628,7 +662,7 @@ def register_filter(base_url: str, token: str, filter_def: dict, memory_token: s
     # and active before its config gets written. A valve-seed failure is
     # treated as a hard failure: a filter without its token will silently
     # 401 on every call.
-    return _seed_filter_valves(base_url, token, filter_def, memory_token)
+    return _seed_filter_valves(base_url, token, filter_def, memory_token, skills_token)
 
 
 def dry_run_model(assistant: dict) -> bool:
@@ -689,6 +723,17 @@ def main():
             'to work — see Issue #49.'
         ),
     )
+    parser.add_argument(
+        '--skills-token',
+        default=None,
+        help=(
+            'Bearer token for the rm-skills HTTP API. Seeded into the '
+            'skills_token valve of the skills_context filter. Falls back '
+            'to $SKILLS_GATEWAY_TOKEN. Optional — rm-skills currently '
+            'allows unauthenticated reads, but seeding the token future-'
+            'proofs against the Phase D scoping work.'
+        ),
+    )
     args = parser.parse_args()
 
     if not args.dry_run and not args.token:
@@ -701,6 +746,11 @@ def main():
             'filters that talk to rm-memory will silently 401 (Issue #49)',
             file=sys.stderr,
         )
+
+    skills_token = args.skills_token or os.environ.get('SKILLS_GATEWAY_TOKEN', '')
+    # Note: rm-skills currently allows unauthenticated reads, so no warning
+    # when the token is absent — the filter just sends no Authorization
+    # header. Set SKILLS_GATEWAY_TOKEN when the service starts enforcing it.
 
     if args.base_model:
         for a in ASSISTANTS:
@@ -719,7 +769,15 @@ def main():
         filter_success = sum(1 for f in FILTERS if dry_run_filter(f))
     else:
         filter_success = sum(
-            1 for f in FILTERS if register_filter(args.url, args.token, f, memory_token=memory_token)
+            1
+            for f in FILTERS
+            if register_filter(
+                args.url,
+                args.token,
+                f,
+                memory_token=memory_token,
+                skills_token=skills_token,
+            )
         )
 
     print(f'\n=== Registering {len(ASSISTANTS)} assistants{suffix} ===\n')

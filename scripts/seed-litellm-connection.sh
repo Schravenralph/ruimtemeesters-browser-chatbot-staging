@@ -222,6 +222,12 @@ seed_persona() {
   # `server:mcp:` prefix) — e.g. "rm-databank,rm-geoportaal,rm-memory".
   # Empty / missing = no curation (model gets default tool surface).
   local tool_ids_csv="${5:-}"
+  # 6th arg: comma-separated list of inlet filter ids (bare names, no
+  # prefix) — e.g. "skills_context,memory_recall_context". Empty/missing
+  # = no filters attached. The filter functions themselves must already
+  # be registered (via `rm-tools/register_assistants.py`) for these IDs
+  # to resolve to actual inlet handlers at chat time.
+  local filter_ids_csv="${6:-}"
 
   # Best-effort delete first so re-runs apply prompt edits cleanly.
   # Body shape is `{"id": "..."}` per ModelIdForm in routers/models.py;
@@ -232,7 +238,7 @@ seed_persona() {
     -d "{\"id\": \"$id\"}" >/dev/null 2>&1 || true
 
   local body
-  body=$(ID="$id" NAME="$display_name" DESC="$description" SYS="$system_prompt" TOOLS="$tool_ids_csv" python3 - <<'PY'
+  body=$(ID="$id" NAME="$display_name" DESC="$description" SYS="$system_prompt" TOOLS="$tool_ids_csv" FILTERS="$filter_ids_csv" python3 - <<'PY'
 import json, os
 # `base_model_id: None` is critical: it puts this Model row in OWUI's
 # *override* branch (utils/models.py:150 — "Override applied directly to
@@ -267,6 +273,15 @@ meta = {
 tools_csv = os.environ.get('TOOLS', '').strip()
 if tools_csv:
     meta['toolIds'] = [f'server:mcp:{t.strip()}' for t in tools_csv.split(',') if t.strip()]
+
+# Per-persona inlet filters. `meta.filterIds` lists bare filter ids
+# (no prefix) — OpenWebUI resolves them against installed Filter
+# functions at chat time. The filter functions themselves are
+# registered by rm-tools/register_assistants.py; this script only
+# attaches them to the persona Model row.
+filters_csv = os.environ.get('FILTERS', '').strip()
+if filters_csv:
+    meta['filterIds'] = [f.strip() for f in filters_csv.split(',') if f.strip()]
 
 print(json.dumps({
     'id': os.environ['ID'],
@@ -319,7 +334,8 @@ Regels:
 - Bij twijfel: tool gebruiken, terugvragen, of zeggen dat je het niet zeker weet. Niet gokken, niet aannemen, niet verzinnen.
 - <map-context> resolveert alleen deictische verwijzingen ('hier', 'dit', 'deze locatie'). 'Waar zit Ruimtemeesters?' is GEEN deictische vraag — gebruik een tool of erken dat je het niet weet. Voeg ook geen losse claims over die selectie toe ('dit is het kantoor van X') tenzij een tool dat bevestigt.
 - Geen rauwe coördinaten. Wikkel adressen als [[place:<volledig adres>]], features als [[feature:<layerKey>/<featureId>]], klikbare acties als [[action:pan_map:{\"lon\":<n>,\"lat\":<n>,\"zoom\":<n>}]] (alleen na een geocodeer-tool)." \
-  "rm-databank,rm-geoportaal,rm-tsa,rm-dashboarding,rm-aggregator,rm-memory"
+  "rm-databank,rm-geoportaal,rm-tsa,rm-dashboarding,rm-aggregator,rm-memory" \
+  "skills_context"
 
 seed_persona "Juridisch-Assistent" "Juridisch Assistent" \
   "Juridische sparringpartner voor adviseurs — Omgevingswet, Awb, Wro en jurisprudentie." \
@@ -329,7 +345,8 @@ Regels:
 - Bij twijfel: bron citeren met vindplaats, of zeggen dat je het niet zeker weet. Niet gokken, niet aannemen, niet verzinnen.
 - Onderscheid vaste lijn en open norm; benoem bandbreedte in interpretatie.
 - Geen advies geven dat een gemachtigd jurist zou moeten geven — signaleer wanneer een vraag dat raakt." \
-  "rm-databank,rm-aggregator,rm-memory"
+  "rm-databank,rm-aggregator,rm-memory" \
+  "skills_context"
 
 seed_persona "Commercieel-Assistent" "Commercieel Assistent" \
   "Commerciële sparringpartner — tendering, aanbestedingen, opdrachten, sales pipeline en opportunities per gemeente." \
@@ -338,6 +355,7 @@ seed_persona "Commercieel-Assistent" "Commercieel Assistent" \
 Regels:
 - Bij twijfel: tool of bron raadplegen, of zeggen dat je het niet zeker weet. Niet gokken, niet aannemen, niet verzinnen.
 - Geen go/no-go-beslissing op tenders — schets afwegingen en beveel menselijke beoordeling aan." \
-  "rm-opdrachten,rm-riens,rm-sales-predictor,rm-dashboarding,rm-aggregator,rm-memory"
+  "rm-opdrachten,rm-riens,rm-sales-predictor,rm-dashboarding,rm-aggregator,rm-memory" \
+  "skills_context"
 
 echo "Done."
