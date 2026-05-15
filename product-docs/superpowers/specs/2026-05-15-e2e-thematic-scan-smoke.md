@@ -8,7 +8,7 @@
 
 A scripted test that verifies the critical-path advisor flow works end-to-end after all four sibling specs ship:
 
-> *Advisor opens RO Assistent, asks "doe een thematische beleidsscan voor gemeente Utrecht op thema energietransitie", and the model follows the 5-step canon from `skills/beleidsscan/SKILL.md` with project-scoped memory binding.*
+> _Advisor opens RO Assistent, asks "doe een thematische beleidsscan voor gemeente Utrecht op thema energietransitie", and the model follows the 5-step canon from `skills/beleidsscan/SKILL.md` with project-scoped memory binding._
 
 Lives in `Ruimtemeesters-Browser-Chatbot` because that's where the orchestration happens.
 
@@ -24,6 +24,7 @@ Lives in `Ruimtemeesters-Browser-Chatbot` because that's where the orchestration
 ## What it verifies (4 stages, fail-fast)
 
 ### Stage 1 — Services reachable
+
 - `curl ${API}/api/health` → 200
 - `curl ${API}/api/v1/models` → contains `ro-assistent` (or `rm-assistent` in legacy)
 - `curl ${SKILLS}/api/v1/skills?persona=ro-assistent` → returns at least `beleidsscan`
@@ -33,6 +34,7 @@ Lives in `Ruimtemeesters-Browser-Chatbot` because that's where the orchestration
 Fails if any service is down or the persona/model is missing.
 
 ### Stage 2 — Skill injection visible
+
 - POST a chat-completions request to `${API}/api/chat/completions` with:
   - `model: ro-assistent`
   - `messages: [{role: "user", content: "doe een thematische beleidsscan voor gemeente Utrecht op thema energietransitie"}]`
@@ -44,6 +46,7 @@ Fails if any service is down or the persona/model is missing.
 Fails if the `skills_context` filter didn't fire or rm-skills didn't return content.
 
 ### Stage 3 — Project binding
+
 - The model SHOULD call `set_active_project({project_id: "beleidsscan:GM0344:energietransitie", kind: "beleidsscan"})` early in its flow (the `beleidsscan` SKILL.md instructs this)
 - After the chat turn completes, query memory MCP directly:
   - `tools/call get_active_project` with the chat-id
@@ -52,6 +55,7 @@ Fails if the `skills_context` filter didn't fire or rm-skills didn't return cont
 Fails if the model didn't follow the canon or the active-project tool isn't wired.
 
 ### Stage 4 — Output follows canon
+
 - Inspect the assistant's response text
 - Assert it references at least 4 of the 5 step markers from beleidsscan SKILL.md (extract markers in the smoke script at runtime by parsing the SKILL.md file)
 - Assert the response is in Dutch (>90% Dutch tokens — cheap heuristic: count common Dutch words)
@@ -61,13 +65,13 @@ Fails if the model improvised instead of following the canon.
 
 ## Success criteria (the smoke itself)
 
-| # | Criterion | How to measure |
-|---|---|---|
-| E1 | All 4 stages pass against local docker-compose stack | Exit code 0 |
-| E2 | Smoke completes in < 90s end-to-end | `time` output |
-| E3 | Failure mode for each stage produces a clear diff (expected vs actual) | Manually break each component and run; verify error legibility |
-| E4 | Runs on a fresh prod deploy without state pollution | Use a throwaway test user account; cleanup at end |
-| E5 | Idempotent: running 10x in a row passes each time | CI repeat |
+| #   | Criterion                                                              | How to measure                                                 |
+| --- | ---------------------------------------------------------------------- | -------------------------------------------------------------- |
+| E1  | All 4 stages pass against local docker-compose stack                   | Exit code 0                                                    |
+| E2  | Smoke completes in < 90s end-to-end                                    | `time` output                                                  |
+| E3  | Failure mode for each stage produces a clear diff (expected vs actual) | Manually break each component and run; verify error legibility |
+| E4  | Runs on a fresh prod deploy without state pollution                    | Use a throwaway test user account; cleanup at end              |
+| E5  | Idempotent: running 10x in a row passes each time                      | CI repeat                                                      |
 
 ## Validation plan
 
@@ -83,9 +87,9 @@ Fails if the model improvised instead of following the canon.
 
 There is no baseline — this is a new test. The closest comparison:
 
-| Today | After this smoke |
-|---|---|
-| No end-to-end test for the advisor flow | One scripted verification covering all 4 components |
+| Today                                        | After this smoke                                                          |
+| -------------------------------------------- | ------------------------------------------------------------------------- |
+| No end-to-end test for the advisor flow      | One scripted verification covering all 4 components                       |
 | Regressions discovered only via user reports | Smoke runs on every prod deploy (manual trigger initially; CI hook later) |
 
 ## CI wiring (follow-up, not in v1)
@@ -104,4 +108,4 @@ There is no baseline — this is a new test. The closest comparison:
 
 - Playwright UI smoke (chat-UI rendering, not just API): worth a dedicated spec when chat UI changes risk regressions
 - Smoke for Juridisch / Commercieel personas: same pattern, separate scripts
-- Beleidsscan completeness (does the scan finish all 5 phases?): the smoke verifies the model *starts* correctly, not that a full scan completes
+- Beleidsscan completeness (does the scan finish all 5 phases?): the smoke verifies the model _starts_ correctly, not that a full scan completes

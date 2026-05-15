@@ -8,7 +8,7 @@
 
 Add `rm-tools/filters/skills_context.py` — an OpenWebUI inlet filter that, at chat start, fetches the active persona's **mandatory** skills from `rm-skills:4101` and injects each one's `skill_md` body into the system prompt as a `<skill name="...">...</skill>` block.
 
-This is the *minimum* skill-loading path. On-demand pulls go through the Skills MCP tools (separate spec `2026-05-15-skills-mcp-package.md`).
+This is the _minimum_ skill-loading path. On-demand pulls go through the Skills MCP tools (separate spec `2026-05-15-skills-mcp-package.md`).
 
 ## Scope (v1)
 
@@ -24,13 +24,13 @@ This is the *minimum* skill-loading path. On-demand pulls go through the Skills 
 
 ## Design choices applied
 
-| # | Choice | Rationale |
-|---|---|---|
-| 1 | Hybrid (always-inject mandatory + MCP for the rest) | Phase 2 design table |
-| 2 | Frontmatter-driven persona filter | Already supported by Skills service |
-| 6 | Filter priority 20 | After memory filters (10/11/12) so skill sees recalled context |
-| 7 | Wire on `rm-assistent` AND `RO-Assistent`/`Juridisch-Assistent`/`Commercieel-Assistent` | User flow targets RO; don't entangle with #109 |
-| 9 | Verify rm-network attachment before changes | Memory filters already reach `rm-mcp-memory:3200` — chatbot must be on rm-network somehow |
+| #   | Choice                                                                                  | Rationale                                                                                 |
+| --- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| 1   | Hybrid (always-inject mandatory + MCP for the rest)                                     | Phase 2 design table                                                                      |
+| 2   | Frontmatter-driven persona filter                                                       | Already supported by Skills service                                                       |
+| 6   | Filter priority 20                                                                      | After memory filters (10/11/12) so skill sees recalled context                            |
+| 7   | Wire on `rm-assistent` AND `RO-Assistent`/`Juridisch-Assistent`/`Commercieel-Assistent` | User flow targets RO; don't entangle with #109                                            |
+| 9   | Verify rm-network attachment before changes                                             | Memory filters already reach `rm-mcp-memory:3200` — chatbot must be on rm-network somehow |
 
 ## Implementation outline
 
@@ -59,6 +59,7 @@ class Filter:
 ```
 
 **Persona resolution** order:
+
 1. `body['model']` → strip `rm-` prefix → lowercase (e.g. `rm-ro-assistent` → `ro-assistent`)
 2. `body['metadata']['model']['info']['meta']['persona']` if set
 3. Hardcoded map for legacy ids (`RO-Assistent` → `ro-assistent`)
@@ -69,6 +70,7 @@ class Filter:
 **Async HTTP:** `httpx.AsyncClient` with `timeout_ms / 1000.0`. Never `requests` (memory: `feedback_openwebui_filter_async_http.md`).
 
 **Injection format** (mirrors how Claude Code wraps skill content):
+
 ```
 <skills>
 <skill name="beleidsscan" mandatory="true" persona="ro-assistent">
@@ -89,15 +91,15 @@ Add to `scripts/seed-litellm-connection.sh` so the canon RO/Juridisch/Commerciee
 
 ## Success criteria (measurable)
 
-| # | Criterion | How to measure |
-|---|---|---|
-| F1 | New chat in RO Assistent with no message → system prompt contains `<skill name="beleidsscan">` block | Log inspection: enable DEBUG, grep `injected skill` |
-| F2 | `beleidsscan` body present in injected text (assert length > 8000 chars) | Same log inspection |
-| F3 | Filter fails open: kill `rm-skills` container, chat still proceeds | Manual test |
-| F4 | Cold-path latency overhead < 600ms (filter inlet → model call) | Trace timestamps |
-| F5 | Warm-path (cached) overhead < 10ms | Trace timestamps |
-| F6 | Filter NOT firing on non-target models (e.g. `gpt-oss-models/gemma3:4b` direct) | Negative test |
-| F7 | Wired on all 4 target personas in production | `gh pr view` + production smoke |
+| #   | Criterion                                                                                            | How to measure                                      |
+| --- | ---------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| F1  | New chat in RO Assistent with no message → system prompt contains `<skill name="beleidsscan">` block | Log inspection: enable DEBUG, grep `injected skill` |
+| F2  | `beleidsscan` body present in injected text (assert length > 8000 chars)                             | Same log inspection                                 |
+| F3  | Filter fails open: kill `rm-skills` container, chat still proceeds                                   | Manual test                                         |
+| F4  | Cold-path latency overhead < 600ms (filter inlet → model call)                                       | Trace timestamps                                    |
+| F5  | Warm-path (cached) overhead < 10ms                                                                   | Trace timestamps                                    |
+| F6  | Filter NOT firing on non-target models (e.g. `gpt-oss-models/gemma3:4b` direct)                      | Negative test                                       |
+| F7  | Wired on all 4 target personas in production                                                         | `gh pr view` + production smoke                     |
 
 ## Validation plan
 
@@ -112,11 +114,11 @@ Add to `scripts/seed-litellm-connection.sh` so the canon RO/Juridisch/Commerciee
 
 ## Comparison to baseline
 
-| Metric | Before | After (target) | Method |
-|---|---|---|---|
-| Skill content visible to RO Assistent | 0 chars | ~10,000 chars (beleidsscan body) | Log diff |
-| Model follows 5-step canon | Ad-hoc / "improvises" | References ≥ 4 of 5 step markers | Manual review of 3 test chats |
-| Chat latency p95 (cold) | ~X ms baseline | +600ms acceptable | Trace before/after |
+| Metric                                | Before                | After (target)                   | Method                        |
+| ------------------------------------- | --------------------- | -------------------------------- | ----------------------------- |
+| Skill content visible to RO Assistent | 0 chars               | ~10,000 chars (beleidsscan body) | Log diff                      |
+| Model follows 5-step canon            | Ad-hoc / "improvises" | References ≥ 4 of 5 step markers | Manual review of 3 test chats |
+| Chat latency p95 (cold)               | ~X ms baseline        | +600ms acceptable                | Trace before/after            |
 
 ## Risks & mitigations
 
