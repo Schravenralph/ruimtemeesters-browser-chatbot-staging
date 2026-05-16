@@ -19,6 +19,7 @@ import pytest
 from fastapi import HTTPException
 
 from open_webui.routers.rm_memory import (
+    ActiveProject,
     ListMemoriesOutput,
     _call_user_tool,
     _resolve_gateway_token,
@@ -504,6 +505,149 @@ def test_forget_endpoint_zero_rows_still_200(monkeypatch):
         undo()
 
 
+# --- /active-project GET endpoint ------------------------------------------
+
+
+SAMPLE_ACTIVE_PROJECT = {
+    'project_id': 'beleidsscan:GM0344:energietransitie',
+    'kind': 'beleidsscan',
+    'label': 'Utrecht — energietransitie',
+    'set_at': '2026-05-16T01:30:00Z',
+}
+
+
+def test_call_user_tool_forwards_x_thread_id_when_set(monkeypatch):
+    """The optional `x_thread_id` arg must surface as the `X-Thread-Id`
+    header so the memory service can scope (user, chat) keyed state."""
+    monkeypatch.setenv('MEMORY_GATEWAY_TOKEN', 'gateway-secret')
+    patcher, post_mock = _patch_async_client(_sse_response(SAMPLE_ACTIVE_PROJECT))
+    with patcher:
+        _run(
+            _call_user_tool(
+                tool_name='get_active_project',
+                arguments={},
+                user_email='ralph@example.org',
+                x_thread_id='chat-abc-123',
+            )
+        )
+    headers = post_mock.call_args.kwargs['headers']
+    assert headers['X-Thread-Id'] == 'chat-abc-123'
+
+
+def test_call_user_tool_omits_x_thread_id_when_missing(monkeypatch):
+    """Existing endpoints that don't pass x_thread_id should not see the
+    header — keep the request small + backward-compatible."""
+    monkeypatch.setenv('MEMORY_GATEWAY_TOKEN', 'gateway-secret')
+    patcher, post_mock = _patch_async_client(_sse_response(SAMPLE_LIST))
+    with patcher:
+        _run(
+            _call_user_tool(
+                tool_name='list_memories',
+                arguments={},
+                user_email='ralph@example.org',
+            )
+        )
+    headers = post_mock.call_args.kwargs['headers']
+    assert 'X-Thread-Id' not in headers
+
+
+def test_active_project_endpoint_returns_row(monkeypatch):
+    """Happy path: MCP returns the active project row → 200 + typed body."""
+    monkeypatch.setenv('MEMORY_GATEWAY_TOKEN', 'gateway-secret')
+    from fastapi.testclient import TestClient
+
+    from open_webui.main import app  # noqa: PLC0415
+
+    patcher, post_mock = _patch_async_client(_sse_response(SAMPLE_ACTIVE_PROJECT))
+    undo = _override_user()
+    try:
+        with patcher:
+            res = TestClient(app).get(
+                '/api/v1/rm-memory/active-project',
+                params={'chat_id': 'chat-abc-123'},
+            )
+        assert res.status_code == 200, res.text
+        body = res.json()
+        assert body['project_id'] == 'beleidsscan:GM0344:energietransitie'
+        assert body['kind'] == 'beleidsscan'
+        assert body['label'] == 'Utrecht — energietransitie'
+
+        # chat_id arrived as X-Thread-Id; the MCP RPC carries no arguments.
+        headers = post_mock.call_args.kwargs['headers']
+        assert headers['X-Thread-Id'] == 'chat-abc-123'
+        rpc = post_mock.call_args.kwargs['json']
+        assert rpc['params']['name'] == 'get_active_project'
+        assert rpc['params']['arguments'] == {}
+    finally:
+        undo()
+
+
+def test_active_project_endpoint_returns_null_when_no_project(monkeypatch):
+    """A chat that hasn't called set_active_project: the MCP returns null;
+    the BFF surfaces null (200) so the frontend can render an empty
+    pill rather than a confusing 404."""
+    monkeypatch.setenv('MEMORY_GATEWAY_TOKEN', 'gateway-secret')
+    from fastapi.testclient import TestClient
+
+    from open_webui.main import app  # noqa: PLC0415
+
+    patcher, _ = _patch_async_client(_sse_response({'active_project': None}))
+    undo = _override_user()
+    try:
+        with patcher:
+            res = TestClient(app).get(
+                '/api/v1/rm-memory/active-project',
+                params={'chat_id': 'cold-chat'},
+            )
+        assert res.status_code == 200, res.text
+        assert res.json() is None
+    finally:
+        undo()
+
+
+def test_active_project_endpoint_requires_chat_id(monkeypatch):
+    """Missing chat_id ⇒ FastAPI 422 (validation). We never let a chat-less
+    request reach the MCP — it has no way to scope without a thread id."""
+    monkeypatch.setenv('MEMORY_GATEWAY_TOKEN', 'gateway-secret')
+    from fastapi.testclient import TestClient
+
+    from open_webui.main import app  # noqa: PLC0415
+
+    undo = _override_user()
+    try:
+        res = TestClient(app).get('/api/v1/rm-memory/active-project')
+        assert res.status_code == 422, res.text
+    finally:
+        undo()
+
+
+def test_active_project_endpoint_502_propagates(monkeypatch):
+    """Transport / upstream failures still 502 like the other endpoints."""
+    monkeypatch.setenv('MEMORY_GATEWAY_TOKEN', 'gateway-secret')
+    from fastapi.testclient import TestClient
+
+    from open_webui.main import app  # noqa: PLC0415
+
+    failing = MagicMock()
+    failing_response = MagicMock(status_code=502)
+    failing_response.text = 'upstream offline'
+    failing.raise_for_status.side_effect = httpx.HTTPStatusError(
+        '502', request=MagicMock(), response=failing_response
+    )
+    patcher, _ = _patch_async_client(failing)
+    undo = _override_user()
+    try:
+        with patcher:
+            res = TestClient(app).get(
+                '/api/v1/rm-memory/active-project',
+                params={'chat_id': 'chat-abc-123'},
+            )
+        assert res.status_code == 502, res.text
+        assert 'rm-memory MCP' in res.json()['detail']
+    finally:
+        undo()
+
+
 # --- regression: ListMemoriesOutput schema still parses sample fixture -----
 
 
@@ -511,3 +655,9 @@ def test_list_memories_output_schema_validates():
     typed = ListMemoriesOutput.model_validate(SAMPLE_LIST)
     assert len(typed.entries) == 2
     assert typed.entries[1].project_id == '7'
+
+
+def test_active_project_schema_validates():
+    typed = ActiveProject.model_validate(SAMPLE_ACTIVE_PROJECT)
+    assert typed.project_id == 'beleidsscan:GM0344:energietransitie'
+    assert typed.kind == 'beleidsscan'

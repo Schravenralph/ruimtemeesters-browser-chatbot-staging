@@ -114,6 +114,16 @@ class ForgetMemoryOutput(BaseModel):
     rows: int
 
 
+class ActiveProject(BaseModel):
+    """Mirror of getActiveProject's row shape in
+    Ruimtemeesters-Memory/src/services/getActiveProject.ts."""
+
+    project_id: str
+    kind: str
+    label: str | None = None
+    set_at: str
+
+
 # --- helpers ---------------------------------------------------------------
 
 
@@ -136,9 +146,15 @@ async def _call_user_tool(
     tool_name: str,
     arguments: dict[str, Any],
     user_email: str | None,
+    x_thread_id: str | None = None,
 ) -> dict[str, Any]:
     """Issue a user-scoped tools/call to the memory MCP and return the
     parsed payload. Shared transport for all rm-memory endpoints.
+
+    When ``x_thread_id`` is provided, it is forwarded as ``X-Thread-Id``
+    so the memory service can scope (user, chat) keyed state — e.g.
+    active-project lookups. The header is omitted otherwise to avoid
+    inflating requests that don't need it.
 
     Raises HTTPException on transport / parser / error-envelope failures
     (always 502 / 503), preserving the upstream message when available.
@@ -159,6 +175,8 @@ async def _call_user_tool(
     }
     if user_email:
         headers['X-Forwarded-User'] = user_email
+    if x_thread_id:
+        headers['X-Thread-Id'] = x_thread_id
 
     url = _resolve_mcp_url()
 
@@ -273,6 +291,44 @@ async def list_memories_endpoint(
         user_email=_user_email(user),
     )
     return _validate_or_502(ListMemoriesOutput, payload, 'list_memories')
+
+
+@router.get('/active-project', response_model=ActiveProject | None)
+async def get_active_project_endpoint(
+    chat_id: str = Query(
+        ...,
+        min_length=1,
+        max_length=128,
+        description='The chat / thread id the caller is asking about. Forwarded as X-Thread-Id to the memory service.',
+    ),
+    user=Depends(get_verified_user),
+) -> ActiveProject | None:
+    """Return the active project bound to (user, chat), or `null` when
+    nothing is bound. The memory service keys the row on `X-Thread-Id`
+    + the forwarded user, so a chat that hasn't yet called
+    `set_active_project` simply returns null.
+
+    Mounted before `/{name}` so a memory entry named "active-project"
+    can't shadow this route — same pattern as the `name == 'list'`
+    bugbot finding on #61.
+    """
+    payload = await _call_user_tool(
+        tool_name='get_active_project',
+        arguments={},
+        user_email=_user_email(user),
+        x_thread_id=chat_id,
+    )
+    # MCP can legitimately return null. Handle the empty/null case
+    # explicitly before validating — `_validate_or_502` would 502 on a
+    # None payload.
+    if payload is None or payload == {} or payload == {'active_project': None}:
+        return None
+    # Some MCP shapes wrap the row under an `active_project` key; others
+    # return the row directly. Normalise here so downstream stays simple.
+    row = payload.get('active_project') if isinstance(payload, dict) and 'active_project' in payload else payload
+    if row is None:
+        return None
+    return _validate_or_502(ActiveProject, row, 'get_active_project')
 
 
 @router.get('/{name}', response_model=GetMemoryOutput)
