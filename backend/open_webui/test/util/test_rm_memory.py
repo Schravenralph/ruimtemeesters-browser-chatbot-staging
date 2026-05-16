@@ -631,9 +631,7 @@ def test_active_project_endpoint_502_propagates(monkeypatch):
     failing = MagicMock()
     failing_response = MagicMock(status_code=502)
     failing_response.text = 'upstream offline'
-    failing.raise_for_status.side_effect = httpx.HTTPStatusError(
-        '502', request=MagicMock(), response=failing_response
-    )
+    failing.raise_for_status.side_effect = httpx.HTTPStatusError('502', request=MagicMock(), response=failing_response)
     patcher, _ = _patch_async_client(failing)
     undo = _override_user()
     try:
