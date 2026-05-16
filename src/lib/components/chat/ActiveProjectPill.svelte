@@ -1,30 +1,37 @@
 <script lang="ts">
 	import { chatId } from '$lib/stores';
 	import { getActiveProject, type ActiveProject } from '$lib/apis/rm-memory';
-	import { onMount } from 'svelte';
 
 	let active: ActiveProject | null = null;
 	let copied = false;
 
+	// Generation counter: each refresh() bumps this. A response only
+	// applies if it was started in the *latest* generation. Without this
+	// guard, switching chats rapidly could let a stale request for chat A
+	// land after the fresh request for chat B and overwrite the UI —
+	// Bugbot finding on PR #116.
+	let fetchGen = 0;
+
 	const refresh = async (id: string | null | undefined) => {
+		const myGen = ++fetchGen;
 		if (!id || (id ?? '').startsWith('local:')) {
 			// Temporary chats have no thread id the memory service can scope.
-			active = null;
+			if (myGen === fetchGen) active = null;
 			return;
 		}
-		active = await getActiveProject(localStorage.token, id);
+		const result = await getActiveProject(localStorage.token, id);
+		// Only apply if no newer refresh started while we were awaiting.
+		if (myGen === fetchGen) active = result;
 	};
 
-	// Refetch whenever the chat we're looking at changes. The first load
-	// runs after mount so we don't hit the BFF before localStorage is
-	// available (SSR safety).
+	// Refetch whenever the chat we're looking at changes. Svelte's reactive
+	// statement also runs once on first store subscription, which gives us
+	// the initial fetch without a redundant onMount.
 	let lastSeenId: string | null = null;
 	$: if (typeof window !== 'undefined' && $chatId !== lastSeenId) {
 		lastSeenId = $chatId ?? null;
 		void refresh($chatId);
 	}
-
-	onMount(() => void refresh($chatId));
 
 	// "beleidsscan:GM0344:energietransitie" → "Utrecht / energietransitie"
 	// when there is no human-friendly label, fall back to the slug parts.
