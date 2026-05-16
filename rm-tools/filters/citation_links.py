@@ -39,8 +39,13 @@ ECLI_RE = re.compile(
 # Databank document ids today are 8+ char alphanumeric tokens often prefixed
 # by `doc_id:` or `(doc_id: ...)` when the LLM cites them. We match the
 # explicit form only — bare hex strings would have too many false positives.
+# The lookbehind only excludes `[` so we don't re-match inside an already-
+# created `[doc_id: …](url)` label. Bare-`(` is allowed because the LLM
+# routinely writes `(doc_id: abc12345xyz)` in prose — those need to wrap.
+# Idempotency for the broader `[label](url)` construct lives in
+# `_inside_existing_markdown_link`, which walks back from each match.
 DOC_ID_RE = re.compile(
-    r'(?<![\[\(])\bdoc_id:\s*([A-Za-z0-9_-]{8,})\b',
+    r'(?<!\[)\bdoc_id:\s*([A-Za-z0-9_-]{8,})\b',
 )
 
 

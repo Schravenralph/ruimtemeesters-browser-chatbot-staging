@@ -49,6 +49,30 @@ def test_wraps_doc_id_mention_with_databank_base_url():
     )
 
 
+def test_wraps_parenthesized_doc_id_form():
+    """The LLM frequently cites in `(doc_id: ...)` form — verify the
+    surrounding `(` doesn't block the lookbehind from matching.
+    Idempotency for already-wrapped `[label](url)` still works because
+    `_inside_existing_markdown_link` walks back from each match."""
+    text = 'Het beleid is vastgelegd (doc_id: abc12345xyz) in 2024.'
+    out = citation_links.annotate(text, 'https://databank.datameesters.nl')
+    assert '[doc_id: abc12345xyz](https://databank.datameesters.nl/documents/abc12345xyz)' in out
+    # And the parens around the now-link are preserved verbatim.
+    assert '([doc_id: abc12345xyz]' in out
+    assert 'abc12345xyz)' in out
+
+
+def test_idempotent_on_already_wrapped_doc_id_inside_parens():
+    """Pre-existing `(text [doc_id: abc...](url) more)` shouldn't be
+    re-wrapped: the `[` lookbehind blocks re-match, AND
+    `_inside_existing_markdown_link` would also catch label-internal
+    matches."""
+    pre = '([doc_id: abc12345xyz](https://databank.datameesters.nl/documents/abc12345xyz))'
+    out = citation_links.annotate(pre, 'https://databank.datameesters.nl')
+    # No double-wrap of the same id.
+    assert out.count('[doc_id: abc12345xyz]') == 1
+
+
 def test_trailing_slash_on_base_url_is_normalised():
     text = 'doc_id: abc12345xyz'
     out = citation_links.annotate(text, 'https://databank.datameesters.nl/')
