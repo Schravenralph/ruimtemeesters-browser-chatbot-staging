@@ -1,0 +1,38 @@
+name: Security
+
+# Caller workflow for ADR-0014's centralised scanner stack.
+# Calls the reusable composite in Ruimtemeesters-Security. The repo there
+# owns the tool versions, severity policy, and SARIF wiring — this file
+# is intentionally thin so all callers stay aligned.
+#
+# See:
+#   - Ruimtemeesters-Platform/architecture/security-scanning.md
+#   - Ruimtemeesters-Platform/adr/ADR-0014-centralised-security-scanning-repo.md
+#   - Ruimtemeesters-Security/repos/Browser-Chatbot/threat-model.md
+
+on:
+  pull_request:
+  schedule:
+    - cron: "0 3 * * *"   # 04:00 Europe/Amsterdam — belt-and-braces nightly
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+jobs:
+  scan:
+    uses: Schravenralph/Ruimtemeesters-Security/.github/workflows/reusable-scan-all.yml@main
+    with:
+      severity-threshold: high
+      # Open-WebUI fork with 8 docker-compose flavors (api/data/gpu/
+      # amdgpu/otel/playwright/a1111-test/rm). Prompt-injection in the
+      # tool-call channel has no in-tree mitigation; structural defence
+      # is the X-Forwarded-User enforcement at each downstream MCP server.
+      run-sast: true
+      run-secrets: true
+      run-deps: true
+      run-container: true
+      run-iac: true
+    secrets: inherit
