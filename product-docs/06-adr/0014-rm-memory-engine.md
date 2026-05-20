@@ -1,7 +1,9 @@
 # ADR-0014: RM-Memory implementation engine
 
-**Date:** 2026-05-08
-**Status:** Accepted
+**Date:** 2026-05-08 (forward-pointer added 2026-05-20)
+**Status:** Accepted — superseded in part by Platform ADR-0012 (engine extraction) + Platform ADR-0021 (Hindsight adoption)
+
+> **Reader update (2026-05-20):** option (a) shipped, then the engine evolved past what this ADR scoped. **Platform ADR-0012** (Accepted 2026-05-13) extracted the engine into its own product repo `Ruimtemeesters-Memory` (`rm-memory:4100`); `MCP-Servers/packages/memory/` is now a thin proxy. **Platform ADR-0021** then adopted `vectorize-io/hindsight` (MIT) as the storage/retrieval engine via `@vectorize-io/hindsight-client` — used as a library inside our service, NOT a Hindsight fork. The four-scope model from ADR-0013 still applies; only the engine internals moved. The "Triggers to flip to (b)" section below is largely obsolete — Hindsight's retrieval is already in our stack. Treat this ADR as the historical record of the engine-direction decision; for the current shape see Platform ADR-0012 + ADR-0021 and the `Ruimtemeesters-Memory` README.
 
 ## Context
 
@@ -194,6 +196,8 @@ When any of these fires, this ADR gets revised: we add a "Migration plan to Hind
 - **ADR-0011** — Service-pattern AI surfaces — Geoportaal's custom UI will read from RM-Memory under the four-scope predicate
 - **ADR-0012** — Frontend strategy — preserves OpenWebUI investment; this ADR continues the same posture for the memory engine
 - **ADR-0013** — MCP-first capability strategy + RM-Memory four-scope model — parent decision; this ADR is its implementation choice
+- **Platform ADR-0012** (2026-05-13) — Extracted the memory engine into its own product repo `Ruimtemeesters-Memory`. Post-extraction this ADR's "extend `@rm-mcp/memory`" framing is partially historical: "extend" still describes the engine ownership decision, but the package itself moved.
+- **Platform ADR-0021** — Adopted `vectorize-io/hindsight` as the storage/retrieval engine inside the extracted service. Most of this ADR's "Triggers to flip to (b)" section is now obsolete.
 
 ## Follow-up work
 
