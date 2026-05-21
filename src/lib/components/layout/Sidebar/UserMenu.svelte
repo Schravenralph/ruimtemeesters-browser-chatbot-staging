@@ -14,6 +14,7 @@
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import ArchiveBox from '$lib/components/icons/ArchiveBox.svelte';
+	import LightBulb from '$lib/components/icons/LightBulb.svelte';
 	import QuestionMarkCircle from '$lib/components/icons/QuestionMarkCircle.svelte';
 	import Map from '$lib/components/icons/Map.svelte';
 	import Keyboard from '$lib/components/icons/Keyboard.svelte';
@@ -234,6 +235,29 @@
 				</div>
 				<div class=" self-center truncate">{$i18n.t('Archived Chats')}</div>
 			</button>
+
+			<a
+				href="/memory"
+				draggable="false"
+				class="flex rounded-xl py-1.5 px-3 w-full hover:bg-gray-50 dark:hover:bg-gray-800 transition cursor-pointer select-none"
+				on:click={async (e) => {
+					if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) {
+						return;
+					}
+					e.preventDefault();
+					show = false;
+					goto('/memory');
+					if ($mobile) {
+						await tick();
+						showSidebar.set(false);
+					}
+				}}
+			>
+				<div class=" self-center mr-3">
+					<LightBulb className="size-5" strokeWidth="1.5" />
+				</div>
+				<div class=" self-center truncate">{$i18n.t('Memory')}</div>
+			</a>
 
 			{#if role === 'admin'}
 				<a
