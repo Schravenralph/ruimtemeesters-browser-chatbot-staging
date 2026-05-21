@@ -44,7 +44,15 @@ jobs:
         run: git diff --exit-code
 
       - name: Build Frontend
+        # The OWUI bundle is right at Node's default 4 GB heap ceiling
+        # during `vite build`'s chunk-render phase — observed sporadic
+        # "Ineffective mark-compacts near heap limit" OOMs on the
+        # GitHub-hosted ubuntu-latest runner. Bumping the old-space
+        # limit to 6 GB gives Vite room to finish without crashing.
+        # The runner has 7 GB RAM so 6 GB is safe.
         run: npm run build
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
 
   test-frontend:
     name: 'Frontend Unit Tests'
