@@ -57,9 +57,7 @@ def _resolve_persona(model_id: str, metadata: dict | None) -> str:
     """
     if isinstance(metadata, dict):
         meta_path = (
-            metadata.get('model', {}).get('info', {}).get('meta', {})
-            if isinstance(metadata.get('model'), dict)
-            else {}
+            metadata.get('model', {}).get('info', {}).get('meta', {}) if isinstance(metadata.get('model'), dict) else {}
         )
         if isinstance(meta_path, dict):
             persona = meta_path.get('persona')
@@ -99,9 +97,7 @@ def _format_skills_block(skills: list[dict], persona: str, max_chars: int) -> st
         body = skill.get('skill_md') or ''
         if max_chars and len(body) > max_chars:
             body = body[:max_chars]
-        parts.append(
-            f'<skill name="{name}" mandatory="true" persona="{persona}">\n{body}\n</skill>'
-        )
+        parts.append(f'<skill name="{name}" mandatory="true" persona="{persona}">\n{body}\n</skill>')
     parts.append('</skills>')
     return '\n'.join(parts)
 
@@ -255,8 +251,7 @@ class Filter:
                     return None
                 if len(mandatory) > self.valves.max_skills:
                     log.warning(
-                        'skills_context: %d mandatory skills for persona %s exceeds cap %d; '
-                        'truncating to first %d',
+                        'skills_context: %d mandatory skills for persona %s exceeds cap %d; truncating to first %d',
                         len(mandatory),
                         persona,
                         self.valves.max_skills,

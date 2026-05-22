@@ -157,6 +157,7 @@ def test_parse_mcp_response_handles_sse_framing():
 
 def test_parse_mcp_response_rejects_empty_body():
     import pytest
+
     with pytest.raises(ValueError):
         _parse_mcp_response('')
 

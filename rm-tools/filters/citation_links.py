@@ -98,7 +98,7 @@ def _wrap_ecli(text: str) -> str:
         if _inside_existing_markdown_link(text, match.start()):
             return ecli
         # Skip when the ECLI is part of a URL (e.g. `?id=ECLI:...`).
-        before = text[max(0, match.start() - 1):match.start()]
+        before = text[max(0, match.start() - 1) : match.start()]
         if before in ('=', '/'):
             return ecli
         return f'[{ecli}]({_ecli_url(ecli)})'
@@ -154,8 +154,7 @@ class Filter:
         enabled: bool = Field(
             default=True,
             description=(
-                'Auto-link citations in this chat. Disable to see raw '
-                'ECLI / doc_id strings instead of clickable links.'
+                'Auto-link citations in this chat. Disable to see raw ECLI / doc_id strings instead of clickable links.'
             ),
         )
 
@@ -193,10 +192,6 @@ class Filter:
             elif isinstance(content, list):
                 # OpenAI-style content parts; only text parts get rewritten.
                 for part in content:
-                    if (
-                        isinstance(part, dict)
-                        and part.get('type') == 'text'
-                        and isinstance(part.get('text'), str)
-                    ):
+                    if isinstance(part, dict) and part.get('type') == 'text' and isinstance(part.get('text'), str):
                         part['text'] = annotate(part['text'], self.valves.databank_base_url)
         return body

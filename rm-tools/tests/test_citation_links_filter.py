@@ -21,10 +21,7 @@ def run(coro):
 def test_wraps_bare_ecli_in_markdown_link():
     text = 'Zie de uitspraak ECLI:NL:RBAMS:2024:1234 voor context.'
     out = citation_links.annotate(text, 'https://databank.datameesters.nl')
-    assert (
-        '[ECLI:NL:RBAMS:2024:1234](https://uitspraken.rechtspraak.nl/details?id=ECLI:NL:RBAMS:2024:1234)'
-        in out
-    )
+    assert '[ECLI:NL:RBAMS:2024:1234](https://uitspraken.rechtspraak.nl/details?id=ECLI:NL:RBAMS:2024:1234)' in out
 
 
 def test_wraps_multiple_eclis_in_one_paragraph():
@@ -43,10 +40,7 @@ def test_does_not_double_wrap_ecli_inside_existing_link():
 def test_wraps_doc_id_mention_with_databank_base_url():
     text = 'Bron: doc_id: abc12345xyz beschrijft het beleid.'
     out = citation_links.annotate(text, 'https://databank.datameesters.nl')
-    assert (
-        '[doc_id: abc12345xyz](https://databank.datameesters.nl/documents/abc12345xyz)'
-        in out
-    )
+    assert '[doc_id: abc12345xyz](https://databank.datameesters.nl/documents/abc12345xyz)' in out
 
 
 def test_wraps_parenthesized_doc_id_form():

@@ -44,11 +44,7 @@ def _last_user_message(messages: list[dict]) -> str:
             return content.strip()
         # OpenAI-style content arrays (text + image parts)
         if isinstance(content, list):
-            parts = [
-                p.get('text', '')
-                for p in content
-                if isinstance(p, dict) and p.get('type') == 'text'
-            ]
+            parts = [p.get('text', '') for p in content if isinstance(p, dict) and p.get('type') == 'text']
             return ' '.join(parts).strip()
     return ''
 
@@ -123,9 +119,7 @@ def _format_block(matches: list[dict]) -> str:
             lines.append(f'- `{name}` ({scope}): {description}')
         else:
             lines.append(f'- `{name}` ({scope})')
-    lines.append(
-        'Roep `get_memory({name})` aan voor de volledige inhoud van een memory wanneer die nodig is.'
-    )
+    lines.append('Roep `get_memory({name})` aan voor de volledige inhoud van een memory wanneer die nodig is.')
     return '\n'.join(lines)
 
 

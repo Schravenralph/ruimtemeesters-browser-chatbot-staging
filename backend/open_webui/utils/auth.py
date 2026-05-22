@@ -276,6 +276,45 @@ def get_http_authorization_cred(auth_header: Optional[str]):
         return None
 
 
+def _try_clerk_jwt_auth(token: str):
+    """
+    Verify `token` as a Clerk session JWT (RS256 via JWKS) and resolve
+    it to an OpenWebUI user. Returns the user or `None`.
+
+    Used by `get_current_user` after OpenWebUI's own HS256 decode fails
+    — Clerk JWTs are signed with a Clerk-controlled RS256 key, so they
+    will never satisfy `decode_token` (which checks SESSION_SECRET).
+    The fallback exists so the geoportaal native chat panel can send
+    the Clerk session token as a Bearer header instead of relying on
+    the `__session` cookie that doesn't reach the chatbot subdomain.
+
+    Imports are lazy to avoid a circular dependency: `clerk_sso.py`
+    imports `create_token` from this module.
+    """
+    jwks_uri = os.environ.get('CLERK_JWKS_URI')
+    issuer = os.environ.get('CLERK_ISSUER')
+    secret_key = os.environ.get('CLERK_SECRET_KEY')
+    if not jwks_uri or not issuer or not secret_key:
+        return None
+
+    # Lazy import — see docstring.
+    from open_webui.utils.clerk_sso import (
+        verify_clerk_session,
+        fetch_clerk_user,
+        get_or_create_openwebui_user,
+    )
+
+    claims = verify_clerk_session(token, jwks_uri, issuer)
+    if not claims or 'sub' not in claims:
+        return None
+
+    clerk_user = fetch_clerk_user(claims['sub'], secret_key)
+    if not clerk_user or not clerk_user.get('email'):
+        return None
+
+    return get_or_create_openwebui_user(clerk_user)
+
+
 async def get_current_user(
     request: Request,
     response: Response,
@@ -315,7 +354,13 @@ async def get_current_user(
 
         return user
 
-    # auth by jwt token
+    # auth by jwt token — try OpenWebUI HS256 first, then Clerk RS256
+    # (Ruimtemeesters shared-session SSO). The native chat panel in
+    # geoportaal.datameesters.nl sends the Clerk session JWT as
+    # `Authorization: Bearer …` because the `__session` cookie is
+    # host-only and does not reach chatbot.datameesters.nl. Without
+    # this fallback every cross-subdomain API request 401s even
+    # though the user has a valid Clerk session.
     try:
         try:
             data = decode_token(token)
@@ -324,6 +369,20 @@ async def get_current_user(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail='Invalid token',
             )
+
+        if data is None:
+            # Not a valid OpenWebUI JWT — try as a Clerk JWT.
+            user = _try_clerk_jwt_auth(token)
+            if user is not None:
+                current_span = trace.get_current_span()
+                if current_span:
+                    current_span.set_attribute('client.user.id', user.id)
+                    current_span.set_attribute('client.user.email', user.email)
+                    current_span.set_attribute('client.user.role', user.role)
+                    current_span.set_attribute('client.auth.type', 'clerk_jwt')
+                if background_tasks:
+                    background_tasks.add_task(Users.update_last_active_by_id, user.id)
+                return user
 
         if data is not None and 'id' in data:
             if data.get('jti') and not await is_valid_token(request, data):

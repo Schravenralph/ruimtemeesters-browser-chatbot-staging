@@ -307,11 +307,7 @@ class Filter:
         # OpenWebUI UUID against the MCP's `clerk:<email>` and never
         # matched). A stale active session is treated as no session.
         active_owned = [
-            s
-            for s in sessions
-            if isinstance(s, dict)
-            and s.get('status') == 'active'
-            and self._is_recent(s)
+            s for s in sessions if isinstance(s, dict) and s.get('status') == 'active' and self._is_recent(s)
         ]
         if not active_owned:
             return None, 0

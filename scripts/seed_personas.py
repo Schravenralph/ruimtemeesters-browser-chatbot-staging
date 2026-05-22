@@ -83,8 +83,15 @@ def _mint_admin_token(app_container: str, admin_user_id: str) -> str:
 def _resolve_admin_user_id(db_container: str) -> str:
     out = _docker_exec(
         db_container,
-        ['psql', '-U', 'rmchatbot', '-d', 'rmchatbot', '-tAc',
-         'SELECT id FROM "user" WHERE role=\'admin\' ORDER BY created_at LIMIT 1;'],
+        [
+            'psql',
+            '-U',
+            'rmchatbot',
+            '-d',
+            'rmchatbot',
+            '-tAc',
+            'SELECT id FROM "user" WHERE role=\'admin\' ORDER BY created_at LIMIT 1;',
+        ],
     )
     uid = out.strip()
     if not uid:
@@ -96,8 +103,7 @@ def _resolve_litellm_key(app_container: str) -> str:
     out = _docker_exec(app_container, ['sh', '-c', 'printf "%s" "$OPENAI_API_KEYS"'])
     if not out:
         raise RuntimeError(
-            f'OPENAI_API_KEYS empty in {app_container}. '
-            'Set LITELLM_MASTER_KEY in .env and recreate the container.'
+            f'OPENAI_API_KEYS empty in {app_container}. Set LITELLM_MASTER_KEY in .env and recreate the container.'
         )
     return out
 
@@ -131,12 +137,17 @@ def seed_connection(base_url: str, token: str, manifest: Manifest, litellm_key: 
             'api_version': 'openai',
         },
     }
-    resp = _post(base_url, token, '/openai/config/update', {
-        'ENABLE_OPENAI_API': True,
-        'OPENAI_API_BASE_URLS': manifest.connection.base_urls,
-        'OPENAI_API_KEYS': [litellm_key],
-        'OPENAI_API_CONFIGS': configs,
-    })
+    resp = _post(
+        base_url,
+        token,
+        '/openai/config/update',
+        {
+            'ENABLE_OPENAI_API': True,
+            'OPENAI_API_BASE_URLS': manifest.connection.base_urls,
+            'OPENAI_API_KEYS': [litellm_key],
+            'OPENAI_API_CONFIGS': configs,
+        },
+    )
     resp.raise_for_status()
     print(f'  ~ openai connection: {", ".join(p.id for p in manifest.personas)}')
 
@@ -295,7 +306,7 @@ def seed_prompt(base_url: str, token: str, prompt: PromptDef) -> bool:
     if listing.status_code == 200:
         for existing in listing.json():
             if existing.get('command') == prompt.command:
-                upd = _post(base_url, token, f"/api/v1/prompts/id/{existing['id']}/update", payload)
+                upd = _post(base_url, token, f'/api/v1/prompts/id/{existing["id"]}/update', payload)
                 if upd.status_code == 200:
                     print(f'  ~ Updated prompt: /{prompt.command}')
                     return True
@@ -362,7 +373,10 @@ def main() -> int:
     if manifest.filters:
         print(f'Seeding {len(manifest.filters)} filters...')
         if not args.memory_token and any(f.needs_memory_token for f in manifest.filters):
-            print('  ! WARNING: no --memory-token / MEMORY_GATEWAY_TOKEN — filters that call rm-memory will 401', file=sys.stderr)
+            print(
+                '  ! WARNING: no --memory-token / MEMORY_GATEWAY_TOKEN — filters that call rm-memory will 401',
+                file=sys.stderr,
+            )
         ok = sum(1 for f in manifest.filters if seed_filter(args.url, token, f, args.memory_token, args.skills_token))
         print(f'  -> {ok}/{len(manifest.filters)} filters seeded\n')
         if ok != len(manifest.filters):

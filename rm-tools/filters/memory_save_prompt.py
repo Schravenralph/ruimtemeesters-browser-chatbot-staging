@@ -61,8 +61,7 @@ def _build_instruction(threshold: int, next_threshold: int | None) -> str:
     so the model knows to treat it as a side-channel cue.
     """
     next_part = (
-        f' Als de gebruiker nu nog niet wil opslaan, vraag dan opnieuw rond de '
-        f'{_format_count(next_threshold)} tokens.'
+        f' Als de gebruiker nu nog niet wil opslaan, vraag dan opnieuw rond de {_format_count(next_threshold)} tokens.'
         if next_threshold
         else ''
     )
@@ -121,9 +120,7 @@ class Filter:
 
     def _parse_thresholds(self) -> list[int]:
         try:
-            parsed = sorted(
-                {int(x.strip()) for x in (self.valves.thresholds or '').split(',') if x.strip()}
-            )
+            parsed = sorted({int(x.strip()) for x in (self.valves.thresholds or '').split(',') if x.strip()})
             return [t for t in parsed if t > 0]
         except ValueError:
             log.warning('memory_save_prompt: invalid thresholds %r, falling back to defaults', self.valves.thresholds)

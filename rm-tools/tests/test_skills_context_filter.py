@@ -95,8 +95,8 @@ def _make_body(model_id: str = 'ro-assistent') -> dict:
 
 def _make_skills_responder(skills_list: list[dict], bodies: dict[str, MagicMock]):
     """Return a side-effect callable that responds to:
-      GET .../api/v1/skills?persona=X  -> list response
-      GET .../api/v1/skills/<name>     -> bodies[name]
+    GET .../api/v1/skills?persona=X  -> list response
+    GET .../api/v1/skills/<name>     -> bodies[name]
     """
 
     async def _responder(url, **kwargs):
@@ -320,9 +320,7 @@ def test_body_fetch_failure_skips_just_that_skill():
     f.valves.cache_ttl_s = 0
     skills_list = [{'name': 'beleidsscan', 'mandatory': True, 'persona': 'ro-assistent'}]
     failing_body = MagicMock()
-    failing_body.raise_for_status.side_effect = httpx.HTTPStatusError(
-        '500', request=MagicMock(), response=MagicMock()
-    )
+    failing_body.raise_for_status.side_effect = httpx.HTTPStatusError('500', request=MagicMock(), response=MagicMock())
 
     async def _responder(url, **kw):
         if url.rstrip('/').endswith('/api/v1/skills/beleidsscan'):

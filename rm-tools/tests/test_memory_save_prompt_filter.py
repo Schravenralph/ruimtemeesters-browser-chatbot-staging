@@ -192,7 +192,9 @@ def test_inlet_no_op_for_other_models():
         'model': 'gemini.gemini-2.5-flash-lite',
         'messages': [_msg('system', 40), _msg('user', 4000)],
     }
-    out = _run(f.inlet(body, __user__={'id': 'u1'}, __metadata__={'chat_id': 'c1', 'model_id': 'gemini.gemini-2.5-flash-lite'}))
+    out = _run(
+        f.inlet(body, __user__={'id': 'u1'}, __metadata__={'chat_id': 'c1', 'model_id': 'gemini.gemini-2.5-flash-lite'})
+    )
     assert '[Systeem-signaal' not in out['messages'][0]['content']
     assert f._asked == {}
 
