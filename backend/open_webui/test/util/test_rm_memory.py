@@ -22,6 +22,7 @@ from open_webui.routers.rm_memory import (
     ActiveProject,
     ListMemoriesOutput,
     _call_user_tool,
+    _forwarded_user_id,
     _resolve_gateway_token,
 )
 
@@ -113,15 +114,28 @@ def _run(coro):
     return asyncio.new_event_loop().run_until_complete(coro)
 
 
-def _override_user(email: str | None = 'ralph@example.org'):
+def _override_user(
+    *,
+    clerk_sub: str | None = 'user_ralph',
+    email: str = 'ralph@example.org',
+):
     """Build a (patcher, undo) pair that overrides get_verified_user on
     the FastAPI app for the duration of a test. Used by endpoint-level
-    tests that go through TestClient."""
+    tests that go through TestClient.
+
+    The fake user mirrors the UserModel shape: `id`, `email`, and an
+    `oauth` dict carrying the clerk sub. Pass `clerk_sub=None` to
+    simulate a pre-Clerk-onboarded user (e.g. legacy email-only
+    accounts) — the BFF then omits X-Forwarded-User and rm-memory
+    attributes to the gateway's API key, matching production
+    behaviour.
+    """
     from open_webui.main import app  # noqa: PLC0415
     from open_webui.utils.auth import get_verified_user  # noqa: PLC0415
 
     def _fake():
-        return type('U', (), {'id': 'u', 'email': email})()
+        oauth = {'clerk': {'sub': clerk_sub}} if clerk_sub else None
+        return type('U', (), {'id': 'u', 'email': email, 'oauth': oauth})()
 
     app.dependency_overrides[get_verified_user] = _fake
     return lambda: app.dependency_overrides.pop(get_verified_user, None)
@@ -145,10 +159,47 @@ def test_blank_gateway_token_returns_503(monkeypatch):
     assert exc.value.status_code == 503
 
 
+# --- _forwarded_user_id -- Issue #58 (b) on Ruimtemeesters-Memory --------
+
+
+def test_forwarded_user_id_returns_clerk_prefix_for_clerk_oauth():
+    user = type('U', (), {'oauth': {'clerk': {'sub': 'user_abc123'}}})()
+    assert _forwarded_user_id(user) == 'clerk:user_abc123'
+
+
+def test_forwarded_user_id_returns_none_when_oauth_missing():
+    # Pre-Clerk-onboarded user (email-only legacy account). The BFF
+    # should then omit X-Forwarded-User and rm-memory falls back to
+    # attributing to the gateway API key — same as before the fix.
+    user = type('U', (), {'oauth': None})()
+    assert _forwarded_user_id(user) is None
+
+
+def test_forwarded_user_id_returns_none_when_oauth_lacks_clerk():
+    # User logged in via a different OAuth provider. Don't synthesise
+    # a clerk: id from another provider's sub; rm-memory's regex would
+    # still accept it but the attribution would be wrong.
+    user = type('U', (), {'oauth': {'google': {'sub': 'g-123'}}})()
+    assert _forwarded_user_id(user) is None
+
+
+def test_forwarded_user_id_returns_none_when_clerk_sub_missing():
+    user = type('U', (), {'oauth': {'clerk': {}}})()
+    assert _forwarded_user_id(user) is None
+
+
+def test_forwarded_user_id_returns_none_when_oauth_is_not_a_dict():
+    # Defensive — UserModel.oauth is typed Optional[dict] but a future
+    # migration might shape-shift it. Falling through to None is
+    # safer than throwing.
+    user = type('U', (), {'oauth': 'oops'})()
+    assert _forwarded_user_id(user) is None
+
+
 # --- _call_user_tool happy path -------------------------------------------
 
 
-def test_call_user_tool_forwards_email_and_token(monkeypatch):
+def test_call_user_tool_forwards_clerk_id_and_token(monkeypatch):
     monkeypatch.setenv('MEMORY_GATEWAY_TOKEN', 'gateway-secret')
     monkeypatch.setenv('RM_MEMORY_MCP_URL', 'http://test-memory:3200/mcp')
 
@@ -158,7 +209,7 @@ def test_call_user_tool_forwards_email_and_token(monkeypatch):
             _call_user_tool(
                 tool_name='list_memories',
                 arguments={'scope': 'user'},
-                user_email='ralph@example.org',
+                forwarded_user_id='clerk:user_ralph',
             )
         )
 
@@ -172,7 +223,9 @@ def test_call_user_tool_forwards_email_and_token(monkeypatch):
 
     headers = call.kwargs['headers']
     assert headers['Authorization'] == 'Bearer gateway-secret'
-    assert headers['X-Forwarded-User'] == 'ralph@example.org'
+    # Issue #58 (b) on Ruimtemeesters-Memory: must be `clerk:<sub>`,
+    # NOT an email — rm-memory's FORWARDED_ID_RE rejects the latter.
+    assert headers['X-Forwarded-User'] == 'clerk:user_ralph'
     assert 'application/json' in headers['Accept']
     assert 'text/event-stream' in headers['Accept']
 
@@ -185,7 +238,7 @@ def test_call_user_tool_omits_x_forwarded_user_when_missing(monkeypatch):
             _call_user_tool(
                 tool_name='list_memories',
                 arguments={},
-                user_email=None,
+                forwarded_user_id=None,
             )
         )
     headers = post_mock.call_args.kwargs['headers']
@@ -212,7 +265,7 @@ def test_call_user_tool_502_propagates_with_upstream_body(monkeypatch):
                 _call_user_tool(
                     tool_name='list_memories',
                     arguments={},
-                    user_email='ralph@example.org',
+                    forwarded_user_id='clerk:user_ralph',
                 )
             )
     assert exc.value.status_code == 502
@@ -228,7 +281,7 @@ def test_call_user_tool_timeout_propagates_as_502(monkeypatch):
                 _call_user_tool(
                     tool_name='list_memories',
                     arguments={},
-                    user_email='ralph@example.org',
+                    forwarded_user_id='clerk:user_ralph',
                 )
             )
     assert exc.value.status_code == 502
@@ -246,7 +299,7 @@ def test_call_user_tool_malformed_propagates_as_502(monkeypatch):
                 _call_user_tool(
                     tool_name='list_memories',
                     arguments={},
-                    user_email='ralph@example.org',
+                    forwarded_user_id='clerk:user_ralph',
                 )
             )
     assert exc.value.status_code == 502
@@ -269,7 +322,7 @@ def test_call_user_tool_error_envelope_propagates_as_502(monkeypatch):
                 _call_user_tool(
                     tool_name='list_memories',
                     arguments={},
-                    user_email='ralph@example.org',
+                    forwarded_user_id='clerk:user_ralph',
                 )
             )
     assert exc.value.status_code == 502
@@ -526,7 +579,7 @@ def test_call_user_tool_forwards_x_thread_id_when_set(monkeypatch):
             _call_user_tool(
                 tool_name='get_active_project',
                 arguments={},
-                user_email='ralph@example.org',
+                forwarded_user_id='clerk:user_ralph',
                 x_thread_id='chat-abc-123',
             )
         )
@@ -544,7 +597,7 @@ def test_call_user_tool_omits_x_thread_id_when_missing(monkeypatch):
             _call_user_tool(
                 tool_name='list_memories',
                 arguments={},
-                user_email='ralph@example.org',
+                forwarded_user_id='clerk:user_ralph',
             )
         )
     headers = post_mock.call_args.kwargs['headers']

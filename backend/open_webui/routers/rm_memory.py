@@ -3,16 +3,23 @@
 Surfaces the MCP's read + write tools (list / get / save / forget)
 over HTTP so the chatbot frontend can render a memory panel without
 direct MCP access. Every request runs under the calling user's
-identity: the chatbot forwards `user.email` as `X-Forwarded-User`
-and authenticates to the MCP with the gateway token. The MCP applies
-its own scope predicates server-side (Session 1 read predicate +
-saveMemory upsert key + forgetMemory ambiguity guard), so the BFF
-stays a pass-through.
+identity: the chatbot forwards a canonical `clerk:<sub>` id as
+`X-Forwarded-User` and authenticates to the MCP with the gateway
+token. The MCP applies its own scope predicates server-side
+(Session 1 read predicate + saveMemory upsert key + forgetMemory
+ambiguity guard), so the BFF stays a pass-through.
+
+Earlier versions forwarded `user.email`, but rm-memory's
+FORWARDED_ID_RE regex rejects emails (no `@` in `[A-Za-z0-9_.-]`),
+so the request silently re-attributed to the BFF's API key
+(`api:mcp-shim`) — users couldn't edit/forget their own memories
+from the chatbot panel because the canMutate check then failed.
+Issue #58 (b) on Ruimtemeesters-Memory.
 
 Distinct from `admin_memory.py`:
 - Auth: gateway token (not admin token).
-- Identity: the caller's email is forwarded; no synthetic admin
-  identity.
+- Identity: the caller's clerk sub is forwarded as `clerk:<sub>`;
+  no synthetic admin identity.
 - Gate: `get_verified_user` (any signed-in user).
 """
 
@@ -145,7 +152,7 @@ async def _call_user_tool(
     *,
     tool_name: str,
     arguments: dict[str, Any],
-    user_email: str | None,
+    forwarded_user_id: str | None,
     x_thread_id: str | None = None,
 ) -> dict[str, Any]:
     """Issue a user-scoped tools/call to the memory MCP and return the
@@ -173,8 +180,8 @@ async def _call_user_tool(
         'Accept': 'application/json, text/event-stream',
         'Content-Type': 'application/json',
     }
-    if user_email:
-        headers['X-Forwarded-User'] = user_email
+    if forwarded_user_id:
+        headers['X-Forwarded-User'] = forwarded_user_id
     if x_thread_id:
         headers['X-Thread-Id'] = x_thread_id
 
@@ -239,8 +246,34 @@ def _validate_or_502(model: type[BaseModel], payload: dict[str, Any], tool_name:
         ) from e
 
 
-def _user_email(user: Any) -> str | None:
-    return getattr(user, 'email', None) or None
+def _forwarded_user_id(user: Any) -> str | None:
+    """Construct the canonical `clerk:<sub>` identifier from the user's
+    OAuth profile, matching rm-memory's FORWARDED_ID_RE convention
+    (`(clerk|api):[A-Za-z0-9_.-]+`). Returns None when the user has
+    no clerk oauth entry — the BFF then sends the request without an
+    X-Forwarded-User header, and rm-memory falls back to attributing
+    to the gateway's own API key. That fallback is intentional for
+    pre-Clerk-onboarded users; it preserves the legacy attribution
+    path rather than silently sending a malformed header that
+    rm-memory would reject.
+
+    Earlier versions of this helper returned `user.email`, but
+    rm-memory's regex rejected emails (no `@` in the allowed char
+    set), so the forwarded identity was silently dropped and every
+    user write surfaced as `owner_user_id='api:mcp-shim'`. Users
+    couldn't edit/forget their own memories from the panel because
+    the canMutate check then failed. Issue #58 (b).
+    """
+    oauth = getattr(user, 'oauth', None) or {}
+    if not isinstance(oauth, dict):
+        return None
+    clerk_entry = oauth.get('clerk')
+    if not isinstance(clerk_entry, dict):
+        return None
+    sub = clerk_entry.get('sub')
+    if not sub or not isinstance(sub, str):
+        return None
+    return f'clerk:{sub}'
 
 
 # --- endpoints -------------------------------------------------------------
@@ -288,7 +321,7 @@ async def list_memories_endpoint(
     payload = await _call_user_tool(
         tool_name='list_memories',
         arguments=arguments,
-        user_email=_user_email(user),
+        forwarded_user_id=_forwarded_user_id(user),
     )
     return _validate_or_502(ListMemoriesOutput, payload, 'list_memories')
 
@@ -315,7 +348,7 @@ async def get_active_project_endpoint(
     payload = await _call_user_tool(
         tool_name='get_active_project',
         arguments={},
-        user_email=_user_email(user),
+        forwarded_user_id=_forwarded_user_id(user),
         x_thread_id=chat_id,
     )
     # MCP can legitimately return null. Handle the empty/null case
@@ -349,7 +382,7 @@ async def get_memory_endpoint(
     payload = await _call_user_tool(
         tool_name='get_memory',
         arguments=arguments,
-        user_email=_user_email(user),
+        forwarded_user_id=_forwarded_user_id(user),
     )
     return _validate_or_502(GetMemoryOutput, payload, 'get_memory')
 
@@ -375,7 +408,7 @@ async def save_memory_endpoint(
     payload = await _call_user_tool(
         tool_name='save_memory',
         arguments=arguments,
-        user_email=_user_email(user),
+        forwarded_user_id=_forwarded_user_id(user),
     )
     return _validate_or_502(SaveMemoryOutput, payload, 'save_memory')
 
@@ -404,6 +437,6 @@ async def forget_memory_endpoint(
     payload = await _call_user_tool(
         tool_name='forget_memory',
         arguments=arguments,
-        user_email=_user_email(user),
+        forwarded_user_id=_forwarded_user_id(user),
     )
     return _validate_or_502(ForgetMemoryOutput, payload, 'forget_memory')
