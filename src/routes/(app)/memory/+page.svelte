@@ -77,7 +77,7 @@
 
 	$: filteredEntries = (() => {
 		const q = searchTerm.trim().toLowerCase();
-		return entries.filter((e) => {
+		const filtered = entries.filter((e) => {
 			if (scopeFilter !== 'all' && e.scope !== scopeFilter) return false;
 			if (typeFilter !== 'all' && e.type !== typeFilter) return false;
 			if (projectFilter.trim() && e.project_id !== projectFilter.trim()) return false;
@@ -87,6 +87,17 @@
 			}
 			return true;
 		});
+		// Dedupe by (name, scope, project_id) — the same composite key used by
+		// {#each} below. Some backends can return multiple rows for the same
+		// composite (e.g. mid-migration state in rm-memory); we keep the most
+		// recently updated copy so the row count matches what forget can act on.
+		const seen = new Map<string, MemoryEntry>();
+		for (const e of filtered) {
+			const k = `${e.name}:${e.scope}:${e.project_id ?? ''}`;
+			const prev = seen.get(k);
+			if (!prev || prev.updated_at < e.updated_at) seen.set(k, e);
+		}
+		return Array.from(seen.values());
 	})();
 
 	$: knownProjects = Array.from(
