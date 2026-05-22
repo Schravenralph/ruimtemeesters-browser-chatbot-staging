@@ -355,7 +355,9 @@
 							<span class="text-[10px] px-1.5 py-0.5 rounded {scopeBadgeClass(entry.scope)}">
 								{entry.scope}
 							</span>
-							<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+							<span
+								class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
+							>
 								{entry.type}
 							</span>
 							{#if entry.project_id}
@@ -447,9 +449,7 @@
 												on:click={() => forget(entry)}
 												disabled={forgettingName === entry.name}
 											>
-												{forgettingName === entry.name
-													? $i18n.t('Forgetting…')
-													: $i18n.t('Forget')}
+												{forgettingName === entry.name ? $i18n.t('Forgetting…') : $i18n.t('Forget')}
 											</button>
 										{:else}
 											<span class="text-[10px] text-gray-500"
