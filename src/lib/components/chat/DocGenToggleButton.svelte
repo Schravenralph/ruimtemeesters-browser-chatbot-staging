@@ -106,18 +106,30 @@
 	}
 
 	async function openPanel() {
-		if (!$chatId) {
+		const initialChatId = $chatId;
+		if (!initialChatId) {
 			toast.error(i18n.t('Start een chat voordat je een document opent.'));
 			return;
 		}
+		// Bugbot HIGH on 289a61f7: openPanel awaits getOrMintDocIdForChat
+		// and iframe polling. The chat-change effect only fires closePanel
+		// when the panel is *already open*; during these awaits the panel
+		// isn't open yet, so a chat navigation would leave us mounting
+		// the previous chat's docId in the iframe while the visible chat
+		// is different. Re-check $chatId after every await and bail if
+		// the user has switched away.
+		const stillSameChat = () => $chatId === initialChatId;
+
 		let docId: string;
 		try {
-			docId = await getOrMintDocIdForChat(localStorage.token, $chatId);
+			docId = await getOrMintDocIdForChat(localStorage.token, initialChatId);
 		} catch (err) {
 			console.error('docGen: failed to read/mint docId for chat', err);
 			toast.error(i18n.t('Kon de document-id voor deze chat niet ophalen.'));
 			return;
 		}
+		if (!stillSameChat()) return;
+
 		const url = `${RMDG_IFRAME_BASE}/iframe-embed.html?docId=${encodeURIComponent(docId)}`;
 		// Open the right-rail Embeds panel via the existing store pattern
 		// (matches Citations / ContentRenderer usage).
@@ -125,11 +137,21 @@
 		embed.set(descriptor as unknown as null);
 		await showControls.set(true);
 		await showEmbeds.set(true);
+		if (!stillSameChat()) {
+			showEmbeds.set(false);
+			embed.set(null);
+			return;
+		}
 		// Wait for Svelte to mount Embeds.svelte + FullHeightIframe.
 		// A single tick() is not enough: FullHeightIframe.setIframeSrc awaits
 		// its own tick() before assigning iframeSrc, and the Embeds pane may
 		// still be expanding. Poll until the iframe appears or a timeout hits.
 		const iframeEl = await waitForEmbedIframe();
+		if (!stillSameChat()) {
+			showEmbeds.set(false);
+			embed.set(null);
+			return;
+		}
 		if (!iframeEl) {
 			// Bugbot MEDIUM on dc20451: previous version returned here
 			// with `embed` + `showEmbeds` still set, leaving the user

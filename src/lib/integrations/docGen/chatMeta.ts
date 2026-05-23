@@ -61,10 +61,20 @@ async function readDocIdFromChat(token: string, chatId: string): Promise<string 
 async function mintAndPersistDocId(token: string, chatId: string): Promise<string> {
 	const docId = mintUuid();
 	const raw = (await getChatById(token, chatId)) as ChatShape | null;
+	// Bugbot HIGH on 289a61f7: if getChatById returns null/empty, the
+	// previous code built `inner = {}` and POSTed it back. updateChatById
+	// re-wraps as `{chat: {}}` which can REPLACE the persisted chat blob,
+	// dropping the entire message history. Fail safe: if we can't read
+	// back a chat, refuse to mint — the caller toasts and aborts the open.
+	const inner = raw?.chat ?? (raw as Record<string, unknown> | null);
+	if (!inner || typeof inner !== 'object' || Object.keys(inner).length === 0) {
+		throw new Error(
+			`docGen chatMeta: cannot mint docId — getChatById returned no chat for '${chatId}'`
+		);
+	}
 	// The /chats/{id} POST endpoint wraps the chat blob under `chat`.
 	// `updateChatById` re-wraps it the same way (chats/index.ts:967). We
 	// hand it the inner chat object with a merged meta.docgen.docId.
-	const inner = raw?.chat ?? raw ?? {};
 	const meta: ChatMeta = {
 		...((inner as ChatShape).meta ?? {}),
 		docgen: {
