@@ -61,13 +61,8 @@
 	import 'tippy.js/dist/tippy.css';
 
 	import { executeToolServer, getBackendConfig, getModels, getVersion } from '$lib/apis';
-	import {
-		dispatchDocGenToolCall
-	} from '$lib/integrations/docGen/executeToolDispatch';
-	import {
-		getActiveDocGenClient,
-		isDocGenServerUrl
-	} from '$lib/integrations/docGen/store';
+	import { dispatchDocGenToolCall } from '$lib/integrations/docGen/executeToolDispatch';
+	import { getActiveDocGenClient, isDocGenServerUrl } from '$lib/integrations/docGen/store';
 	import { getSessionUser, userSignOut } from '$lib/apis/auths';
 	import { getAllTags, getChatList } from '$lib/apis/chats';
 	import { chatCompletion } from '$lib/apis/openai';

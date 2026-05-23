@@ -15,14 +15,7 @@
 	import { tick, getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
 
-	import {
-		chatId,
-		embed,
-		showControls,
-		showEmbeds,
-		user,
-		type EmbedDescriptor
-	} from '$lib/stores';
+	import { chatId, embed, showControls, showEmbeds, user, type EmbedDescriptor } from '$lib/stores';
 	import Document from '$lib/components/icons/Document.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 
@@ -50,6 +43,39 @@
 	})();
 
 	let busy = $state(false);
+
+	// Bugbot HIGH on dc20451: the docgen client + panel are global
+	// singletons, but a user can switch chats while the panel is open.
+	// If we don't disconnect, completions in the new chat still inject
+	// `docgen_*` tools and tool calls still hit the *previous* chat's
+	// document. Watch `$chatId` and close the panel on any change.
+	// (Initial mount also fires this effect, but `$docGenPanelState.open`
+	// is false then so the close is a no-op.)
+	let lastChatId: string | null | undefined = undefined;
+	$effect(() => {
+		const cid = $chatId ?? null;
+		if (lastChatId === undefined) {
+			lastChatId = cid;
+			return;
+		}
+		if (cid !== lastChatId) {
+			lastChatId = cid;
+			if ($docGenPanelState.open) closePanel();
+		}
+	});
+
+	// Bugbot MEDIUM on dc20451: the user can close the Embeds panel via
+	// the X button inside Embeds.svelte itself, which clears `embed` /
+	// `showEmbeds` but doesn't know about our docgen client. Watch the
+	// `embed` store — if it goes null while we still think the panel is
+	// open, run our close path so tools stop injecting and the toolbar
+	// button updates.
+	$effect(() => {
+		const e = $embed;
+		if ($docGenPanelState.open && e === null) {
+			closePanel();
+		}
+	});
 
 	async function toggle() {
 		if (busy) return;
@@ -89,8 +115,14 @@
 		await tick();
 		const iframeEl = findEmbedIframe();
 		if (!iframeEl) {
+			// Bugbot MEDIUM on dc20451: previous version returned here
+			// with `embed` + `showEmbeds` still set, leaving the user
+			// with an empty embed rail and no connected client. Clear
+			// the stores so the chat returns to its normal layout.
 			toast.error(i18n.t('Document-paneel kon niet worden gestart.'));
 			console.error('docGen: iframe element not found after panel open');
+			showEmbeds.set(false);
+			embed.set(null);
 			return;
 		}
 		openDocGenIframe({ iframe: iframeEl, docId, iframeOrigin: RMDG_IFRAME_ORIGIN });

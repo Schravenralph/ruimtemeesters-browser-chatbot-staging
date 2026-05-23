@@ -184,7 +184,8 @@ export function connectDocGenIframe(opts: ConnectOptions): DocGenIframeClient {
 	function call<T>(method: string, args: unknown[] = []): Promise<T> {
 		if (disconnected) return Promise.reject(new Error('docGenIframeClient: disconnected'));
 		const target = iframe.contentWindow;
-		if (!target) return Promise.reject(new Error('docGenIframeClient: iframe has no contentWindow'));
+		if (!target)
+			return Promise.reject(new Error('docGenIframeClient: iframe has no contentWindow'));
 		const requestId = mintRequestId();
 		const req: RmdgRequest = { type: 'rmdg:request', requestId, method, args };
 		return new Promise<T>((resolve, reject) => {

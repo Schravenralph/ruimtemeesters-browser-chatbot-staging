@@ -20,7 +20,9 @@ export interface DocGenToolServerEntry {
  * open. Returns null when closed — caller should skip injection in that
  * case.
  */
-export function getDocGenToolServerEntry(opts: { panelOpen: boolean }): DocGenToolServerEntry | null {
+export function getDocGenToolServerEntry(opts: {
+	panelOpen: boolean;
+}): DocGenToolServerEntry | null {
 	if (!opts.panelOpen) return null;
 	return {
 		url: DOC_GEN_VIRTUAL_SERVER_URL,
