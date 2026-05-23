@@ -2266,8 +2266,7 @@
 					});
 					return [
 						...($toolServers ?? []).filter(
-							(server, idx) =>
-								toolServerIds.includes(idx) || toolServerIds.includes(server?.id)
+							(server, idx) => toolServerIds.includes(idx) || toolServerIds.includes(server?.id)
 						),
 						// Direct terminal servers — always included when enabled (not routed through selectedToolIds)
 						...($terminalServers ?? []).filter((t) => !t.id),
