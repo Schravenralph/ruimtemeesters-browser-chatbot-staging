@@ -12,8 +12,8 @@ vi.mock('$lib/integrations/docGen/panelLifecycle', () => ({
 	openDocGenPanelForCurrentChat: openSpy
 }));
 
-import { filterSlashActions, slashActions } from './registry';
-import type { SlashActionContext } from './registry';
+import { documentActionGate, filterSlashActions, slashActions } from './registry';
+import type { SlashActionContext, SlashActionUser } from './registry';
 
 describe('slashActions registry', () => {
 	it('exposes the document action', () => {
@@ -43,25 +43,73 @@ describe('slashActions registry', () => {
 	});
 });
 
+describe('documentActionGate (Bugbot PR #132 fix)', () => {
+	it('admits when user is null (pre-load — defer to toolbar guard)', () => {
+		expect(documentActionGate(null)).toBe(true);
+		expect(documentActionGate(undefined)).toBe(true);
+	});
+
+	it('admits admins regardless of permissions', () => {
+		const admin: SlashActionUser = {
+			role: 'admin',
+			permissions: { chat: { controls: false } }
+		};
+		expect(documentActionGate(admin)).toBe(true);
+	});
+
+	it('admits non-admins by default (permissive when permission missing)', () => {
+		expect(documentActionGate({ role: 'user' })).toBe(true);
+		expect(documentActionGate({ role: 'user', permissions: {} })).toBe(true);
+		expect(documentActionGate({ role: 'user', permissions: { chat: {} } })).toBe(true);
+	});
+
+	it('admits non-admins when chat.controls is explicitly true', () => {
+		expect(
+			documentActionGate({ role: 'user', permissions: { chat: { controls: true } } })
+		).toBe(true);
+	});
+
+	it('denies non-admins when chat.controls is explicitly false', () => {
+		expect(
+			documentActionGate({ role: 'user', permissions: { chat: { controls: false } } })
+		).toBe(false);
+	});
+});
+
 describe('filterSlashActions', () => {
-	it('returns all entries for an empty query', () => {
+	const adminUser: SlashActionUser = { role: 'admin' };
+	const deniedUser: SlashActionUser = {
+		role: 'user',
+		permissions: { chat: { controls: false } }
+	};
+
+	it('returns all entries for an empty query (admin)', () => {
+		expect(filterSlashActions('', adminUser).length).toBe(slashActions.length);
+		expect(filterSlashActions('   ', adminUser).length).toBe(slashActions.length);
+	});
+
+	it('returns all entries for an empty query (null user — pre-load permissive)', () => {
 		expect(filterSlashActions('').length).toBe(slashActions.length);
-		expect(filterSlashActions('   ').length).toBe(slashActions.length);
+	});
+
+	it('hides the document action from users denied chat.controls', () => {
+		expect(filterSlashActions('', deniedUser).map((a) => a.id)).not.toContain('document');
+		expect(filterSlashActions('doc', deniedUser)).toEqual([]);
 	});
 
 	it('matches by id prefix', () => {
-		expect(filterSlashActions('doc').map((a) => a.id)).toEqual(['document']);
+		expect(filterSlashActions('doc', adminUser).map((a) => a.id)).toEqual(['document']);
 	});
 
 	it('matches by id full', () => {
-		expect(filterSlashActions('document').map((a) => a.id)).toEqual(['document']);
+		expect(filterSlashActions('document', adminUser).map((a) => a.id)).toEqual(['document']);
 	});
 
 	it('matches by label (case-insensitive)', () => {
-		expect(filterSlashActions('DOCUMENT').map((a) => a.id)).toEqual(['document']);
+		expect(filterSlashActions('DOCUMENT', adminUser).map((a) => a.id)).toEqual(['document']);
 	});
 
 	it('returns empty for non-matching query', () => {
-		expect(filterSlashActions('xyzzy')).toEqual([]);
+		expect(filterSlashActions('xyzzy', adminUser)).toEqual([]);
 	});
 });

@@ -29,6 +29,16 @@ export interface SlashActionContext {
 	i18n: Writable<i18nType>;
 }
 
+/**
+ * Minimal user shape the registry needs for permission gating. Avoids a
+ * hard dependency on `$lib/stores`'s SessionUser (which is `any` on
+ * `.permissions` anyway) so this module stays test-friendly.
+ */
+export interface SlashActionUser {
+	role?: string;
+	permissions?: { chat?: { controls?: boolean } } & Record<string, unknown>;
+}
+
 export interface SlashAction {
 	/** Lowercase id; also the typed command without the slash (`document` → `/document`). */
 	id: string;
@@ -38,8 +48,27 @@ export interface SlashAction {
 	description: string;
 	/** Optional emoji/glyph for the dropdown item. */
 	icon?: string;
+	/**
+	 * Optional visibility predicate. Returns true when the action should
+	 * appear in the dropdown for this user. Bugbot PR #132 finding: without
+	 * this, `/document` lets a user denied `chat.controls` open the panel
+	 * the toolbar button hides from them.
+	 */
+	gate?: (user: SlashActionUser | null | undefined) => boolean;
 	/** Side-effect to execute on select. May be async; return value is ignored. */
 	run: (ctx: SlashActionContext) => void | Promise<void>;
+}
+
+/**
+ * Document action mirrors `DocGenToggleButton.svelte`'s visibility check:
+ * admins always see it; everyone else sees it unless `chat.controls` is
+ * explicitly set to `false` (default permissive when the field is
+ * missing). Exported for direct unit test.
+ */
+export function documentActionGate(user: SlashActionUser | null | undefined): boolean {
+	if (!user) return true; // pre-load: defer to the toolbar's own guard.
+	if (user.role === 'admin') return true;
+	return user.permissions?.chat?.controls ?? true;
 }
 
 export const slashActions: SlashAction[] = [
@@ -48,6 +77,7 @@ export const slashActions: SlashAction[] = [
 		label: 'Document',
 		description: 'Open de DocGen-zijbalk voor deze chat',
 		icon: '📄',
+		gate: documentActionGate,
 		run: ({ i18n }) => {
 			void openDocGenPanelForCurrentChat({ i18n });
 		}
@@ -55,13 +85,18 @@ export const slashActions: SlashAction[] = [
 ];
 
 /**
- * Filter the registry by a typed query (the text after `/`). Match is
- * case-insensitive against id and label. Empty query returns all.
+ * Filter the registry by a typed query (the text after `/`) and the
+ * current user (for permission gating). Match is case-insensitive
+ * against id and label. Empty query returns all visible actions.
  */
-export function filterSlashActions(query: string): SlashAction[] {
+export function filterSlashActions(
+	query: string,
+	user: SlashActionUser | null | undefined = null
+): SlashAction[] {
+	const visible = slashActions.filter((a) => !a.gate || a.gate(user));
 	const q = query.trim().toLowerCase();
-	if (!q) return slashActions.slice();
-	return slashActions.filter(
+	if (!q) return visible;
+	return visible.filter(
 		(a) => a.id.toLowerCase().includes(q) || a.label.toLowerCase().includes(q)
 	);
 }

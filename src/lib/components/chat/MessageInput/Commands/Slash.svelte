@@ -67,10 +67,12 @@
 	{query}
 	bind:filteredItems={actionItems}
 	onSelect={(e) => onSelect(e)}
+	onHover={(localIdx) => (globalIdx = localIdx)}
 />
 <Prompts
 	bind:this={promptsEl}
 	{query}
 	bind:filteredItems={promptItems}
 	onSelect={(e) => onSelect(e)}
+	onHover={(localIdx) => (globalIdx = actionItems.length + localIdx)}
 />

@@ -9,6 +9,13 @@
 
 	export let query = '';
 	export let onSelect = (e) => {};
+	/**
+	 * Mouse-hover callback used by the WI-015 Slash composite to keep its
+	 * shared keyboard cursor (globalIdx) in sync with the actually-hovered
+	 * row. Stock `/`-only consumers leave it null; the local highlight
+	 * still updates via `selectedPromptIdx` below.
+	 */
+	export let onHover: ((localIdx: number) => void) | null = null;
 
 	let selectedPromptIdx = 0;
 	export let filteredItems = [];
@@ -86,6 +93,7 @@
 					}}
 					on:mousemove={() => {
 						selectedPromptIdx = promptIdx;
+						onHover?.(promptIdx);
 					}}
 					on:focus={() => {}}
 					data-selected={promptIdx === selectedPromptIdx}

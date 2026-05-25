@@ -9,18 +9,28 @@
 	// inserted.
 
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
+	import { user } from '$lib/stores';
 	import {
 		filterSlashActions,
-		type SlashAction
+		type SlashAction,
+		type SlashActionUser
 	} from '$lib/integrations/slashActions/registry';
 
 	export let query = '';
 	export let onSelect: (e: { type: 'action'; data: SlashAction }) => void = () => {};
+	/**
+	 * Mouse-hover callback. Bugbot PR #132 finding: without this, hover
+	 * only updates the child's local `selectedIdx`, while Enter dispatches
+	 * via the composite's globalIdx — so hover+Enter could execute the
+	 * wrong row. The Slash composite passes a callback that maps the
+	 * local idx back into its own globalIdx.
+	 */
+	export let onHover: ((localIdx: number) => void) | null = null;
 
 	let selectedIdx = 0;
 	export let filteredItems: SlashAction[] = [];
 
-	$: filteredItems = filterSlashActions(query);
+	$: filteredItems = filterSlashActions(query, $user as SlashActionUser | undefined);
 
 	$: if (query !== undefined) {
 		// Keep the cursor in range whenever the filter changes.
@@ -64,6 +74,7 @@
 					on:click={() => onSelect({ type: 'action', data: action })}
 					on:mousemove={() => {
 						selectedIdx = actionIdx;
+						onHover?.(actionIdx);
 					}}
 					on:focus={() => {}}
 					data-selected={actionIdx === selectedIdx}
