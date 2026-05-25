@@ -165,17 +165,26 @@ def main() -> int:
             updates['name'] = clerk['name']
 
         # Avatar: inline Clerk's URL → data URL, write if different (or forced)
+        avatar_fetch_failed = False
         if clerk['image_url']:
             current = full_user.profile_image_url or ''
             already_inlined = current.startswith('data:')
             if args.force_image or not already_inlined or current == '/user.png':
                 inlined = inline_image(clerk['image_url'])
-                if inlined and inlined != current:
+                if inlined is None:
+                    # Don't silently mask a transient fetch error as "in sync";
+                    # log + count it so the operator can retry.
+                    log.error('  %s: avatar fetch failed for %s', owui_user.email, clerk['image_url'])
+                    avatar_fetch_failed = True
+                elif inlined != current:
                     updates['profile_image_url'] = inlined
 
         if not updates:
-            log.info('  %s: in sync', owui_user.email)
-            stats['unchanged'] += 1
+            if avatar_fetch_failed:
+                stats['errors'] += 1
+            else:
+                log.info('  %s: in sync', owui_user.email)
+                stats['unchanged'] += 1
             continue
 
         before = {
