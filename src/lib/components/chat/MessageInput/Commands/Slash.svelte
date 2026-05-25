@@ -32,17 +32,39 @@
 		// stock Prompts component had before.
 		globalIdx = 0;
 	}
-	$: syncChildSelection(globalIdx);
 
-	function syncChildSelection(idx: number) {
-		// Highlight the cursor's location in the right child, clear the
-		// other. setSelectedIdx is a no-op outside the child's range.
-		if (idx < actionItems.length) {
+	// Re-run on *any* dependency change — globalIdx, actionItems, or
+	// promptItems. Bugbot PR #132 follow-up: with only `globalIdx` as
+	// the dependency, `$user` loading mid-mount could shift `actionItems`
+	// from `[]` to `[document]` (or vice versa) without re-syncing the
+	// child highlights, leaving `selectedPromptIdx` at a stale index and
+	// causing Enter to fire the wrong row.
+	$: syncCursor(globalIdx, actionItems.length, promptItems.length);
+
+	function syncCursor(idx: number, actionLen: number, promptLen: number) {
+		const total = actionLen + promptLen;
+		if (total === 0) {
+			actionsEl?.clearSelected?.();
+			promptsEl?.clearSelected?.();
+			return;
+		}
+		// Clamp into the current combined range. Writing back to globalIdx
+		// triggers a re-run of this reactive block with the clamped value,
+		// which is then in-range and proceeds to the sync below.
+		if (idx > total - 1) {
+			globalIdx = total - 1;
+			return;
+		}
+		if (idx < 0) {
+			globalIdx = 0;
+			return;
+		}
+		if (idx < actionLen) {
 			actionsEl?.setSelectedIdx?.(idx);
 			promptsEl?.clearSelected?.();
 		} else {
 			actionsEl?.clearSelected?.();
-			promptsEl?.setSelectedIdx?.(idx - actionItems.length);
+			promptsEl?.setSelectedIdx?.(idx - actionLen);
 		}
 	}
 
@@ -54,6 +76,9 @@
 	};
 	export const select = () => {
 		if (filteredItems.length === 0) return;
+		// Re-check the section boundary at call time. The child's
+		// `selectedIdx` is whatever the latest `syncCursor` set it to,
+		// so delegating to the right child fires the highlighted row.
 		if (globalIdx < actionItems.length) {
 			actionsEl?.select?.();
 		} else {
