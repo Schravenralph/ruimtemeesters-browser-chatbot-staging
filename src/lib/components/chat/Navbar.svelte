@@ -156,9 +156,9 @@
 								>
 									<div class=" m-auto self-center">
 										{#if $temporaryChatEnabled}
-											<ChatBubbleDottedChecked className=" size-4.5" strokeWidth="1.5" />
+											<ChatBubbleDottedChecked className=" size-9" strokeWidth="1.5" />
 										{:else}
-											<ChatBubbleDotted className=" size-4.5" strokeWidth="1.5" />
+											<ChatBubbleDotted className=" size-9" strokeWidth="1.5" />
 										{/if}
 									</div>
 								</button>
@@ -173,7 +173,7 @@
 									}}
 								>
 									<div class=" m-auto self-center">
-										<ChatCheck className=" size-4.5" strokeWidth="1.5" />
+										<ChatCheck className=" size-9" strokeWidth="1.5" />
 									</div>
 								</button>
 							</Tooltip>
@@ -192,7 +192,7 @@
 								aria-label="New Chat"
 							>
 								<div class=" m-auto self-center">
-									<ChatPlus className=" size-4.5" strokeWidth="1.5" />
+									<ChatPlus className=" size-9" strokeWidth="1.5" />
 								</div>
 							</button>
 						</Tooltip>
@@ -215,7 +215,7 @@
 								id="chat-context-menu-button"
 							>
 								<div class=" m-auto self-center">
-									<EllipsisHorizontal className=" size-5" strokeWidth="1.5" />
+									<EllipsisHorizontal className=" size-10" strokeWidth="1.5" />
 								</div>
 							</button>
 						</Menu>
@@ -233,7 +233,7 @@
 								aria-label="Controls"
 							>
 								<div class=" m-auto self-center">
-									<Knobs className=" size-5" strokeWidth="1" />
+									<Knobs className=" size-10" strokeWidth="1" />
 								</div>
 							</button>
 						</Tooltip>
@@ -257,7 +257,7 @@
 									<span class="sr-only">{$i18n.t('User menu')}</span>
 									<img
 										src={`${WEBUI_API_BASE_URL}/users/${$user?.id}/profile/image`}
-										class="size-6 object-cover rounded-full"
+										class="size-12 object-cover rounded-full"
 										alt=""
 										draggable="false"
 									/>
