@@ -1,51 +1,30 @@
 <script lang="ts">
 	// Toggle button for the Document-Generator iframe panel (WI-014).
 	//
-	// Owns the open/close lifecycle for the DG panel within a chat:
-	//   - On open: mints/reads the chat's docId from chat.meta.docgen,
-	//     sets the global embed store to point at iframe-embed.html, marks
-	//     it `trusted` (so Embeds.svelte passes allowSameOrigin to the
-	//     iframe — DG needs same-origin for Clerk localStorage/cookies),
-	//     opens showControls+showEmbeds, waits a tick for the iframe DOM,
-	//     queries it, and connects an iframeClient via the docGen store
-	//     (the active client becomes available to the execute:tool socket
-	//     handler in +layout.svelte).
-	//   - On close: disconnects the client, clears showEmbeds + embed.
+	// Owns the *button* — busy state, chat-change watchdog, embed-rail
+	// desync watchdog, click handler. The open-lifecycle itself
+	// (mint docId, mount iframe, connect client) was extracted to
+	// `panelLifecycle.openDocGenPanelForCurrentChat()` in WI-015 so the
+	// `/document` slash command can share it.
 
-	import { tick, getContext } from 'svelte';
+	import { getContext } from 'svelte';
 	import type { Writable } from 'svelte/store';
 	import type { i18n as i18nType } from 'i18next';
-	import { toast } from 'svelte-sonner';
 
-	import { chatId, embed, showControls, showEmbeds, user, type EmbedDescriptor } from '$lib/stores';
+	import { chatId, embed, showEmbeds, user, type EmbedDescriptor } from '$lib/stores';
 	import Document from '$lib/components/icons/Document.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 
-	import { getOrMintDocIdForChat } from '$lib/integrations/docGen/chatMeta';
+	import { disconnectDocGenIframe, docGenPanelState } from '$lib/integrations/docGen/store';
 	import {
-		disconnectDocGenIframe,
-		docGenPanelState,
-		openDocGenIframe
-	} from '$lib/integrations/docGen/store';
+		embedIsDocGenIframe,
+		openDocGenPanelForCurrentChat
+	} from '$lib/integrations/docGen/panelLifecycle';
 
 	// OWUI's i18n context is a Writable store, not a plain { t }. Auto-
 	// subscribe with the $-prefix in both script and template. See
 	// Chat.svelte:8 for the canonical declaration pattern.
 	const i18n: Writable<i18nType> = getContext('i18n');
-
-	// Production override + sensible default for the DG iframe URL. Mirrors
-	// the WI-013 iframe-embed.html entry. PUBLIC_RMDG_IFRAME_BASE lets ops
-	// point at a non-prod DG without a rebuild.
-	const RMDG_IFRAME_BASE =
-		(import.meta.env?.VITE_RMDG_IFRAME_BASE as string | undefined) ??
-		'https://doc-gen.datameesters.nl';
-	const RMDG_IFRAME_ORIGIN = (() => {
-		try {
-			return new URL(RMDG_IFRAME_BASE).origin;
-		} catch {
-			return 'https://doc-gen.datameesters.nl';
-		}
-	})();
 
 	let busy = $state(false);
 
@@ -80,18 +59,10 @@
 	// gone iframe, the model still receives docgen_* tools, and the
 	// toolbar still claims the panel is open. Close the panel as soon as
 	// the active embed is no longer ours OR the rail is hidden.
-	function embedIsOurDocGen(e: EmbedDescriptor | null): boolean {
-		return (
-			e !== null &&
-			e?.trusted === true &&
-			typeof e?.url === 'string' &&
-			e.url.startsWith(RMDG_IFRAME_BASE)
-		);
-	}
 	$effect(() => {
 		if (!$docGenPanelState.open) return;
 		const e = $embed as EmbedDescriptor | null;
-		if (!embedIsOurDocGen(e) || !$showEmbeds) {
+		if (!embedIsDocGenIframe(e) || !$showEmbeds) {
 			closePanel();
 		}
 	});
@@ -104,114 +75,16 @@
 				closePanel();
 				return;
 			}
-			await openPanel();
+			await openDocGenPanelForCurrentChat({ i18n });
 		} finally {
 			busy = false;
 		}
-	}
-
-	async function openPanel() {
-		const initialChatId = $chatId;
-		if (!initialChatId) {
-			toast.error($i18n.t('Start een chat voordat je een document opent.'));
-			return;
-		}
-		// Bugbot MEDIUM on 91851a09: temporary-chat ids have a `local:`
-		// prefix and aren't persisted server-side, so getChatById /
-		// updateChatById can't bind a docId to them. Block the open with
-		// a clear toast — server-side docId persistence is Ralph's call
-		// (2026-05-22 Q1) and localStorage fallback for temp chats would
-		// re-introduce the cross-browser-drift problem he wanted to avoid.
-		if (initialChatId.startsWith('local:')) {
-			toast.error(
-				$i18n.t('Documenten zijn niet beschikbaar in tijdelijke chats. Start een gewone chat.')
-			);
-			return;
-		}
-		// Bugbot HIGH on 289a61f7: openPanel awaits getOrMintDocIdForChat
-		// and iframe polling. The chat-change effect only fires closePanel
-		// when the panel is *already open*; during these awaits the panel
-		// isn't open yet, so a chat navigation would leave us mounting
-		// the previous chat's docId in the iframe while the visible chat
-		// is different. Re-check $chatId after every await and bail if
-		// the user has switched away.
-		const stillSameChat = () => $chatId === initialChatId;
-
-		let docId: string;
-		try {
-			docId = await getOrMintDocIdForChat(localStorage.token, initialChatId);
-		} catch (err) {
-			console.error('docGen: failed to read/mint docId for chat', err);
-			toast.error($i18n.t('Kon de document-id voor deze chat niet ophalen.'));
-			return;
-		}
-		if (!stillSameChat()) return;
-
-		const url = `${RMDG_IFRAME_BASE}/iframe-embed.html?docId=${encodeURIComponent(docId)}`;
-		// Open the right-rail Embeds panel via the existing store pattern
-		// (matches Citations / ContentRenderer usage).
-		const descriptor: EmbedDescriptor = { url, title: 'Document', trusted: true };
-		embed.set(descriptor as unknown as null);
-		await showControls.set(true);
-		await showEmbeds.set(true);
-		if (!stillSameChat()) {
-			showEmbeds.set(false);
-			embed.set(null);
-			return;
-		}
-		// Wait for Svelte to mount Embeds.svelte + FullHeightIframe.
-		// A single tick() is not enough: FullHeightIframe.setIframeSrc awaits
-		// its own tick() before assigning iframeSrc, and the Embeds pane may
-		// still be expanding. Poll until the iframe appears or a timeout hits.
-		const iframeEl = await waitForEmbedIframe();
-		if (!stillSameChat()) {
-			showEmbeds.set(false);
-			embed.set(null);
-			return;
-		}
-		if (!iframeEl) {
-			// Bugbot MEDIUM on dc20451: previous version returned here
-			// with `embed` + `showEmbeds` still set, leaving the user
-			// with an empty embed rail and no connected client. Clear
-			// the stores so the chat returns to its normal layout.
-			toast.error($i18n.t('Document-paneel kon niet worden gestart.'));
-			console.error('docGen: iframe element not found after panel open');
-			showEmbeds.set(false);
-			embed.set(null);
-			return;
-		}
-		openDocGenIframe({ iframe: iframeEl, docId, iframeOrigin: RMDG_IFRAME_ORIGIN });
 	}
 
 	function closePanel() {
 		disconnectDocGenIframe();
 		showEmbeds.set(false);
 		embed.set(null);
-	}
-
-	async function waitForEmbedIframe(
-		maxWaitMs = 2000,
-		intervalMs = 50
-	): Promise<HTMLIFrameElement | null> {
-		const deadline = Date.now() + maxWaitMs;
-		while (Date.now() < deadline) {
-			await tick();
-			const el = findEmbedIframe();
-			if (el) return el;
-			await new Promise((r) => setTimeout(r, intervalMs));
-		}
-		return null;
-	}
-
-	function findEmbedIframe(): HTMLIFrameElement | null {
-		// FullHeightIframe doesn't expose a binding hook to its consumer
-		// (it's used by Citations + others as a generic embed shell). The
-		// reliable way to grab the iframe element is a DOM query scoped
-		// to the embeds panel; there is exactly one iframe in that pane.
-		// If FullHeightIframe later exposes a `bind:iframe`, swap to that.
-		return document.querySelector<HTMLIFrameElement>(
-			'.docgen-embeds-pane iframe, [data-rmdg-embed-host] iframe, iframe[src*="iframe-embed.html"]'
-		);
 	}
 </script>
 

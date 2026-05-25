@@ -55,6 +55,17 @@
 			onSelect({ type: 'prompt', data: command });
 		}
 	};
+
+	// Hooks for the WI-015 Slash composite that shares one keyboard
+	// cursor across Actions + Prompts. Stock `/`-only consumers ignore
+	// these; they only mutate internal highlight state.
+	export const setSelectedIdx = (idx: number) => {
+		if (idx < 0 || idx >= filteredItems.length) return;
+		selectedPromptIdx = idx;
+	};
+	export const clearSelected = () => {
+		selectedPromptIdx = -1;
+	};
 </script>
 
 <div class="px-2 text-xs text-gray-500 py-1">

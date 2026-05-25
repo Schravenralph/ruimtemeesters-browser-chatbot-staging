@@ -1,8 +1,20 @@
 <script lang="ts">
-	import Prompts from './Commands/Prompts.svelte';
+	import { getContext } from 'svelte';
+	import type { Writable } from 'svelte/store';
+	import type { i18n as i18nType } from 'i18next';
+
+	import Slash from './Commands/Slash.svelte';
 	import Knowledge from './Commands/Knowledge.svelte';
 	import Models from './Commands/Models.svelte';
 	import Skills from './Commands/Skills.svelte';
+
+	import type { SlashAction } from '$lib/integrations/slashActions/registry';
+
+	// Slash actions need i18n to render translated toasts. CommandSuggestionList
+	// is mounted via `createClassComponent` with a context Map seeded by
+	// `getSuggestionRenderer`, so `getContext('i18n')` resolves to the
+	// OWUI i18next store here.
+	const i18n: Writable<i18nType> | undefined = getContext('i18n');
 
 	export let char = '';
 	export let query = '';
@@ -59,7 +71,7 @@
 >
 	<div class="overflow-y-auto scrollbar-thin max-h-60">
 		{#if char === '/'}
-			<Prompts
+			<Slash
 				bind:this={suggestionElement}
 				{query}
 				bind:filteredItems
@@ -68,6 +80,14 @@
 
 					if (type === 'prompt') {
 						insertTextHandler(data.content);
+					} else if (type === 'action') {
+						// WI-015: clear the typed `/<id>` text and run the action.
+						insertTextHandler('');
+						if (i18n) {
+							void (data as SlashAction).run({ i18n });
+						} else {
+							console.warn('SlashAction skipped: no i18n in context', data);
+						}
 					}
 				}}
 			/>
