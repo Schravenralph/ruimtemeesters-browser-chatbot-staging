@@ -997,7 +997,7 @@
 		if (!evt) return 0;
 		if (evt.consumed) return evt.seq;
 		if (evt.chatId === chatIdProp) return evt.seq - 1;
-		return evt.seq;
+		return 0;
 	})();
 	$: if (
 		$proposalAcceptedEvent &&
