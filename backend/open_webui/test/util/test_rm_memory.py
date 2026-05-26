@@ -124,8 +124,10 @@ def _override_user(
     tests that go through TestClient.
 
     The fake user mirrors the UserModel shape: `id`, `email`, and an
-    `oauth` dict carrying the clerk sub. Pass `clerk_sub=None` to
-    simulate a pre-Clerk-onboarded user (e.g. legacy email-only
+    `oauth` dict carrying the OIDC sub under the `'oidc'` key (the
+    literal key OWUI uses for any generic OIDC provider — see
+    `_forwarded_user_id` for the rationale). Pass `clerk_sub=None`
+    to simulate a pre-OIDC-onboarded user (e.g. legacy email-only
     accounts) — the BFF then omits X-Forwarded-User and rm-memory
     attributes to the gateway's API key, matching production
     behaviour.
@@ -134,7 +136,7 @@ def _override_user(
     from open_webui.utils.auth import get_verified_user  # noqa: PLC0415
 
     def _fake():
-        oauth = {'clerk': {'sub': clerk_sub}} if clerk_sub else None
+        oauth = {'oidc': {'sub': clerk_sub}} if clerk_sub else None
         return type('U', (), {'id': 'u', 'email': email, 'oauth': oauth})()
 
     app.dependency_overrides[get_verified_user] = _fake
@@ -162,29 +164,35 @@ def test_blank_gateway_token_returns_503(monkeypatch):
 # --- _forwarded_user_id -- Issue #58 (b) on Ruimtemeesters-Memory --------
 
 
-def test_forwarded_user_id_returns_clerk_prefix_for_clerk_oauth():
-    user = type('U', (), {'oauth': {'clerk': {'sub': 'user_abc123'}}})()
+def test_forwarded_user_id_returns_clerk_prefix_for_oidc_oauth():
+    # OWUI keys the generic OIDC provider under the literal `'oidc'`
+    # key (config.py `OAUTH_PROVIDERS['oidc']`), so a Clerk-OIDC user
+    # lands as `oauth = {"oidc": {"sub": "user_..."}}`. The helper
+    # still emits `clerk:<sub>` since that's the canonical identity
+    # prefix on the memory side.
+    user = type('U', (), {'oauth': {'oidc': {'sub': 'user_abc123'}}})()
     assert _forwarded_user_id(user) == 'clerk:user_abc123'
 
 
 def test_forwarded_user_id_returns_none_when_oauth_missing():
-    # Pre-Clerk-onboarded user (email-only legacy account). The BFF
+    # Pre-OIDC-onboarded user (email-only legacy account). The BFF
     # should then omit X-Forwarded-User and rm-memory falls back to
     # attributing to the gateway API key — same as before the fix.
     user = type('U', (), {'oauth': None})()
     assert _forwarded_user_id(user) is None
 
 
-def test_forwarded_user_id_returns_none_when_oauth_lacks_clerk():
-    # User logged in via a different OAuth provider. Don't synthesise
-    # a clerk: id from another provider's sub; rm-memory's regex would
-    # still accept it but the attribution would be wrong.
+def test_forwarded_user_id_returns_none_when_oauth_lacks_oidc():
+    # User logged in via a different OAuth provider (e.g. Google).
+    # Don't synthesise a clerk: id from another provider's sub —
+    # rm-memory's regex would still accept it but the attribution
+    # would be wrong.
     user = type('U', (), {'oauth': {'google': {'sub': 'g-123'}}})()
     assert _forwarded_user_id(user) is None
 
 
-def test_forwarded_user_id_returns_none_when_clerk_sub_missing():
-    user = type('U', (), {'oauth': {'clerk': {}}})()
+def test_forwarded_user_id_returns_none_when_oidc_sub_missing():
+    user = type('U', (), {'oauth': {'oidc': {}}})()
     assert _forwarded_user_id(user) is None
 
 
@@ -193,6 +201,14 @@ def test_forwarded_user_id_returns_none_when_oauth_is_not_a_dict():
     # migration might shape-shift it. Falling through to None is
     # safer than throwing.
     user = type('U', (), {'oauth': 'oops'})()
+    assert _forwarded_user_id(user) is None
+
+
+def test_forwarded_user_id_ignores_legacy_clerk_key():
+    # Regression guard for the prior bug: an earlier helper read
+    # oauth['clerk'] which never matched OWUI's real schema. If a
+    # stale memory map ever resurrects that key, ignore it.
+    user = type('U', (), {'oauth': {'clerk': {'sub': 'should_not_match'}}})()
     assert _forwarded_user_id(user) is None
 
 

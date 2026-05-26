@@ -250,27 +250,28 @@ def _forwarded_user_id(user: Any) -> str | None:
     """Construct the canonical `clerk:<sub>` identifier from the user's
     OAuth profile, matching rm-memory's FORWARDED_ID_RE convention
     (`(clerk|api):[A-Za-z0-9_.-]+`). Returns None when the user has
-    no clerk oauth entry — the BFF then sends the request without an
+    no OIDC oauth entry — the BFF then sends the request without an
     X-Forwarded-User header, and rm-memory falls back to attributing
-    to the gateway's own API key. That fallback is intentional for
-    pre-Clerk-onboarded users; it preserves the legacy attribution
-    path rather than silently sending a malformed header that
-    rm-memory would reject.
+    to the gateway's own API key.
 
-    Earlier versions of this helper returned `user.email`, but
-    rm-memory's regex rejected emails (no `@` in the allowed char
-    set), so the forwarded identity was silently dropped and every
-    user write surfaced as `owner_user_id='api:mcp-shim'`. Users
-    couldn't edit/forget their own memories from the panel because
-    the canMutate check then failed. Issue #58 (b).
+    The dict key is `'oidc'` (not `'clerk'`). OWUI's generic OIDC
+    integration is registered under the literal string `'oidc'` in
+    `OAUTH_PROVIDERS` (see `config.py`), and `update_user_oauth_by_id`
+    stores the per-provider entry under that key — so a Clerk-OIDC
+    user lands as `oauth = {"oidc": {"sub": "user_..."}}`.
+    `OAUTH_PROVIDER_NAME` is the *display* label only; it doesn't
+    influence the dict key. An earlier version of this helper read
+    `oauth['clerk']`, which always returned None, so every BFF call
+    silently dropped X-Forwarded-User → MCP 401 → BFF 502, and every
+    write attributed to `api:mcp-shim`. Issue #58 (b).
     """
     oauth = getattr(user, 'oauth', None) or {}
     if not isinstance(oauth, dict):
         return None
-    clerk_entry = oauth.get('clerk')
-    if not isinstance(clerk_entry, dict):
+    oidc_entry = oauth.get('oidc')
+    if not isinstance(oidc_entry, dict):
         return None
-    sub = clerk_entry.get('sub')
+    sub = oidc_entry.get('sub')
     if not sub or not isinstance(sub, str):
         return None
     return f'clerk:{sub}'
