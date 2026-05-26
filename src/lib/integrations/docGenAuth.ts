@@ -79,10 +79,13 @@ async function loadClerk(): Promise<import('@clerk/clerk-js').Clerk | null> {
 export async function getDocGenAuthToken(): Promise<string | null> {
 	const clerk = await loadClerk();
 	if (!clerk) return null;
-	const session = clerk.session;
-	if (!session) return null;
+	if (!clerk.session) return null;
 	try {
 		await ensureActiveOrganization(clerk);
+		// Re-read clerk.session: setActive() inside ensureActiveOrganization
+		// replaces the session reference with one whose JWT includes o.id.
+		const session = clerk.session;
+		if (!session) return null;
 		return await session.getToken();
 	} catch {
 		// Network blip / expired refresh token. Returning null lets the
