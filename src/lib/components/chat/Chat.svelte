@@ -988,12 +988,19 @@
 	// the conversation going silent. Untranslated Dutch — the chat itself
 	// is Dutch-first, and the synthetic message is also part of the
 	// model's context, so a single canonical wording is what we want.
-	// `lastSeenProposalSeq` dedupes reactive re-runs.
-	let lastSeenProposalSeq = 0;
+	// `lastSeenProposalSeq` is seeded from the current store value so
+	// stale events from before this mount are ignored (prevents duplicate
+	// submits on component remount). The extra guards mirror the relevant
+	// submitPrompt preconditions so the seq is not consumed when the
+	// prompt would be rejected.
+	let lastSeenProposalSeq = get(proposalAcceptedEvent)?.seq ?? 0;
 	$: if (
 		$proposalAcceptedEvent &&
 		$proposalAcceptedEvent.chatId === $chatId &&
-		$proposalAcceptedEvent.seq > lastSeenProposalSeq
+		$proposalAcceptedEvent.seq > lastSeenProposalSeq &&
+		history?.currentId &&
+		!selectedModels.includes('') &&
+		pendingOAuthTools.length === 0
 	) {
 		lastSeenProposalSeq = $proposalAcceptedEvent.seq;
 		void submitPrompt('Voorstel geaccepteerd. Ga door met je werk.');
