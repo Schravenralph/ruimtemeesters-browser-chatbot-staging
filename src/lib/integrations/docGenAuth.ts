@@ -120,15 +120,13 @@ export async function getDocGenAuthToken(): Promise<string | null> {
  * default; they can switch later via a future OrganizationSwitcher in
  * the chrome.
  */
-async function ensureActiveOrganization(
-	clerk: import('@clerk/clerk-js').Clerk,
-): Promise<void> {
+async function ensureActiveOrganization(clerk: import('@clerk/clerk-js').Clerk): Promise<void> {
 	// Existing active-org context wins — never override a user's
 	// explicit choice if they've already switched.
 	const existing = (clerk as unknown as { organization?: { id?: string } | null }).organization;
 	if (existing?.id) return;
 
-	const memberships = clerk.user?.organizationMemberships ?? [];
+	const memberships = await loadOrganizationMemberships(clerk);
 	if (memberships.length === 0) return;
 
 	const preferred =
@@ -142,6 +140,52 @@ async function ensureActiveOrganization(
 		// setActive can fail if the org has been deleted server-side
 		// between membership-list fetch and now. Swallow — caller will
 		// just get a no-org JWT and DG will surface workspace_required.
+	}
+}
+
+/**
+ * Read the user's org memberships, forcing a network fetch when the
+ * cached array is empty.
+ *
+ * Why: `clerk.user.organizationMemberships` is a lazily-hydrated cache.
+ * On a fresh `clerk.load()` it can read as `[]` even when the user has
+ * memberships server-side, because the OAuth flow that established the
+ * session never required them. `ensureActiveOrganization` then silently
+ * picked no org and the user hit doc-gen's `WorkspaceRequiredError`.
+ * Issue #137.
+ *
+ * The explicit `getOrganizationMemberships()` call is a noop when the
+ * cache is already populated (Clerk SDK short-circuits), so the only
+ * cost is the very first call per page load for users who actually
+ * have memberships.
+ *
+ * Falls back to the cached property if `getOrganizationMemberships`
+ * isn't available on this SDK version (defensive — Clerk JS v5 exposes
+ * it; older majors may not).
+ */
+async function loadOrganizationMemberships(
+	clerk: import('@clerk/clerk-js').Clerk
+): Promise<NonNullable<import('@clerk/clerk-js').Clerk['user']>['organizationMemberships']> {
+	const user = clerk.user;
+	if (!user) return [];
+	const cached = user.organizationMemberships ?? [];
+	if (cached.length > 0) return cached;
+	const fetcher = (user as unknown as { getOrganizationMemberships?: () => Promise<unknown> })
+		.getOrganizationMemberships;
+	if (typeof fetcher !== 'function') return cached;
+	try {
+		const result = await fetcher.call(user);
+		// Clerk JS v5 returns a paginated response: { data: OrganizationMembership[], total_count }.
+		// Older shapes may return the array directly. Handle both.
+		if (Array.isArray(result)) return result as typeof cached;
+		const data = (result as { data?: unknown }).data;
+		if (Array.isArray(data)) return data as typeof cached;
+		return user.organizationMemberships ?? cached;
+	} catch {
+		// Network blip — treat as no memberships rather than crashing.
+		// The user lands on doc-gen's workspace-required path, same as
+		// before; not worse.
+		return cached;
 	}
 }
 

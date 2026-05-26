@@ -43,6 +43,22 @@ export const DOCGEN_IFRAME_BASE =
 
 const DEFAULT_IFRAME_BASE = DOCGEN_IFRAME_BASE;
 
+// In-flight tracking. Two distinct call sites can fire concurrently:
+// the toolbar `DocGenToggleButton` (already has its own UI `busy` flag)
+// and the `/document` slash action (no flag of its own). A user who
+// double-taps Enter on `/document` would otherwise mint two doc-gen
+// rows (POST /documents is non-idempotent) and race two iframe mounts
+// against each other. Same-chat reentry returns the existing promise;
+// different-chat reentry starts fresh (the prior call's
+// `stillSameChat()` checks naturally abort it). Issue #137 (MED).
+let inFlightOpen: { chatId: string; promise: Promise<OpenDocGenPanelResult> } | null = null;
+
+/** Test seam — clear the in-flight slot between cases. Production
+ *  callers don't use this; the slot self-clears on settle. */
+export function __resetInFlightOpenForTesting(): void {
+	inFlightOpen = null;
+}
+
 /**
  * Guard for the toggle button's "embed-rail desync" $effect: returns true
  * when the active `embed` descriptor is our DG iframe (and not, e.g.,
@@ -92,6 +108,32 @@ export async function openDocGenPanelForCurrentChat(
 		toast.error(t('Start een chat voordat je een document opent.'));
 		return { ok: false, reason: 'no-chat' };
 	}
+
+	// Busy guard: a reentrant call for the SAME chat reuses the existing
+	// promise instead of firing a second POST /documents + iframe mount.
+	// Reentry from a DIFFERENT chat is allowed to start fresh; the prior
+	// call's `stillSameChat()` checks will abort it the next time it hits
+	// an await boundary. Issue #137.
+	if (inFlightOpen?.chatId === initialChatId) {
+		return inFlightOpen.promise;
+	}
+
+	const work = doOpen({ initialChatId, iframeBase, iframeOrigin, t });
+	inFlightOpen = { chatId: initialChatId, promise: work };
+	try {
+		return await work;
+	} finally {
+		if (inFlightOpen?.promise === work) inFlightOpen = null;
+	}
+}
+
+async function doOpen(args: {
+	initialChatId: string;
+	iframeBase: string;
+	iframeOrigin: string;
+	t: (k: string) => string;
+}): Promise<OpenDocGenPanelResult> {
+	const { initialChatId, iframeBase, iframeOrigin, t } = args;
 
 	// Idempotent reopen: only short-circuit when the still-open panel
 	// belongs to the SAME chat as the click. Without the chat-id check,
