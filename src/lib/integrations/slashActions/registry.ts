@@ -66,7 +66,13 @@ export interface SlashAction {
  * missing). Exported for direct unit test.
  */
 export function documentActionGate(user: SlashActionUser | null | undefined): boolean {
-	if (!user) return true; // pre-load: defer to the toolbar's own guard.
+	// Deny-by-default during the brief init window when `$user` hasn't
+	// populated yet. Returning true there would let a non-admin who hit
+	// `/` in the first few hundred ms invoke the action — and
+	// `openDocGenPanelForCurrentChat` doesn't re-check user role
+	// downstream. Admins miss the menu item for one tick; the action
+	// reappears the moment $user resolves. Bugbot MED on PR #134.
+	if (!user) return false;
 	if (user.role === 'admin') return true;
 	return user.permissions?.chat?.controls ?? true;
 }

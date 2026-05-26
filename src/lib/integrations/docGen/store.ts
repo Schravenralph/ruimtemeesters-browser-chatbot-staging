@@ -27,11 +27,16 @@ export interface DocGenPanelState {
 	open: boolean;
 	/** docId currently mounted in the iframe. Null when closed. */
 	docId: string | null;
+	/** Chat id the panel was opened against. Null when closed. The
+	 * panelLifecycle idempotent-reopen path uses this to avoid returning
+	 * chat A's doc to a click that came from chat B. */
+	chatId: string | null;
 }
 
 export const docGenPanelState: Writable<DocGenPanelState> = writable({
 	open: false,
-	docId: null
+	docId: null,
+	chatId: null
 });
 
 // ─── Lifecycle ──────────────────────────────────────────────────────────
@@ -39,6 +44,10 @@ export const docGenPanelState: Writable<DocGenPanelState> = writable({
 export interface OpenDocGenIframeOptions {
 	iframe: HTMLIFrameElement;
 	docId: string;
+	/** Chat id the panel is being opened against. Tracked alongside the
+	 * open state so the idempotent-reopen path in panelLifecycle can
+	 * tell whether the still-open panel matches the current chat. */
+	chatId: string;
 	iframeOrigin?: string;
 }
 
@@ -58,7 +67,7 @@ export function openDocGenIframe(opts: OpenDocGenIframeOptions): DocGenIframeCli
 		iframeOrigin: opts.iframeOrigin ?? DEFAULT_IFRAME_ORIGIN
 	});
 	activeClient = client;
-	docGenPanelState.set({ open: true, docId: opts.docId });
+	docGenPanelState.set({ open: true, docId: opts.docId, chatId: opts.chatId });
 	return client;
 }
 
@@ -67,7 +76,7 @@ export function disconnectDocGenIframe(): void {
 		activeClient.disconnect();
 		activeClient = null;
 	}
-	docGenPanelState.set({ open: false, docId: null });
+	docGenPanelState.set({ open: false, docId: null, chatId: null });
 }
 
 // ─── Server-URL guard (used by executeTool) ─────────────────────────────

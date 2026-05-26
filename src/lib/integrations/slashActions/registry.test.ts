@@ -44,9 +44,13 @@ describe('slashActions registry', () => {
 });
 
 describe('documentActionGate (Bugbot PR #132 fix)', () => {
-	it('admits when user is null (pre-load — defer to toolbar guard)', () => {
-		expect(documentActionGate(null)).toBe(true);
-		expect(documentActionGate(undefined)).toBe(true);
+	it('denies when user is null (deny-by-default during init load)', () => {
+		// Returning true here would let a non-admin briefly invoke the
+		// action via `/` while $user is still null on first render —
+		// openDocGenPanelForCurrentChat does not re-check user role
+		// downstream. Bugbot MED follow-up on PR #134.
+		expect(documentActionGate(null)).toBe(false);
+		expect(documentActionGate(undefined)).toBe(false);
 	});
 
 	it('admits admins regardless of permissions', () => {
@@ -88,8 +92,13 @@ describe('filterSlashActions', () => {
 		expect(filterSlashActions('   ', adminUser).length).toBe(slashActions.length);
 	});
 
-	it('returns all entries for an empty query (null user — pre-load permissive)', () => {
-		expect(filterSlashActions('').length).toBe(slashActions.length);
+	it('returns no permission-gated entries for null user (deny-by-default during init)', () => {
+		// Inverse of the admin case: during the brief init window when
+		// `$user` is null, every action with a permission gate is hidden
+		// so a non-admin can't briefly trigger one. Admins see the full
+		// list as soon as $user resolves.
+		const visible = filterSlashActions('');
+		expect(visible.some((a) => a.id === 'document')).toBe(false);
 	});
 
 	it('hides the document action from users denied chat.controls', () => {

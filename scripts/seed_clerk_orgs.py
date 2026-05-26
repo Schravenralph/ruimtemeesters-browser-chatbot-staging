@@ -1,0 +1,375 @@
+#!/usr/bin/env python3
+"""Provision Clerk organizations + memberships for the chatbot tenant.
+
+Why: the chatbot calls Document-Generator (DG) via an iframe with a Clerk
+JWT. DG requires `o.id` (the active-org claim) on the JWT to scope every
+write to a workspace_id. With zero Clerk orgs in the instance, every
+user hits `WorkspaceRequiredError` and `/document` is unusable.
+
+Decision (2026-05-25): two orgs — `Ruimtemeesters` (everyone except the
+Prophys-only contingent) and `Prophys` (Mats, Coline, Frans + the four
+multi-org users). After seeding, an active-org context still has to be
+established before DG accepts the JWT — see "What this script does NOT
+do" below.
+
+What this script does NOT do (out of band):
+  1. Plan upgrade — Clerk's free tier caps memberships per org at 5
+     (incl. outstanding invitations). The script catches the quota
+     error and continues, so a re-run after the plan upgrade fills in
+     whatever's missing.
+  2. last_active_organization_id — Clerk's Backend API accepts the
+     PATCH but silently ignores it; this field is frontend-only.
+     Either enable "force organization on sign-in" in Clerk Dashboard
+     (kicks in for single-org users automatically) or add an
+     OrganizationSwitcher in the Workspace sign-in surface for
+     multi-org users.
+
+Idempotent: re-running detects existing orgs and memberships, only adds
+what's missing. Safe to run after bringing new users on.
+
+Usage:
+    scripts/seed_clerk_orgs.py --dry-run    # print plan, no API writes
+    scripts/seed_clerk_orgs.py              # apply
+
+Env:
+    CLERK_SECRET_KEY  required, used as Bearer for api.clerk.com/v1
+
+Caveat: DG's workspace_id is just a TEXT column, no provisioning table.
+The Clerk org id becomes the workspace id implicitly on first write.
+That means deleting/renaming an org orphans all its DG documents —
+treat org ids as forever after the first write lands.
+"""
+
+from __future__ import annotations
+
+import argparse
+import logging
+import os
+import sys
+
+import httpx
+
+log = logging.getLogger('seed_clerk_orgs')
+
+CLERK_API = 'https://api.clerk.com/v1'
+
+# --- Membership matrix ---------------------------------------------------
+
+# Multi-org users (in BOTH Ruimtemeesters + Prophys). Default-active org
+# is Ruimtemeesters — that's their primary identity; they can switch in
+# Clerk UI when they need Prophys context.
+MULTI_ORG_EMAILS = {
+    'ralphdrmoller@gmail.com',
+    'ron@ruimtemeesters.nl',
+    'jarko@ruimtemeesters.nl',
+    'bruno@ruimtemeesters.nl',
+}
+
+# Prophys-only users.
+PROPHYS_ONLY_EMAILS = {
+    'mats@ruimtemeesters.nl',
+    'coline@prophys.nl',
+    'frans@prophys.nl',
+}
+
+# Everyone else: Ruimtemeesters-only (computed from the live Clerk user
+# list at runtime, minus the above two sets).
+
+ORG_RM = {
+    'name': 'Ruimtemeesters',
+    'slug': 'ruimtemeesters',
+}
+ORG_PROPHYS = {
+    'name': 'Prophys',
+    'slug': 'prophys',
+}
+
+# Org role to assign — Clerk built-ins are `org:admin` and `org:member`.
+# Ralph is the chatbot's sole admin and should be admin of both orgs;
+# everyone else is `org:member`.
+ADMIN_EMAILS = {'ralphdrmoller@gmail.com'}
+
+
+# --- Clerk HTTP helpers --------------------------------------------------
+
+
+def clerk_get(client: httpx.Client, path: str, **kwargs):
+    r = client.get(f'{CLERK_API}{path}', **kwargs)
+    r.raise_for_status()
+    return r.json()
+
+
+def clerk_post(client: httpx.Client, path: str, json: dict | None = None):
+    r = client.post(f'{CLERK_API}{path}', json=json or {})
+    if r.status_code >= 400:
+        log.error('POST %s → %s %s', path, r.status_code, r.text[:300])
+        r.raise_for_status()
+    return r.json()
+
+
+def clerk_patch(client: httpx.Client, path: str, json: dict):
+    r = client.patch(f'{CLERK_API}{path}', json=json)
+    if r.status_code >= 400:
+        log.error('PATCH %s → %s %s', path, r.status_code, r.text[:300])
+        r.raise_for_status()
+    return r.json()
+
+
+# --- Resolvers -----------------------------------------------------------
+
+
+def list_users(client: httpx.Client) -> dict[str, dict]:
+    """Return {email_lower: user_dict} for every Clerk user."""
+    out: dict[str, dict] = {}
+    offset = 0
+    while True:
+        page = clerk_get(client, '/users', params={'limit': 100, 'offset': offset})
+        if not page:
+            break
+        for u in page:
+            pid = u.get('primary_email_address_id')
+            em = ''
+            for e in u.get('email_addresses', []):
+                if e.get('id') == pid:
+                    em = e['email_address']
+                    break
+            if not em and u.get('email_addresses'):
+                em = u['email_addresses'][0]['email_address']
+            if em:
+                out[em.lower()] = u
+        if len(page) < 100:
+            break
+        offset += 100
+    return out
+
+
+def list_orgs(client: httpx.Client) -> dict[str, dict]:
+    """Return {name-lower: org_dict}. Slugs are auto-generated by Clerk
+    when we don't supply one (e.g. `prophys-1779743819308309587`), so we
+    can't dedup by slug — key on the lowercased name instead. This is
+    what `ORG_RM['slug']` / `ORG_PROPHYS['slug']` are matched against,
+    since those happen to be the same as the lowercased names."""
+    res = clerk_get(client, '/organizations', params={'limit': 100})
+    items = res.get('data', res) if isinstance(res, dict) else res
+    out: dict[str, dict] = {}
+    for o in items:
+        name = (o.get('name') or '').lower()
+        if name:
+            out[name] = o
+    return out
+
+
+def list_org_memberships(client: httpx.Client, org_id: str) -> dict[str, dict]:
+    """Return {user_id: membership_dict} for an org."""
+    out: dict[str, dict] = {}
+    offset = 0
+    while True:
+        res = clerk_get(
+            client,
+            f'/organizations/{org_id}/memberships',
+            params={'limit': 200, 'offset': offset},
+        )
+        items = res.get('data', res) if isinstance(res, dict) else res
+        if not items:
+            break
+        for m in items:
+            uid = (m.get('public_user_data') or {}).get('user_id') or m.get('user_id')
+            if uid:
+                out[uid] = m
+        if len(items) < 200:
+            break
+        offset += 200
+    return out
+
+
+# --- Apply ---------------------------------------------------------------
+
+
+def ensure_org(client: httpx.Client, spec: dict, existing: dict, dry_run: bool) -> dict:
+    if spec['slug'] in existing:
+        log.info('org %s: exists (%s)', spec['slug'], existing[spec['slug']]['id'])
+        return existing[spec['slug']]
+    log.info('org %s: would create' if dry_run else 'org %s: creating', spec['slug'])
+    if dry_run:
+        return {'id': f'<new-{spec["slug"]}>', **spec}
+    # Clerk requires created_by — use the first admin user. Caller fills it in.
+    # Don't send `slug` — this instance has org-slugs disabled at the dashboard
+    # level (instance setting), Clerk 403s the create if `slug` is present.
+    return clerk_post(
+        client,
+        '/organizations',
+        {'name': spec['name'], 'created_by': spec['_created_by']},
+    )
+
+
+def ensure_membership(
+    client: httpx.Client,
+    org_id: str,
+    org_slug: str,
+    user_id: str,
+    email: str,
+    role: str,
+    existing: dict,
+    dry_run: bool,
+) -> None:
+    if user_id in existing:
+        current_role = existing[user_id].get('role')
+        if current_role == role:
+            log.debug('  %s in %s: ok (%s)', email, org_slug, role)
+        else:
+            log.info(
+                '  %s in %s: role %s → %s%s',
+                email,
+                org_slug,
+                current_role,
+                role,
+                ' (would patch)' if dry_run else '',
+            )
+            if not dry_run:
+                clerk_patch(
+                    client,
+                    f'/organizations/{org_id}/memberships/{user_id}',
+                    {'role': role},
+                )
+        return
+    log.info('  %s → %s as %s%s', email, org_slug, role, ' (would add)' if dry_run else '')
+    if not dry_run:
+        try:
+            clerk_post(
+                client,
+                f'/organizations/{org_id}/memberships',
+                {'user_id': user_id, 'role': role},
+            )
+        except httpx.HTTPStatusError as e:
+            # Clerk free tier caps memberships per org. Don't crash — log the
+            # blocker and keep going so re-runs after a plan upgrade fill in
+            # whatever else is missing. Same applies if a user's deletion
+            # raced our add (404).
+            body = e.response.text[:200]
+            if 'quota_exceeded' in body or e.response.status_code in (403, 404, 409):
+                log.warning('  %s: skipped (%s) %s', email, e.response.status_code, body)
+            else:
+                raise
+
+
+def set_default_active_org(
+    client: httpx.Client, user_id: str, email: str, org_id: str, dry_run: bool
+) -> None:
+    """No-op stub — kept as a marker, see module docstring.
+
+    Verified 2026-05-25 against the live Clerk Backend API: PATCH on
+    `/v1/users/{id}` with `last_active_organization_id` is accepted with
+    200 but silently ignored (the field returns `null`). This field is
+    *frontend-only* in Clerk's data model — set via the JS SDK's
+    `setActive({ organization })` call when the user picks an org. Server-
+    side seeding of active-org isn't possible; we leave it to either
+    (a) Clerk's "force organization on sign-in" instance setting for the
+    single-org case, or (b) an OrganizationSwitcher in the sign-in flow
+    for multi-org users.
+    """
+    log.debug('skip default-active for %s (Clerk API does not honour it)', email)
+
+
+# --- Main ----------------------------------------------------------------
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--dry-run', action='store_true')
+    parser.add_argument('-v', '--verbose', action='store_true')
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        level=logging.DEBUG if args.verbose else logging.INFO,
+        format='%(levelname)s %(message)s',
+    )
+
+    key = os.environ.get('CLERK_SECRET_KEY')
+    if not key:
+        log.error('CLERK_SECRET_KEY not set')
+        return 1
+
+    with httpx.Client(
+        headers={'Authorization': f'Bearer {key}'}, timeout=20.0
+    ) as client:
+        users = list_users(client)
+        log.info('Clerk users: %d', len(users))
+
+        # Resolve Ralph for org creation (created_by must be a real Clerk user id).
+        ralph = users.get('ralphdrmoller@gmail.com')
+        if not ralph:
+            log.error('Ralph (ralphdrmoller@gmail.com) not found in Clerk — cannot proceed')
+            return 1
+
+        existing_orgs = list_orgs(client)
+
+        rm_spec = {**ORG_RM, '_created_by': ralph['id']}
+        proph_spec = {**ORG_PROPHYS, '_created_by': ralph['id']}
+        rm = ensure_org(client, rm_spec, existing_orgs, args.dry_run)
+        proph = ensure_org(client, proph_spec, existing_orgs, args.dry_run)
+
+        # Compute final per-user memberships from the matrix.
+        rm_emails: set[str] = set()
+        proph_emails: set[str] = set()
+        for email in users:
+            in_multi = email in MULTI_ORG_EMAILS
+            in_proph_only = email in PROPHYS_ONLY_EMAILS
+            if in_multi:
+                rm_emails.add(email)
+                proph_emails.add(email)
+            elif in_proph_only:
+                proph_emails.add(email)
+            else:
+                rm_emails.add(email)
+
+        log.info('Plan: Ruimtemeesters=%d users, Prophys=%d users', len(rm_emails), len(proph_emails))
+
+        # Live membership state (skip if org freshly created in dry-run mode).
+        rm_members = (
+            list_org_memberships(client, rm['id'])
+            if not (args.dry_run and rm['id'].startswith('<new-'))
+            else {}
+        )
+        proph_members = (
+            list_org_memberships(client, proph['id'])
+            if not (args.dry_run and proph['id'].startswith('<new-'))
+            else {}
+        )
+
+        log.info('Ruimtemeesters:')
+        for email in sorted(rm_emails):
+            u = users[email]
+            role = 'org:admin' if email in ADMIN_EMAILS else 'org:member'
+            ensure_membership(
+                client, rm['id'], 'ruimtemeesters', u['id'], email, role, rm_members, args.dry_run
+            )
+
+        log.info('Prophys:')
+        for email in sorted(proph_emails):
+            u = users[email]
+            role = 'org:admin' if email in ADMIN_EMAILS else 'org:member'
+            ensure_membership(
+                client, proph['id'], 'prophys', u['id'], email, role, proph_members, args.dry_run
+            )
+
+        # Default-active org per user. Multi-org → Ruimtemeesters; otherwise
+        # the user's only org.
+        log.info('Default-active org assignments:')
+        for email, u in users.items():
+            if email in MULTI_ORG_EMAILS:
+                target_org_id = rm['id']
+            elif email in PROPHYS_ONLY_EMAILS:
+                target_org_id = proph['id']
+            else:
+                target_org_id = rm['id']
+            current = u.get('last_active_organization_id')
+            if current == target_org_id:
+                continue
+            set_default_active_org(client, u['id'], email, target_org_id, args.dry_run)
+
+        log.info('Done%s.', ' (dry-run)' if args.dry_run else '')
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

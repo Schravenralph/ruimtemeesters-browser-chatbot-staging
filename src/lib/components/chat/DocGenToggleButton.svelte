@@ -101,7 +101,7 @@
 			aria-pressed={$docGenPanelState.open}
 		>
 			<div class="m-auto self-center">
-				<Document className="size-5" strokeWidth="1.5" />
+				<Document className="size-10" strokeWidth="1.5" />
 			</div>
 		</button>
 	</Tooltip>

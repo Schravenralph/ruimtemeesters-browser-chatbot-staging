@@ -13,6 +13,7 @@
 		showControls,
 		showSidebar,
 		temporaryChatEnabled,
+		theme,
 		user
 	} from '$lib/stores';
 
@@ -41,9 +42,63 @@
 	import Knobs from '../icons/Knobs.svelte';
 
 	import DocGenToggleButton from './DocGenToggleButton.svelte';
+	import Sun from '../icons/Sun.svelte';
+	import Moon from '../icons/Moon.svelte';
 	import { WEBUI_API_BASE_URL } from '$lib/constants';
 
 	const i18n = getContext('i18n');
+
+	// Resolve the current effective theme — `<html class="dark">` is the
+	// source of truth in OWUI (Settings/General.svelte's applyTheme adds
+	// it). The `theme` store can hold 'system'/'oled-dark'/'her' etc.,
+	// none of which map directly to a binary toggle.
+	let isDark = false;
+	function syncIsDark() {
+		if (typeof document !== 'undefined') {
+			isDark = document.documentElement.classList.contains('dark');
+		}
+	}
+	$: ($theme, syncIsDark());
+
+	// Minimal apply for a light/dark flip. Mirrors the path
+	// Settings/General.svelte takes (without the OLED / `her` / system
+	// branches) — we're only toggling between the two canonical modes
+	// here. Persisting to localStorage keeps the choice across reloads
+	// without going through the Settings modal.
+	//
+	// Defensive class cleanup: a user who arrived via Settings on
+	// `oled-dark` or `her` has those classes on <html>. Flipping just
+	// `light`/`dark` would leave the niche class on and the toggle
+	// would visually no-op. Strip every known theme class before
+	// applying the chosen one. Bugbot MED on PR #134.
+	const KNOWN_THEME_CLASSES = ['light', 'dark', 'oled-dark', 'her'];
+	function toggleTheme() {
+		const next = isDark ? 'light' : 'dark';
+		theme.set(next);
+		try {
+			localStorage.setItem('theme', next);
+		} catch {}
+		for (const cls of KNOWN_THEME_CLASSES) {
+			document.documentElement.classList.remove(cls);
+		}
+		document.documentElement.classList.add(next);
+		if (next === 'dark') {
+			document.documentElement.style.setProperty('--color-gray-800', '#333');
+			document.documentElement.style.setProperty('--color-gray-850', '#262626');
+			document.documentElement.style.setProperty('--color-gray-900', '#171717');
+			document.documentElement.style.setProperty('--color-gray-950', '#0d0d0d');
+		} else {
+			// Clear the OLED overrides if we're leaving a dark variant for
+			// light, so the next dark flip starts from a clean palette.
+			document.documentElement.style.removeProperty('--color-gray-800');
+			document.documentElement.style.removeProperty('--color-gray-850');
+			document.documentElement.style.removeProperty('--color-gray-900');
+			document.documentElement.style.removeProperty('--color-gray-950');
+		}
+		const meta = document.querySelector('meta[name="theme-color"]');
+		if (meta) meta.setAttribute('content', next === 'dark' ? '#171717' : '#ffffff');
+		syncIsDark();
+	}
 
 	export let initNewChat: Function;
 	export let shareEnabled: boolean = false;
@@ -156,9 +211,9 @@
 								>
 									<div class=" m-auto self-center">
 										{#if $temporaryChatEnabled}
-											<ChatBubbleDottedChecked className=" size-4.5" strokeWidth="1.5" />
+											<ChatBubbleDottedChecked className=" size-9" strokeWidth="1.5" />
 										{:else}
-											<ChatBubbleDotted className=" size-4.5" strokeWidth="1.5" />
+											<ChatBubbleDotted className=" size-9" strokeWidth="1.5" />
 										{/if}
 									</div>
 								</button>
@@ -173,7 +228,7 @@
 									}}
 								>
 									<div class=" m-auto self-center">
-										<ChatCheck className=" size-4.5" strokeWidth="1.5" />
+										<ChatCheck className=" size-9" strokeWidth="1.5" />
 									</div>
 								</button>
 							</Tooltip>
@@ -192,7 +247,7 @@
 								aria-label="New Chat"
 							>
 								<div class=" m-auto self-center">
-									<ChatPlus className=" size-4.5" strokeWidth="1.5" />
+									<ChatPlus className=" size-9" strokeWidth="1.5" />
 								</div>
 							</button>
 						</Tooltip>
@@ -215,11 +270,29 @@
 								id="chat-context-menu-button"
 							>
 								<div class=" m-auto self-center">
-									<EllipsisHorizontal className=" size-5" strokeWidth="1.5" />
+									<EllipsisHorizontal className=" size-10" strokeWidth="1.5" />
 								</div>
 							</button>
 						</Menu>
 					{/if}
+
+					<Tooltip content={$i18n.t(isDark ? 'Schakel naar licht' : 'Schakel naar donker')}>
+						<button
+							type="button"
+							class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+							on:click={toggleTheme}
+							aria-label={$i18n.t(isDark ? 'Schakel naar licht' : 'Schakel naar donker')}
+							aria-pressed={isDark}
+						>
+							<div class=" m-auto self-center">
+								{#if isDark}
+									<Sun className=" size-10" strokeWidth="1.5" />
+								{:else}
+									<Moon className=" size-10" strokeWidth="1.5" />
+								{/if}
+							</div>
+						</button>
+					</Tooltip>
 
 					{#if $user?.role === 'admin' || ($user?.permissions.chat?.controls ?? true)}
 						<DocGenToggleButton />
@@ -233,7 +306,7 @@
 								aria-label="Controls"
 							>
 								<div class=" m-auto self-center">
-									<Knobs className=" size-5" strokeWidth="1" />
+									<Knobs className=" size-10" strokeWidth="1" />
 								</div>
 							</button>
 						</Tooltip>
@@ -257,7 +330,7 @@
 									<span class="sr-only">{$i18n.t('User menu')}</span>
 									<img
 										src={`${WEBUI_API_BASE_URL}/users/${$user?.id}/profile/image`}
-										class="size-6 object-cover rounded-full"
+										class="size-12 object-cover rounded-full"
 										alt=""
 										draggable="false"
 									/>

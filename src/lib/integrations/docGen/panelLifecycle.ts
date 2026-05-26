@@ -22,7 +22,7 @@ import {
 	type EmbedDescriptor
 } from '$lib/stores';
 import { getOrMintDocIdForChat } from './chatMeta';
-import { docGenPanelState, openDocGenIframe } from './store';
+import { disconnectDocGenIframe, docGenPanelState, openDocGenIframe } from './store';
 
 export interface OpenDocGenPanelOptions {
 	i18n: Writable<i18nType>;
@@ -38,7 +38,7 @@ export type OpenDocGenPanelResult =
 	  };
 
 export const DOCGEN_IFRAME_BASE =
-	(import.meta.env?.VITE_RMDG_IFRAME_BASE as string | undefined) ??
+	(import.meta.env?.VITE_RMDG_IFRAME_BASE as string | undefined) ||
 	'https://doc-gen.datameesters.nl';
 
 const DEFAULT_IFRAME_BASE = DOCGEN_IFRAME_BASE;
@@ -69,24 +69,40 @@ export async function openDocGenPanelForCurrentChat(
 ): Promise<OpenDocGenPanelResult> {
 	const { i18n } = opts;
 	const t = get(i18n).t.bind(get(i18n));
-	const iframeBase = opts.iframeBase ?? DEFAULT_IFRAME_BASE;
-	const iframeOrigin = (() => {
+	// Validate the iframe base once. If a caller (or VITE_RMDG_IFRAME_BASE)
+	// hands us a malformed URL, fall back BOTH the iframeBase and the
+	// derived iframeOrigin together — the previous code only swapped the
+	// origin and then used the malformed string when building the iframe
+	// URL, so the iframe would 404 instead of recovering. The default is
+	// a well-formed URL, so this never throws on the fallback path.
+	const { iframeBase, iframeOrigin } = (() => {
+		const candidate = opts.iframeBase ?? DEFAULT_IFRAME_BASE;
 		try {
-			return new URL(iframeBase).origin;
+			return { iframeBase: candidate, iframeOrigin: new URL(candidate).origin };
 		} catch {
-			return DEFAULT_IFRAME_BASE;
+			return {
+				iframeBase: DEFAULT_IFRAME_BASE,
+				iframeOrigin: new URL(DEFAULT_IFRAME_BASE).origin
+			};
 		}
 	})();
-
-	const panel = get(docGenPanelState);
-	if (panel.open && panel.docId) {
-		return { ok: true, docId: panel.docId, reopened: true };
-	}
 
 	const initialChatId = get(chatIdStore);
 	if (!initialChatId) {
 		toast.error(t('Start een chat voordat je een document opent.'));
 		return { ok: false, reason: 'no-chat' };
+	}
+
+	// Idempotent reopen: only short-circuit when the still-open panel
+	// belongs to the SAME chat as the click. Without the chat-id check,
+	// "open doc in chat A → switch to chat B → click open doc" returned
+	// chat A's docId for chat B (Bugbot HIGH on 875106c follow-up).
+	const panel = get(docGenPanelState);
+	if (panel.open && panel.docId && panel.chatId === initialChatId) {
+		return { ok: true, docId: panel.docId, reopened: true };
+	}
+	if (panel.open) {
+		disconnectDocGenIframe();
 	}
 	// Temp-chat ids (`local:` prefix) aren't persisted server-side, so we
 	// can't bind a docId to them via chat.meta. Same guard as the toggle
@@ -133,7 +149,7 @@ export async function openDocGenPanelForCurrentChat(
 		return { ok: false, reason: 'iframe-mount-failed' };
 	}
 
-	openDocGenIframe({ iframe: iframeEl, docId, iframeOrigin });
+	openDocGenIframe({ iframe: iframeEl, docId, chatId: initialChatId, iframeOrigin });
 	return { ok: true, docId };
 }
 

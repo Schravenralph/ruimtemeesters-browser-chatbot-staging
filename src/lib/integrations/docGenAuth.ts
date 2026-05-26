@@ -79,15 +79,69 @@ async function loadClerk(): Promise<import('@clerk/clerk-js').Clerk | null> {
 export async function getDocGenAuthToken(): Promise<string | null> {
 	const clerk = await loadClerk();
 	if (!clerk) return null;
-	const session = clerk.session;
-	if (!session) return null;
+	if (!clerk.session) return null;
 	try {
+		await ensureActiveOrganization(clerk);
+		// Re-read clerk.session: setActive() inside ensureActiveOrganization
+		// replaces the session reference with one whose JWT includes o.id.
+		const session = clerk.session;
+		if (!session) return null;
 		return await session.getToken();
 	} catch {
 		// Network blip / expired refresh token. Returning null lets the
 		// caller show a "please sign in again" message rather than
 		// crashing the embed.
 		return null;
+	}
+}
+
+/**
+ * Make sure the Clerk session has an active organisation before we mint
+ * the JWT for DG.
+ *
+ * Why: DG's backend requires `auth.sessionClaims.o.id` and 401s with
+ * `WorkspaceRequiredError` ("geen toegang tot deze werkruimte") when
+ * absent. Clerk only populates `o.id` after the user has selected an
+ * active org via `setActive({ organization })` — there is no Backend-
+ * API equivalent to seed it (verified live: PATCH on
+ * `/v1/users/{id}.last_active_organization_id` is accepted but silently
+ * ignored). Without this bridge, a fresh sign-in carries no org and
+ * every user hits the workspace-required path.
+ *
+ * Strategy: if the session already has an active org (because the user
+ * picked one earlier in the session or in a sibling app), keep it.
+ * Otherwise scan the user's memberships and pick a default: prefer
+ * "Ruimtemeesters" (the primary org for everyone except the Prophys-
+ * only contingent), else fall back to the first membership. No-op for
+ * users with zero org memberships — DG will still reject them, but the
+ * fix for that is server-side (seat them via scripts/seed_clerk_orgs.py).
+ *
+ * Multi-org users (Ralph, Ron, Jarko, Bruno) land in Ruimtemeesters by
+ * default; they can switch later via a future OrganizationSwitcher in
+ * the chrome.
+ */
+async function ensureActiveOrganization(
+	clerk: import('@clerk/clerk-js').Clerk,
+): Promise<void> {
+	// Existing active-org context wins — never override a user's
+	// explicit choice if they've already switched.
+	const existing = (clerk as unknown as { organization?: { id?: string } | null }).organization;
+	if (existing?.id) return;
+
+	const memberships = clerk.user?.organizationMemberships ?? [];
+	if (memberships.length === 0) return;
+
+	const preferred =
+		memberships.find((m) => m.organization?.name?.toLowerCase() === 'ruimtemeesters') ??
+		memberships[0];
+	if (!preferred?.organization?.id) return;
+
+	try {
+		await clerk.setActive({ organization: preferred.organization.id });
+	} catch {
+		// setActive can fail if the org has been deleted server-side
+		// between membership-list fetch and now. Swallow — caller will
+		// just get a no-org JWT and DG will surface workspace_required.
 	}
 }
 
