@@ -58,29 +58,42 @@
 			isDark = document.documentElement.classList.contains('dark');
 		}
 	}
-	$: $theme, syncIsDark();
+	$: ($theme, syncIsDark());
 
 	// Minimal apply for a light/dark flip. Mirrors the path
 	// Settings/General.svelte takes (without the OLED / `her` / system
 	// branches) — we're only toggling between the two canonical modes
 	// here. Persisting to localStorage keeps the choice across reloads
 	// without going through the Settings modal.
+	//
+	// Defensive class cleanup: a user who arrived via Settings on
+	// `oled-dark` or `her` has those classes on <html>. Flipping just
+	// `light`/`dark` would leave the niche class on and the toggle
+	// would visually no-op. Strip every known theme class before
+	// applying the chosen one. Bugbot MED on PR #134.
+	const KNOWN_THEME_CLASSES = ['light', 'dark', 'oled-dark', 'her'];
 	function toggleTheme() {
 		const next = isDark ? 'light' : 'dark';
 		theme.set(next);
 		try {
 			localStorage.setItem('theme', next);
 		} catch {}
+		for (const cls of KNOWN_THEME_CLASSES) {
+			document.documentElement.classList.remove(cls);
+		}
+		document.documentElement.classList.add(next);
 		if (next === 'dark') {
-			document.documentElement.classList.remove('light');
-			document.documentElement.classList.add('dark');
 			document.documentElement.style.setProperty('--color-gray-800', '#333');
 			document.documentElement.style.setProperty('--color-gray-850', '#262626');
 			document.documentElement.style.setProperty('--color-gray-900', '#171717');
 			document.documentElement.style.setProperty('--color-gray-950', '#0d0d0d');
 		} else {
-			document.documentElement.classList.remove('dark');
-			document.documentElement.classList.add('light');
+			// Clear the OLED overrides if we're leaving a dark variant for
+			// light, so the next dark flip starts from a clean palette.
+			document.documentElement.style.removeProperty('--color-gray-800');
+			document.documentElement.style.removeProperty('--color-gray-850');
+			document.documentElement.style.removeProperty('--color-gray-900');
+			document.documentElement.style.removeProperty('--color-gray-950');
 		}
 		const meta = document.querySelector('meta[name="theme-color"]');
 		if (meta) meta.setAttribute('content', next === 'dark' ? '#171717' : '#ffffff');
@@ -263,41 +276,41 @@
 						</Menu>
 					{/if}
 
-				<Tooltip content={$i18n.t(isDark ? 'Schakel naar licht' : 'Schakel naar donker')}>
-					<button
-						type="button"
-						class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-						on:click={toggleTheme}
-						aria-label={$i18n.t(isDark ? 'Schakel naar licht' : 'Schakel naar donker')}
-						aria-pressed={isDark}
-					>
-						<div class=" m-auto self-center">
-							{#if isDark}
-								<Sun className=" size-10" strokeWidth="1.5" />
-							{:else}
-								<Moon className=" size-10" strokeWidth="1.5" />
-							{/if}
-						</div>
-					</button>
-				</Tooltip>
-
-				{#if $user?.role === 'admin' || ($user?.permissions.chat?.controls ?? true)}
-					<DocGenToggleButton />
-
-					<Tooltip content={$i18n.t('Controls')}>
+					<Tooltip content={$i18n.t(isDark ? 'Schakel naar licht' : 'Schakel naar donker')}>
 						<button
+							type="button"
 							class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-							on:click={async () => {
-								await showControls.set(!$showControls);
-							}}
-							aria-label="Controls"
+							on:click={toggleTheme}
+							aria-label={$i18n.t(isDark ? 'Schakel naar licht' : 'Schakel naar donker')}
+							aria-pressed={isDark}
 						>
 							<div class=" m-auto self-center">
-								<Knobs className=" size-10" strokeWidth="1" />
+								{#if isDark}
+									<Sun className=" size-10" strokeWidth="1.5" />
+								{:else}
+									<Moon className=" size-10" strokeWidth="1.5" />
+								{/if}
 							</div>
 						</button>
 					</Tooltip>
-				{/if}
+
+					{#if $user?.role === 'admin' || ($user?.permissions.chat?.controls ?? true)}
+						<DocGenToggleButton />
+
+						<Tooltip content={$i18n.t('Controls')}>
+							<button
+								class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
+								on:click={async () => {
+									await showControls.set(!$showControls);
+								}}
+								aria-label="Controls"
+							>
+								<div class=" m-auto self-center">
+									<Knobs className=" size-10" strokeWidth="1" />
+								</div>
+							</button>
+						</Tooltip>
+					{/if}
 
 					{#if $user !== undefined && $user !== null}
 						<UserMenu

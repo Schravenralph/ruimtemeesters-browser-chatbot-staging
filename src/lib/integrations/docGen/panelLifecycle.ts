@@ -69,12 +69,21 @@ export async function openDocGenPanelForCurrentChat(
 ): Promise<OpenDocGenPanelResult> {
 	const { i18n } = opts;
 	const t = get(i18n).t.bind(get(i18n));
-	const iframeBase = opts.iframeBase ?? DEFAULT_IFRAME_BASE;
-	const iframeOrigin = (() => {
+	// Validate the iframe base once. If a caller (or VITE_RMDG_IFRAME_BASE)
+	// hands us a malformed URL, fall back BOTH the iframeBase and the
+	// derived iframeOrigin together — the previous code only swapped the
+	// origin and then used the malformed string when building the iframe
+	// URL, so the iframe would 404 instead of recovering. The default is
+	// a well-formed URL, so this never throws on the fallback path.
+	const { iframeBase, iframeOrigin } = (() => {
+		const candidate = opts.iframeBase ?? DEFAULT_IFRAME_BASE;
 		try {
-			return new URL(iframeBase).origin;
+			return { iframeBase: candidate, iframeOrigin: new URL(candidate).origin };
 		} catch {
-			return DEFAULT_IFRAME_BASE;
+			return {
+				iframeBase: DEFAULT_IFRAME_BASE,
+				iframeOrigin: new URL(DEFAULT_IFRAME_BASE).origin
+			};
 		}
 	})();
 
