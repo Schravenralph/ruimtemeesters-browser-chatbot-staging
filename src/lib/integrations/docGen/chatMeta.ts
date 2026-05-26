@@ -111,7 +111,12 @@ async function mintAndPersistDocId(
 		}
 	};
 	const updated = { ...(inner as object), meta };
-	await updateChatById(token, chatId, updated);
+	try {
+		await updateChatById(token, chatId, updated);
+	} catch (err) {
+		await deleteDocGenDocument(apiBase, docId).catch(() => {});
+		throw err;
+	}
 	return docId;
 }
 
@@ -150,6 +155,18 @@ async function createDocGenDocument(apiBase: string, title?: string): Promise<st
 		throw new Error('docGen POST /documents: response missing id');
 	}
 	return id;
+}
+
+async function deleteDocGenDocument(apiBase: string, docId: string): Promise<void> {
+	const jwt = await getDocGenAuthToken();
+	if (!jwt) return;
+	const resp = await fetch(`${apiBase}/documents/${encodeURIComponent(docId)}`, {
+		method: 'DELETE',
+		headers: { Authorization: `Bearer ${jwt}` }
+	});
+	if (!resp.ok && resp.status !== 404) {
+		throw new Error(`docGen DELETE /documents/${docId} failed (HTTP ${resp.status})`);
+	}
 }
 
 type ProbeResult = 'exists' | 'missing' | 'inconclusive';

@@ -100,7 +100,7 @@ export async function openDocGenPanelForCurrentChat(
 
 	let docId: string;
 	try {
-		docId = await getOrMintDocIdForChat(localStorage.token, initialChatId);
+		docId = await getOrMintDocIdForChat(localStorage.token, initialChatId, iframeBase);
 	} catch (err) {
 		console.error('docGen: failed to read/mint docId for chat', err);
 		toast.error(t('Kon de document-id voor deze chat niet ophalen.'));
