@@ -6,14 +6,18 @@
 //
 //     chat.meta.docgen = { docId: "<uuid>" }
 //
-// First open in a chat mints + persists. Subsequent opens read back the
-// same id. Works across browsers (chat lives on the server) and is
-// trivial to extend with more docgen state if needed.
+// First open in a chat creates a real doc-gen row + persists the id.
+// Subsequent opens read back the same id (and self-heal if doc-gen no
+// longer has the row).
 //
-// API: a single helper. Caller is Chat.svelte / the toolbar-button
-// handler, which already has the chat id + the OWUI token in context.
+// Until 2026-05-26 this helper minted a client-side UUID and persisted
+// it WITHOUT telling doc-gen — every first "Open document" click then
+// hit a doc-gen 404 because no INSERT ever happened. Now the id we
+// store is one doc-gen has actually issued via POST /documents.
 
 import { getChatById, updateChatById } from '$lib/apis/chats';
+
+import { getDocGenAuthToken } from '$lib/integrations/docGenAuth';
 
 interface DocGenChatMeta {
 	docId?: string;
@@ -26,7 +30,9 @@ interface ChatMeta {
 
 interface ChatShape {
 	id?: string;
+	title?: string;
 	chat?: {
+		title?: string;
 		meta?: ChatMeta;
 		[key: string]: unknown;
 	};
@@ -34,20 +40,34 @@ interface ChatShape {
 	[key: string]: unknown;
 }
 
+const DEFAULT_DOC_GEN_API_BASE = 'https://doc-gen.datameesters.nl';
+
 /**
- * Read the docId for this chat. Mints + persists if absent.
+ * Read the docId for this chat. Mints + persists (against doc-gen) if
+ * absent or if the previously-stored id no longer exists in doc-gen.
  *
  * Returns the docId. Throws on a real backend failure — the caller
  * should toast and bail rather than silently opening a stranger doc.
  *
- * The chat object's shape varies (OWUI returns `{id, chat: {...}}` from
- * /chats/{id}, but the inner `chat` is the persistable blob); we handle
- * both wrappings.
+ * The `apiBase` arg exists for tests + future per-env overrides. In
+ * production the default points at the public doc-gen host.
  */
-export async function getOrMintDocIdForChat(token: string, chatId: string): Promise<string> {
+export async function getOrMintDocIdForChat(
+	token: string,
+	chatId: string,
+	apiBase: string = DEFAULT_DOC_GEN_API_BASE
+): Promise<string> {
 	const existing = await readDocIdFromChat(token, chatId);
-	if (existing) return existing;
-	return mintAndPersistDocId(token, chatId);
+	if (existing) {
+		// Self-heal: 404 on probe = doc-gen never had this row (history
+		// of orphaned client-minted UUIDs, or doc-gen DB loss). Anything
+		// else (auth blip, 5xx, network) is inconclusive → trust the
+		// stored id and let the iframe surface the real error.
+		const probe = await probeDocGenDocument(existing, apiBase);
+		if (probe !== 'missing') return existing;
+		return mintAndPersistDocId(token, chatId, apiBase, existing);
+	}
+	return mintAndPersistDocId(token, chatId, apiBase);
 }
 
 async function readDocIdFromChat(token: string, chatId: string): Promise<string | null> {
@@ -58,8 +78,12 @@ async function readDocIdFromChat(token: string, chatId: string): Promise<string 
 	return typeof docId === 'string' && docId.length > 0 ? docId : null;
 }
 
-async function mintAndPersistDocId(token: string, chatId: string): Promise<string> {
-	const docId = mintUuid();
+async function mintAndPersistDocId(
+	token: string,
+	chatId: string,
+	apiBase: string,
+	alreadyProbedMissing?: string
+): Promise<string> {
 	const raw = (await getChatById(token, chatId)) as ChatShape | null;
 	// Bugbot HIGH on 289a61f7: if getChatById returns null/empty, the
 	// previous code built `inner = {}` and POSTed it back. updateChatById
@@ -72,6 +96,27 @@ async function mintAndPersistDocId(token: string, chatId: string): Promise<strin
 			`docGen chatMeta: cannot mint docId — getChatById returned no chat for '${chatId}'`
 		);
 	}
+
+	// The first readDocIdFromChat may have returned null due to a
+	// transient getChatById failure. Now that we have the chat, check
+	// whether it already carries a docId and probe before minting.
+	// Skip if this is the same id that getOrMintDocIdForChat already
+	// probed and confirmed missing.
+	const existingDocId = (inner as ChatShape).meta?.docgen?.docId;
+	if (
+		typeof existingDocId === 'string' &&
+		existingDocId.length > 0 &&
+		existingDocId !== alreadyProbedMissing
+	) {
+		const probe = await probeDocGenDocument(existingDocId, apiBase);
+		if (probe !== 'missing') return existingDocId;
+	}
+
+	// Seed the doc title from the chat title (if any), so the user sees
+	// something meaningful in the doc-gen panel instead of "Untitled".
+	const chatTitle = pickTitle(inner) ?? pickTitle(raw);
+	const docId = await createDocGenDocument(apiBase, chatTitle);
+
 	// The /chats/{id} POST endpoint wraps the chat blob under `chat`.
 	// `updateChatById` re-wraps it the same way (chats/index.ts:967). We
 	// hand it the inner chat object with a merged meta.docgen.docId.
@@ -83,14 +128,93 @@ async function mintAndPersistDocId(token: string, chatId: string): Promise<strin
 		}
 	};
 	const updated = { ...(inner as object), meta };
-	await updateChatById(token, chatId, updated);
+	try {
+		await updateChatById(token, chatId, updated);
+	} catch (err) {
+		await deleteDocGenDocument(apiBase, docId).catch(() => {});
+		throw err;
+	}
 	return docId;
 }
 
-function mintUuid(): string {
-	const c = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
-	if (c?.randomUUID) return c.randomUUID();
-	// Fallback — should never hit in modern browsers. Belt-and-suspenders.
-	const rand = Math.random().toString(36).slice(2);
-	return `${Date.now().toString(36)}-${rand}`;
+function pickTitle(blob: ChatShape | Record<string, unknown> | null): string | undefined {
+	const t = (blob as { title?: unknown } | null)?.title;
+	return typeof t === 'string' && t.trim().length > 0 ? t.trim() : undefined;
+}
+
+/**
+ * Create a fresh document in doc-gen and return its id.
+ *
+ * Auth: Clerk JWT minted via docGenAuth.getDocGenAuthToken(). The
+ * doc-gen backend requires `o.id` in the JWT and 401s otherwise;
+ * docGenAuth handles active-org selection up front.
+ */
+async function createDocGenDocument(apiBase: string, title?: string): Promise<string> {
+	const jwt = await getDocGenAuthToken();
+	if (!jwt) {
+		throw new Error('docGen chatMeta: no Clerk JWT available — cannot create doc-gen document');
+	}
+	const resp = await fetch(`${apiBase}/documents`, {
+		method: 'POST',
+		headers: {
+			Authorization: `Bearer ${jwt}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify(title ? { title } : {})
+	});
+	if (!resp.ok) {
+		const body = await resp.text().catch(() => '');
+		throw new Error(`docGen POST /documents failed (HTTP ${resp.status}): ${body.slice(0, 200)}`);
+	}
+	const json = (await resp.json().catch(() => null)) as { id?: unknown } | null;
+	const id = json?.id;
+	if (typeof id !== 'string' || id.length === 0) {
+		throw new Error('docGen POST /documents: response missing id');
+	}
+	return id;
+}
+
+async function deleteDocGenDocument(apiBase: string, docId: string): Promise<void> {
+	const jwt = await getDocGenAuthToken();
+	if (!jwt) return;
+	const resp = await fetch(`${apiBase}/documents/${encodeURIComponent(docId)}`, {
+		method: 'DELETE',
+		headers: { Authorization: `Bearer ${jwt}` }
+	});
+	if (!resp.ok && resp.status !== 404) {
+		throw new Error(`docGen DELETE /documents/${docId} failed (HTTP ${resp.status})`);
+	}
+}
+
+type ProbeResult = 'exists' | 'missing' | 'inconclusive';
+
+/**
+ * HEAD-style existence probe for a doc-gen document. Returns:
+ *  - 'exists' on 2xx
+ *  - 'missing' on 404 (the only signal that re-minting is safe)
+ *  - 'inconclusive' on anything else (auth blip, 5xx, network) — the
+ *    caller should reuse the stored id rather than orphan it.
+ *
+ * Uses GET because the doc-gen backend doesn't expose HEAD; we ignore
+ * the response body. Auth is the same Clerk JWT used for POST.
+ */
+async function probeDocGenDocument(docId: string, apiBase: string): Promise<ProbeResult> {
+	let jwt: string | null = null;
+	try {
+		jwt = await getDocGenAuthToken();
+	} catch {
+		return 'inconclusive';
+	}
+	if (!jwt) return 'inconclusive';
+	let resp: Response;
+	try {
+		resp = await fetch(`${apiBase}/documents/${encodeURIComponent(docId)}`, {
+			headers: { Authorization: `Bearer ${jwt}` }
+		});
+	} catch {
+		return 'inconclusive';
+	}
+	if (resp.status === 404) return 'missing';
+	if (resp.ok) return 'exists';
+	return 'inconclusive';
 }
