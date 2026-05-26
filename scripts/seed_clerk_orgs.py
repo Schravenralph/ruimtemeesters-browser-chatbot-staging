@@ -148,7 +148,12 @@ def list_orgs(client: httpx.Client) -> dict[str, dict]:
     when we don't supply one (e.g. `prophys-1779743819308309587`), so we
     can't dedup by slug — key on the lowercased name instead. This is
     what `ORG_RM['slug']` / `ORG_PROPHYS['slug']` are matched against,
-    since those happen to be the same as the lowercased names."""
+    since those happen to be the same as the lowercased names.
+
+    No pagination loop: RM and Prophys are the only orgs the workspace
+    will hold for the foreseeable future. If a future spec adds a 100th
+    org we'll need to mirror the offset+200 pattern from
+    `list_org_memberships` / `list_users` (issue #137 note)."""
     res = clerk_get(client, '/organizations', params={'limit': 100})
     items = res.get('data', res) if isinstance(res, dict) else res
     out: dict[str, dict] = {}
