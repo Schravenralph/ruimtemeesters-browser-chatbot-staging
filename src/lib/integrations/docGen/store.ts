@@ -39,6 +39,33 @@ export const docGenPanelState: Writable<DocGenPanelState> = writable({
 	chatId: null
 });
 
+// ─── Proposal-accepted event bus (WI-016) ───────────────────────────────
+//
+// When the user clicks "Accept" on a pending edit in the DG iframe, the
+// bridge re-broadcasts a `proposal-accepted` event. The chat surface
+// listens via this store and re-prompts the model to continue, closing
+// the loop instead of leaving the conversation dead after the accept.
+//
+// Why a store (and not a direct subscription in Chat.svelte)? The active
+// client is recreated on every panel reopen, so a Chat-side subscription
+// would need to re-attach in lockstep. Letting `openDocGenIframe` own
+// the subscription means consumers just watch one store — and the seq
+// guarantees reactive subscribers can dedupe even when the same payload
+// is set twice.
+
+export interface ProposalAcceptedEvent {
+	proposalId: string;
+	/** Chat id the panel was open against when the accept fired. Lets
+	 *  consumers ignore events from a different chat. */
+	chatId: string;
+	/** Monotonic per-session sequence. Used by subscribers to dedupe
+	 *  reactive re-runs that don't reflect a fresh event. */
+	seq: number;
+}
+
+let proposalAcceptedSeq = 0;
+export const proposalAcceptedEvent: Writable<ProposalAcceptedEvent | null> = writable(null);
+
 // ─── Lifecycle ──────────────────────────────────────────────────────────
 
 export interface OpenDocGenIframeOptions {
@@ -65,6 +92,15 @@ export function openDocGenIframe(opts: OpenDocGenIframeOptions): DocGenIframeCli
 	const client = connectDocGenIframe({
 		iframe: opts.iframe,
 		iframeOrigin: opts.iframeOrigin ?? DEFAULT_IFRAME_ORIGIN
+	});
+	const chatId = opts.chatId;
+	client.on('proposal-accepted', (detail) => {
+		const proposalId =
+			detail && typeof detail === 'object' && 'proposalId' in detail
+				? String((detail as { proposalId: unknown }).proposalId ?? '')
+				: '';
+		if (!proposalId) return;
+		proposalAcceptedEvent.set({ proposalId, chatId, seq: ++proposalAcceptedSeq });
 	});
 	activeClient = client;
 	docGenPanelState.set({ open: true, docId: opts.docId, chatId: opts.chatId });

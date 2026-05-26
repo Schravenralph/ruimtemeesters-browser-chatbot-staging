@@ -108,7 +108,7 @@
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
 
-	import { docGenPanelState } from '$lib/integrations/docGen/store';
+	import { docGenPanelState, proposalAcceptedEvent } from '$lib/integrations/docGen/store';
 	import { getDocGenToolServerEntry } from '$lib/integrations/docGen/toolServersInject';
 
 	export let chatIdProp = '';
@@ -982,6 +982,22 @@
 	};
 
 	$: onHistoryChange(history);
+
+	// WI-016: when the user accepts a docgen_proposeEdit proposal in the
+	// DG iframe, send a follow-up turn so the model continues instead of
+	// the conversation going silent. Untranslated Dutch — the chat itself
+	// is Dutch-first, and the synthetic message is also part of the
+	// model's context, so a single canonical wording is what we want.
+	// `lastSeenProposalSeq` dedupes reactive re-runs.
+	let lastSeenProposalSeq = 0;
+	$: if (
+		$proposalAcceptedEvent &&
+		$proposalAcceptedEvent.chatId === $chatId &&
+		$proposalAcceptedEvent.seq > lastSeenProposalSeq
+	) {
+		lastSeenProposalSeq = $proposalAcceptedEvent.seq;
+		void submitPrompt('Voorstel geaccepteerd. Ga door met je werk.');
+	}
 
 	const getContents = () => {
 		const messages = history ? createMessagesList(history, history.currentId) : [];
