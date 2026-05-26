@@ -22,7 +22,7 @@ import {
 	type EmbedDescriptor
 } from '$lib/stores';
 import { getOrMintDocIdForChat } from './chatMeta';
-import { docGenPanelState, openDocGenIframe } from './store';
+import { disconnectDocGenIframe, docGenPanelState, openDocGenIframe } from './store';
 
 export interface OpenDocGenPanelOptions {
 	i18n: Writable<i18nType>;
@@ -91,6 +91,9 @@ export async function openDocGenPanelForCurrentChat(
 	const panel = get(docGenPanelState);
 	if (panel.open && panel.docId && panel.chatId === initialChatId) {
 		return { ok: true, docId: panel.docId, reopened: true };
+	}
+	if (panel.open) {
+		disconnectDocGenIframe();
 	}
 	// Temp-chat ids (`local:` prefix) aren't persisted server-side, so we
 	// can't bind a docId to them via chat.meta. Same guard as the toggle
