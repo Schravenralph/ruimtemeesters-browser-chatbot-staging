@@ -84,9 +84,6 @@ ORG_PROPHYS = {
     'slug': 'prophys',
 }
 
-# Default-active org for multi-org users.
-DEFAULT_ACTIVE_FOR_MULTI = 'ruimtemeesters'
-
 # Org role to assign — Clerk built-ins are `org:admin` and `org:member`.
 # Ralph is the chatbot's sole admin and should be admin of both orgs;
 # everyone else is `org:member`.
@@ -164,13 +161,24 @@ def list_orgs(client: httpx.Client) -> dict[str, dict]:
 
 def list_org_memberships(client: httpx.Client, org_id: str) -> dict[str, dict]:
     """Return {user_id: membership_dict} for an org."""
-    res = clerk_get(client, f'/organizations/{org_id}/memberships', params={'limit': 200})
-    items = res.get('data', res) if isinstance(res, dict) else res
-    out = {}
-    for m in items:
-        uid = (m.get('public_user_data') or {}).get('user_id') or m.get('user_id')
-        if uid:
-            out[uid] = m
+    out: dict[str, dict] = {}
+    offset = 0
+    while True:
+        res = clerk_get(
+            client,
+            f'/organizations/{org_id}/memberships',
+            params={'limit': 200, 'offset': offset},
+        )
+        items = res.get('data', res) if isinstance(res, dict) else res
+        if not items:
+            break
+        for m in items:
+            uid = (m.get('public_user_data') or {}).get('user_id') or m.get('user_id')
+            if uid:
+                out[uid] = m
+        if len(items) < 200:
+            break
+        offset += 200
     return out
 
 

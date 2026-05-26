@@ -38,7 +38,7 @@ export type OpenDocGenPanelResult =
 	  };
 
 export const DOCGEN_IFRAME_BASE =
-	(import.meta.env?.VITE_RMDG_IFRAME_BASE as string | undefined) ??
+	(import.meta.env?.VITE_RMDG_IFRAME_BASE as string | undefined) ||
 	'https://doc-gen.datameesters.nl';
 
 const DEFAULT_IFRAME_BASE = DOCGEN_IFRAME_BASE;
