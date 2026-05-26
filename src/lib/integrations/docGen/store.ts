@@ -61,6 +61,10 @@ export interface ProposalAcceptedEvent {
 	/** Monotonic per-session sequence. Used by subscribers to dedupe
 	 *  reactive re-runs that don't reflect a fresh event. */
 	seq: number;
+	/** Set to true once the Chat reactive handler has consumed this event
+	 *  (i.e. called submitPrompt). Prevents duplicate submissions on
+	 *  remount while still allowing unprocessed events to be retried. */
+	consumed?: boolean;
 }
 
 let proposalAcceptedSeq = 0;

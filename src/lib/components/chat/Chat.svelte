@@ -988,21 +988,28 @@
 	// the conversation going silent. Untranslated Dutch — the chat itself
 	// is Dutch-first, and the synthetic message is also part of the
 	// model's context, so a single canonical wording is what we want.
-	// `lastSeenProposalSeq` is seeded from the current store value so
-	// stale events from before this mount are ignored (prevents duplicate
-	// submits on component remount). The extra guards mirror the relevant
-	// submitPrompt preconditions so the seq is not consumed when the
-	// prompt would be rejected.
-	let lastSeenProposalSeq = get(proposalAcceptedEvent)?.seq ?? 0;
+	// `lastSeenProposalSeq` is seeded from the current store value ONLY
+	// when the event was already consumed (submitPrompt ran). Unconsumed
+	// events for this chat are left actionable so a remount after a missed
+	// accept still triggers the follow-up.
+	let lastSeenProposalSeq = (() => {
+		const evt = get(proposalAcceptedEvent);
+		if (!evt) return 0;
+		if (evt.consumed) return evt.seq;
+		if (evt.chatId === chatIdProp) return evt.seq - 1;
+		return evt.seq;
+	})();
 	$: if (
 		$proposalAcceptedEvent &&
 		$proposalAcceptedEvent.chatId === $chatId &&
 		$proposalAcceptedEvent.seq > lastSeenProposalSeq &&
+		!$proposalAcceptedEvent.consumed &&
 		history?.currentId &&
 		!selectedModels.includes('') &&
 		pendingOAuthTools.length === 0
 	) {
 		lastSeenProposalSeq = $proposalAcceptedEvent.seq;
+		proposalAcceptedEvent.update((e) => (e ? { ...e, consumed: true } : e));
 		void submitPrompt('Voorstel geaccepteerd. Ga door met je werk.');
 	}
 
