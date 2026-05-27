@@ -108,7 +108,7 @@
 	import Image from '../common/Image.svelte';
 	import { getBanners } from '$lib/apis/configs';
 
-	import { docGenPanelState } from '$lib/integrations/docGen/store';
+	import { docGenPanelState, proposalAcceptedEvent } from '$lib/integrations/docGen/store';
 	import { getDocGenToolServerEntry } from '$lib/integrations/docGen/toolServersInject';
 
 	export let chatIdProp = '';
@@ -982,6 +982,36 @@
 	};
 
 	$: onHistoryChange(history);
+
+	// WI-016: when the user accepts a docgen_proposeEdit proposal in the
+	// DG iframe, send a follow-up turn so the model continues instead of
+	// the conversation going silent. Untranslated Dutch — the chat itself
+	// is Dutch-first, and the synthetic message is also part of the
+	// model's context, so a single canonical wording is what we want.
+	// `lastSeenProposalSeq` is seeded from the current store value ONLY
+	// when the event was already consumed (submitPrompt ran). Unconsumed
+	// events for this chat are left actionable so a remount after a missed
+	// accept still triggers the follow-up.
+	let lastSeenProposalSeq = (() => {
+		const evt = get(proposalAcceptedEvent);
+		if (!evt) return 0;
+		if (evt.consumed) return evt.seq;
+		if (evt.chatId === chatIdProp) return evt.seq - 1;
+		return 0;
+	})();
+	$: if (
+		$proposalAcceptedEvent &&
+		$proposalAcceptedEvent.chatId === $chatId &&
+		$proposalAcceptedEvent.seq > lastSeenProposalSeq &&
+		!$proposalAcceptedEvent.consumed &&
+		history?.currentId &&
+		!selectedModels.includes('') &&
+		pendingOAuthTools.length === 0
+	) {
+		lastSeenProposalSeq = $proposalAcceptedEvent.seq;
+		proposalAcceptedEvent.update((e) => (e ? { ...e, consumed: true } : e));
+		void submitPrompt('Voorstel geaccepteerd. Ga door met je werk.');
+	}
 
 	const getContents = () => {
 		const messages = history ? createMessagesList(history, history.currentId) : [];
