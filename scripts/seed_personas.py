@@ -269,6 +269,12 @@ def _persona_payload(persona: PersonaDef) -> dict:
         'description': persona.description,
         'capabilities': persona.capabilities or None,
         'toolIds': persona.tool_ids,
+        # Per-tool-name allowlist read by the chatbot filter at
+        # src/lib/integrations/toolAllowlist/. Strict default: an empty
+        # list means no tools — every persona is expected to declare its
+        # own list in personas.yaml. The pre-seed check below warns when
+        # a persona ships with an empty allowlist.
+        'toolAllowlist': persona.tools,
         'filterIds': persona.filter_ids,
     }
     if persona.suggestion_prompts:
@@ -329,7 +335,11 @@ def run_dry(manifest: Manifest) -> int:
         print(f'Legacy persona ids to delete: {manifest.legacy_persona_ids}\n')
     print(f'Personas ({len(manifest.personas)}):')
     for p in manifest.personas:
-        print(f'  ? {p.id:25s} filters={p.filter_ids} tools={len(p.tool_ids)} prompt={len(p.system_prompt)}B')
+        allow = f'allowlist={len(p.tools)}' if p.tools else 'allowlist=EMPTY (no tools)'
+        print(
+            f'  ? {p.id:25s} filters={p.filter_ids} servers={len(p.tool_ids)} '
+            f'{allow} prompt={len(p.system_prompt)}B'
+        )
     print()
     print(f'Prompts ({len(manifest.prompts)}):')
     for pr in manifest.prompts:
@@ -384,6 +394,17 @@ def main() -> int:
 
     delete_legacy_personas(args.url, token, manifest.legacy_persona_ids)
     print()
+
+    # Strict allowlist default: an empty `tools` list means the persona
+    # has NO tools after seed (the chatbot filter drops everything).
+    # That's intentional — we control infra and prefer "loud break" over
+    # "silently revert to full exposure" — but loud means loud, so warn.
+    for p in manifest.personas:
+        if not p.tools:
+            print(
+                f'  ! WARNING: persona {p.id!r} has empty tools allowlist — model will see no tools',
+                file=sys.stderr,
+            )
 
     print(f'Seeding {len(manifest.personas)} personas...')
     ok = sum(1 for p in manifest.personas if seed_persona(args.url, token, p))

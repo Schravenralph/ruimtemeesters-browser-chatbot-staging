@@ -99,6 +99,111 @@ personas:
       - server:mcp:rm-dashboarding
       - server:mcp:rm-aggregator
       - server:mcp:rm-memory
+    # Tool-name allowlist (bare-prefix wildcards). See personas_schema.py.
+    # Curated for the RO advisory workflow: spatial inspection, BOPA flow,
+    # rules + compliance, solar, parkeernorm, demographic forecasting,
+    # document/policy retrieval, memory + BOPA-session bookkeeping.
+    # Excluded from geoportaal: scoring_* (niche grid analysis) — add back
+    # if a user invokes scoring in real chats.
+    tools:
+      # rm-geoportaal — spatial + BOPA + rules + solar
+      - geocode_address
+      - geocode_reverse
+      - bag_info_at_point
+      - bouwvlak_envelopes_at_point
+      - bouwvlak_envelopes_for_plan
+      - bouwvlak_violations
+      - check_aantal_woningen
+      - check_bouwvlak_hoogte
+      - get_stedelijkheid_at_point
+      - sample_spatial_layer_at_point
+      - sample_bopa_constraints_at_point
+      - bopa_*
+      - list_bopa_layers
+      - activities_at_point
+      - evaluate_rules
+      - decision
+      - ruimtelijke_toets
+      - applicability
+      - applicability_consolidated
+      - compliance_scan
+      - get_compliance_*
+      - get_building_data
+      - search_artikelen
+      - get_artikel
+      - get_artikel_history
+      - get_regeling_bekendmakingen
+      - list_activiteiten
+      - list_available_checks
+      - list_catalog_layers
+      - list_onderbouwing_sections
+      - list_parkeernorm_functies
+      - list_regelingen
+      - get_parkeernorm
+      - solar_*
+      - energy_area_balance
+      - get_onderbouwing_section
+      - query_spatial_rules
+      - search_pdok
+      - get_air_quality
+      - get_weather
+      # rm-databank — document/policy access
+      - search_documents
+      - get_document
+      - classify_information_request
+      - start_beleidsscan
+      - beleidsscan_query
+      - get_analysis_detail
+      - analyze_question
+      - theme_profile_for_gemeente
+      - compare_gemeenten_on_theme
+      - rules_by_gemeente_and_theme
+      - list_document_library_filters
+      - list_municipalities
+      - get_databank_stats
+      - browse_knowledge_graph
+      - get_entity
+      - search_raadsinformatie
+      # rm-tsa — demographic forecasting (all)
+      - run_population_forecast
+      - get_forecast_results
+      - run_backtest
+      - get_diagnostics
+      - list_gemeenten
+      - get_model_status
+      # rm-dashboarding — all
+      - get_dashboard_data
+      - get_statistics
+      - get_trends
+      - search_dashboard
+      # rm-aggregator — search + KG + spatial context
+      - search_documents
+      - search_semantic
+      - search_knowledge_graph
+      - get_document_summary
+      - get_entity_relations
+      - graph_stats
+      - traverse_graph
+      - context_at_coordinate
+      - context_municipality
+      - spatial_rules_at_point
+      - solar_potential
+      # rm-memory — BOPA sessions + recall/save
+      - create_bopa_session
+      - get_bopa_session
+      - list_bopa_sessions
+      - update_bopa_session
+      - recall_memory
+      - save_memory
+      - forget_memory
+      - list_memories
+      - get_memory
+      - summarize_session
+      - note_for_later
+      - list_entities
+      - resolve_thema
+      - list_themas
+      - list_projects
     filter_ids:
       - skills_context
     suggestion_prompts: []
@@ -122,6 +227,47 @@ personas:
       - server:mcp:rm-databank
       - server:mcp:rm-aggregator
       - server:mcp:rm-memory
+    # Tool-name allowlist (bare-prefix wildcards). Juridisch needs the
+    # full Databank surface (jurisprudentie + beleidsdocumenten) and
+    # document search via the aggregator. No spatial tools, no commercial
+    # tools, no BOPA-session writes — strictly read-and-cite.
+    tools:
+      # rm-databank — full document/policy/jurisprudentie surface
+      - search_documents
+      - get_document
+      - classify_information_request
+      - start_beleidsscan
+      - beleidsscan_query
+      - get_analysis_detail
+      - analyze_question
+      - theme_profile_for_gemeente
+      - compare_gemeenten_on_theme
+      - rules_by_gemeente_and_theme
+      - list_document_library_filters
+      - list_municipalities
+      - get_databank_stats
+      - browse_knowledge_graph
+      - get_entity
+      - search_raadsinformatie
+      # rm-aggregator — cross-source search + KG
+      - search_documents
+      - search_semantic
+      - search_knowledge_graph
+      - get_document_summary
+      - get_entity_relations
+      - graph_stats
+      - traverse_graph
+      # rm-memory — recall/save + entity lookups
+      - recall_memory
+      - save_memory
+      - forget_memory
+      - list_memories
+      - get_memory
+      - summarize_session
+      - note_for_later
+      - list_entities
+      - resolve_thema
+      - list_themas
     filter_ids:
       - skills_context
     suggestion_prompts: []
@@ -148,6 +294,44 @@ personas:
       - server:mcp:rm-dashboarding
       - server:mcp:rm-aggregator
       - server:mcp:rm-memory
+    # Tool-name allowlist (bare-prefix wildcards). Commercial covers
+    # tendering/opdrachten + gemeente status + sales prediction +
+    # dashboards. No databank-policy tools, no spatial tools.
+    tools:
+      # rm-opdrachten — full
+      - accept_inbox_item
+      - get_inbox
+      - get_pipeline
+      - get_pipeline_deadlines
+      - get_stats
+      - move_pipeline_stage
+      - search_library
+      # rm-riens — both
+      - get_gemeente_status
+      - update_gemeente
+      # rm-sales-predictor — full
+      - compare_models
+      - get_predictions
+      - list_models
+      - run_sales_forecast
+      # rm-dashboarding — full
+      - get_dashboard_data
+      - get_statistics
+      - get_trends
+      - search_dashboard
+      # rm-aggregator — commercial-relevant subset (search + KG)
+      - search_documents
+      - search_semantic
+      - search_knowledge_graph
+      - get_document_summary
+      # rm-memory — recall/save (no BOPA sessions)
+      - recall_memory
+      - save_memory
+      - forget_memory
+      - list_memories
+      - get_memory
+      - summarize_session
+      - note_for_later
     filter_ids:
       - skills_context
     suggestion_prompts: []

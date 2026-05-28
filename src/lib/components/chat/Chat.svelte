@@ -110,6 +110,7 @@
 
 	import { docGenPanelState, proposalAcceptedEvent } from '$lib/integrations/docGen/store';
 	import { getDocGenToolServerEntry } from '$lib/integrations/docGen/toolServersInject';
+	import { filterToolsByAllowlist } from '$lib/integrations/toolAllowlist';
 
 	export let chatIdProp = '';
 
@@ -2294,14 +2295,23 @@
 					const docGenEntry = getDocGenToolServerEntry({
 						panelOpen: get(docGenPanelState).open
 					});
-					return [
+					const assembled = [
 						...($toolServers ?? []).filter(
 							(server, idx) => toolServerIds.includes(idx) || toolServerIds.includes(server?.id)
 						),
 						// Direct terminal servers — always included when enabled (not routed through selectedToolIds)
-						...($terminalServers ?? []).filter((t) => !t.id),
-						...(docGenEntry ? [docGenEntry] : [])
+						...($terminalServers ?? []).filter((t) => !t.id)
 					];
+					// Per-persona tool-name allowlist (scripts/personas.yaml →
+					// meta.toolAllowlist). Strict default: a missing/empty
+					// allowlist drops every tool, since seed_personas.py
+					// guarantees every persona declares its own list. The
+					// DocGen entry is appended AFTER the filter — it's a
+					// chat-local capability (not part of the persona's MCP
+					// surface) and the allowlist isn't meant to gate it.
+					const allowlist = model.info?.meta?.toolAllowlist as string[] | undefined;
+					const filtered = filterToolsByAllowlist(assembled, allowlist);
+					return [...filtered, ...(docGenEntry ? [docGenEntry] : [])];
 				})(),
 				features: getFeatures(),
 				variables: {
