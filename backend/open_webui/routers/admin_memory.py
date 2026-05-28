@@ -21,7 +21,7 @@ import uuid
 from typing import Any
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field, ValidationError
 
 from open_webui.utils.auth import get_admin_user
@@ -36,45 +36,27 @@ DEFAULT_MEMORY_MCP_URL = 'http://rm-mcp-memory:3200/mcp'
 MCP_TIMEOUT_S = 10.0
 
 
-class CountedScopeType(BaseModel):
-    scope: str
-    type: str
-    count: int
-
-
-class CountedUser(BaseModel):
+class CountedOwner(BaseModel):
     owner_user_id: str
     count: int
 
 
-class CountedTool(BaseModel):
-    tool: str
-    calls: int
-    errors: int
+class BankStats(BaseModel):
+    """Per-bank telemetry sourced from Hindsight.
 
+    `document_count` is from /documents iteration (retain-call volume).
+    `fact_count` is the upstream-authoritative LLM-extracted unit count
+    from /v1/default/banks; null when the bank doesn't exist upstream
+    or when listBanks() failed.
+    """
 
-class EntriesBlock(BaseModel):
-    total: int
-    by_scope_and_type: list[CountedScopeType] = Field(default_factory=list)
-    by_user: list[CountedUser] = Field(default_factory=list)
-
-
-class RecallBlock(BaseModel):
-    calls: int
-    with_hits: int
-
-
-class SaveBlock(BaseModel):
-    calls: int
-
-
-class SessionEventsBlock(BaseModel):
-    window_days: int
-    total: int
-    by_tool: list[CountedTool] = Field(default_factory=list)
-    recall: RecallBlock
-    save: SaveBlock
-    notes: int
+    bank_id: str
+    document_count: int
+    fact_count: int | None = None
+    last_document_at: str | None = None
+    by_owner: list[CountedOwner] = Field(default_factory=list)
+    by_type: dict[str, int] = Field(default_factory=dict)
+    truncated: bool = False
 
 
 class BopaSessionsBlock(BaseModel):
@@ -84,11 +66,16 @@ class BopaSessionsBlock(BaseModel):
 
 class AdoptionStats(BaseModel):
     """Mirror of GetAdoptionStatsOutput in
-    Ruimtemeesters-MCP-Servers/packages/memory/src/tools/getAdoptionStats.ts."""
+    Ruimtemeesters-MCP-Servers/packages/memory/src/tools/getAdoptionStats.ts.
+
+    Post-Hindsight-cutover (Memory #67, #70): per-bank shape. The legacy
+    `entries.*` and `session_events.*` blocks are gone — `memory.entries`
+    is stale post-cutover, and tool-call audit moved to observability
+    sidecars (Langfuse / OpenLLMetry) per ADR-0012 §E.5.
+    """
 
     measured_at: str
-    entries: EntriesBlock
-    session_events: SessionEventsBlock
+    banks: list[BankStats] = Field(default_factory=list)
     bopa_sessions: BopaSessionsBlock
     projects: int
     users: int
@@ -111,20 +98,16 @@ def _resolve_mcp_url() -> str:
     return (os.environ.get('RM_MEMORY_MCP_URL') or DEFAULT_MEMORY_MCP_URL).strip() or DEFAULT_MEMORY_MCP_URL
 
 
-async def _call_get_adoption_stats(*, since_days: int | None) -> dict[str, Any]:
+async def _call_get_adoption_stats() -> dict[str, Any]:
     """Issue the admin tools/call to the memory MCP and return the parsed
     payload. Raises HTTPException on transport / protocol failures."""
-    arguments: dict[str, Any] = {}
-    if since_days is not None:
-        arguments['since_days'] = since_days
-
     rpc_payload = {
         'jsonrpc': '2.0',
         'id': str(uuid.uuid4()),
         'method': 'tools/call',
         'params': {
             'name': 'get_adoption_stats',
-            'arguments': arguments,
+            'arguments': {},
         },
     }
     headers = {
@@ -164,16 +147,16 @@ async def _call_get_adoption_stats(*, since_days: int | None) -> dict[str, Any]:
 
 @router.get('/stats', response_model=AdoptionStats)
 async def get_adoption_stats_endpoint(
-    since_days: int | None = Query(
-        default=None,
-        ge=1,
-        le=90,
-        description='Window for session_events aggregates, in days (1-90). Defaults to 7 on the MCP side.',
-    ),
     user=Depends(get_admin_user),
 ) -> AdoptionStats:
-    """Return cross-user memory adoption stats. Admin only."""
-    payload = await _call_get_adoption_stats(since_days=since_days)
+    """Return cross-user memory adoption stats. Admin only.
+
+    Post-cutover (Memory #67) there's no per-day window — counts are
+    per-bank from the live Hindsight state, not from a rolling
+    session_events table. The legacy `since_days` query param was
+    removed in MCP-Servers #122.
+    """
+    payload = await _call_get_adoption_stats()
     # Schema-validate inside the same 502 boundary as the MCP transport
     # — a malformed payload from the MCP is a gateway-level fault, not
     # a bug in the chatbot, so it must not surface as 500.

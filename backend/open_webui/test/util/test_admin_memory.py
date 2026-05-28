@@ -28,28 +28,29 @@ from open_webui.routers.admin_memory import (
 
 SAMPLE_OUTPUT = {
     'measured_at': '2026-05-06T08:00:00.000Z',
-    'entries': {
-        'total': 12,
-        'by_scope_and_type': [
-            {'scope': 'user', 'type': 'feedback', 'count': 7},
-            {'scope': 'user', 'type': 'project', 'count': 5},
-        ],
-        'by_user': [
-            {'owner_user_id': 'clerk:ralph', 'count': 8},
-            {'owner_user_id': 'clerk:other', 'count': 4},
-        ],
-    },
-    'session_events': {
-        'window_days': 7,
-        'total': 30,
-        'by_tool': [
-            {'tool': 'recall_memory', 'calls': 18, 'errors': 1},
-            {'tool': 'save_memory', 'calls': 10, 'errors': 0},
-        ],
-        'recall': {'calls': 18, 'with_hits': 14},
-        'save': {'calls': 10},
-        'notes': 2,
-    },
+    'banks': [
+        {
+            'bank_id': 'org-ruimtemeesters',
+            'document_count': 12,
+            'fact_count': 13,
+            'last_document_at': '2026-05-22T21:51:14Z',
+            'by_owner': [
+                {'owner_user_id': 'clerk:ralph', 'count': 8},
+                {'owner_user_id': 'clerk:other', 'count': 4},
+            ],
+            'by_type': {'feedback': 7, 'project': 5},
+            'truncated': False,
+        },
+        {
+            'bank_id': 'process-specs',
+            'document_count': 42,
+            'fact_count': 114,
+            'last_document_at': '2026-05-21T22:58:21Z',
+            'by_owner': [{'owner_user_id': 'system:admin', 'count': 42}],
+            'by_type': {'reference': 42},
+            'truncated': False,
+        },
+    ],
     'bopa_sessions': {'total': 4, 'active': 2},
     'projects': 3,
     'users': 6,
@@ -125,12 +126,14 @@ def test_happy_path_returns_typed_payload(monkeypatch):
 
     patcher, post_mock = _patch_async_client(_sse_response(SAMPLE_OUTPUT))
     with patcher:
-        payload = _run(_call_get_adoption_stats(since_days=14))
+        payload = _run(_call_get_adoption_stats())
 
     typed = AdoptionStats.model_validate(payload)
-    assert typed.entries.total == 12
-    assert typed.entries.by_scope_and_type[0].scope == 'user'
-    assert typed.session_events.recall.with_hits == 14
+    assert len(typed.banks) == 2
+    org_bank = next(b for b in typed.banks if b.bank_id == 'org-ruimtemeesters')
+    assert org_bank.document_count == 12
+    assert org_bank.fact_count == 13
+    assert org_bank.by_type == {'feedback': 7, 'project': 5}
     assert typed.bopa_sessions.active == 2
     assert typed.projects == 3
     assert typed.users == 6
@@ -141,7 +144,8 @@ def test_happy_path_returns_typed_payload(monkeypatch):
     body = call.kwargs['json']
     assert body['method'] == 'tools/call'
     assert body['params']['name'] == 'get_adoption_stats'
-    assert body['params']['arguments'] == {'since_days': 14}
+    # Post-cutover: no arguments. since_days was removed in MCP-Servers #122.
+    assert body['params']['arguments'] == {}
 
     headers = call.kwargs['headers']
     assert headers['Authorization'] == 'Bearer sekret'
@@ -152,25 +156,39 @@ def test_happy_path_returns_typed_payload(monkeypatch):
     assert 'text/event-stream' in headers['Accept']
 
 
-def test_no_since_days_omits_argument(monkeypatch):
-    """When the caller omits since_days, the MCP applies its default (7).
-    The BFF must NOT fabricate a value — pass an empty arguments object."""
-    monkeypatch.setenv('MEMORY_ADMIN_TOKEN', 'sekret')
-
-    patcher, post_mock = _patch_async_client(_sse_response(SAMPLE_OUTPUT))
-    with patcher:
-        _run(_call_get_adoption_stats(since_days=None))
-
-    body = post_mock.call_args.kwargs['json']
-    assert body['params']['arguments'] == {}
-
-
 def test_pure_json_framing_also_parses(monkeypatch):
     monkeypatch.setenv('MEMORY_ADMIN_TOKEN', 'sekret')
     patcher, _ = _patch_async_client(_sse_response(SAMPLE_OUTPUT, framing='json'))
     with patcher:
-        payload = _run(_call_get_adoption_stats(since_days=None))
-    assert payload['entries']['total'] == 12
+        payload = _run(_call_get_adoption_stats())
+    assert payload['banks'][0]['document_count'] == 12
+    assert payload['banks'][0]['fact_count'] == 13
+
+
+def test_fact_count_null_when_upstream_missing(monkeypatch):
+    """Banks that exist in our SHARED_BANK_IDS but not in Hindsight yet
+    return fact_count: null. The BFF must accept that shape (don't reject
+    a missing/None field — model_validate has fact_count optional)."""
+    monkeypatch.setenv('MEMORY_ADMIN_TOKEN', 'sekret')
+    payload = {
+        **SAMPLE_OUTPUT,
+        'banks': [
+            {
+                'bank_id': 'gemeente-knowledge',
+                'document_count': 0,
+                'fact_count': None,
+                'last_document_at': None,
+                'by_owner': [],
+                'by_type': {},
+                'truncated': False,
+            },
+        ],
+    }
+    patcher, _ = _patch_async_client(_sse_response(payload))
+    with patcher:
+        out = _run(_call_get_adoption_stats())
+    typed = AdoptionStats.model_validate(out)
+    assert typed.banks[0].fact_count is None
 
 
 # --- failure modes ---------------------------------------------------------
@@ -185,7 +203,7 @@ def test_mcp_502_propagates_as_502(monkeypatch):
     patcher, _ = _patch_async_client(failing)
     with patcher:
         with pytest.raises(HTTPException) as exc:
-            _run(_call_get_adoption_stats(since_days=None))
+            _run(_call_get_adoption_stats())
     assert exc.value.status_code == 502
 
 
@@ -194,7 +212,7 @@ def test_mcp_timeout_propagates_as_502(monkeypatch):
     patcher, _ = _patch_async_client(post_side_effect=httpx.TimeoutException('timed out'))
     with patcher:
         with pytest.raises(HTTPException) as exc:
-            _run(_call_get_adoption_stats(since_days=None))
+            _run(_call_get_adoption_stats())
     assert exc.value.status_code == 502
 
 
@@ -206,7 +224,7 @@ def test_malformed_response_propagates_as_502(monkeypatch):
     patcher, _ = _patch_async_client(bad)
     with patcher:
         with pytest.raises(HTTPException) as exc:
-            _run(_call_get_adoption_stats(since_days=None))
+            _run(_call_get_adoption_stats())
     assert exc.value.status_code == 502
     assert 'malformed' in exc.value.detail.lower()
 
@@ -226,7 +244,7 @@ def test_mcp_error_envelope_propagates_as_502(monkeypatch):
     patcher, _ = _patch_async_client(bad)
     with patcher:
         with pytest.raises(HTTPException) as exc:
-            _run(_call_get_adoption_stats(since_days=None))
+            _run(_call_get_adoption_stats())
     assert exc.value.status_code == 502
     assert 'forbidden' in exc.value.detail.lower()
 
@@ -248,7 +266,7 @@ def test_string_error_envelope_propagates_as_502(monkeypatch):
     patcher, _ = _patch_async_client(bad)
     with patcher:
         with pytest.raises(HTTPException) as exc:
-            _run(_call_get_adoption_stats(since_days=None))
+            _run(_call_get_adoption_stats())
     assert exc.value.status_code == 502
     assert 'forbidden' in exc.value.detail.lower()
 
@@ -264,7 +282,7 @@ def test_non_object_json_body_propagates_as_502(monkeypatch):
     patcher, _ = _patch_async_client(bad)
     with patcher:
         with pytest.raises(HTTPException) as exc:
-            _run(_call_get_adoption_stats(since_days=None))
+            _run(_call_get_adoption_stats())
     assert exc.value.status_code == 502
 
 
@@ -293,9 +311,9 @@ def test_late_notification_does_not_clobber_result(monkeypatch):
 
     patcher, _ = _patch_async_client(resp)
     with patcher:
-        payload = _run(_call_get_adoption_stats(since_days=None))
+        payload = _run(_call_get_adoption_stats())
     # The result envelope wins over the trailing notification.
-    assert payload['entries']['total'] == 12
+    assert payload['banks'][0]['document_count'] == 12
 
 
 def test_validation_error_propagates_as_502(monkeypatch):

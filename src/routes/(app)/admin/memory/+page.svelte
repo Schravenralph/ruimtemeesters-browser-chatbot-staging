@@ -2,7 +2,7 @@
 	import { getContext, onMount } from 'svelte';
 
 	import { user } from '$lib/stores';
-	import { getAdoptionStats, type AdoptionStats } from '$lib/apis/admin/memory';
+	import { getAdoptionStats, type AdoptionStats, type BankStats } from '$lib/apis/admin/memory';
 
 	import Spinner from '$lib/components/common/Spinner.svelte';
 
@@ -11,13 +11,12 @@
 	let stats: AdoptionStats | null = null;
 	let loading = true;
 	let errorMsg: string | null = null;
-	let sinceDays = 7;
 
 	const TOP_USERS = 10;
 
-	// Request-token to drop stale responses: if the admin clicks the window
-	// selector twice quickly, the first request's response could otherwise
-	// arrive after the second and overwrite the fresh stats with old data
+	// Request-token to drop stale responses: if the admin clicks Refresh
+	// twice quickly, the first request's response could otherwise arrive
+	// after the second and overwrite the fresh stats with old data
 	// (Bugbot finding on PR #59).
 	let requestId = 0;
 
@@ -26,7 +25,7 @@
 		loading = true;
 		errorMsg = null;
 		try {
-			const result = await getAdoptionStats(localStorage.token, sinceDays);
+			const result = await getAdoptionStats(localStorage.token);
 			if (myId !== requestId) return; // a newer refresh is in flight; drop
 			stats = result;
 		} catch (e: any) {
@@ -47,19 +46,48 @@
 		refresh();
 	});
 
-	const recallHitRate = (s: AdoptionStats): number => {
-		const calls = s.session_events.recall.calls;
-		if (calls === 0) return 0;
-		return s.session_events.recall.with_hits / calls;
-	};
-
-	const formatPct = (n: number): string => `${(n * 100).toFixed(1)}%`;
-	const formatTimestamp = (iso: string): string => {
+	const formatTimestamp = (iso: string | null): string => {
+		if (!iso) return '—';
 		try {
 			return new Date(iso).toLocaleString();
 		} catch {
 			return iso;
 		}
+	};
+
+	// Aggregate `by_owner` across all banks so the Top users card shows
+	// a single ranking instead of per-bank lists. Same prefixed-id
+	// convention as the legacy view (`api:<name>` / `clerk:<id>`).
+	const aggregateOwners = (banks: BankStats[]): { owner_user_id: string; count: number }[] => {
+		const totals = new Map<string, number>();
+		for (const b of banks) {
+			for (const row of b.by_owner) {
+				totals.set(row.owner_user_id, (totals.get(row.owner_user_id) ?? 0) + row.count);
+			}
+		}
+		return [...totals.entries()]
+			.map(([owner_user_id, count]) => ({ owner_user_id, count }))
+			.sort((a, b) => b.count - a.count || a.owner_user_id.localeCompare(b.owner_user_id));
+	};
+
+	$: owners = stats ? aggregateOwners(stats.banks) : [];
+
+	const totalDocs = (banks: BankStats[]): number =>
+		banks.reduce((sum, b) => sum + b.document_count, 0);
+
+	const totalFacts = (banks: BankStats[]): number | null => {
+		// If ANY bank has a known fact_count, sum them — banks with null
+		// (upstream missing) are skipped, and the surfaced number reflects
+		// only the banks Hindsight actually knows about.
+		let any = false;
+		let sum = 0;
+		for (const b of banks) {
+			if (b.fact_count !== null) {
+				any = true;
+				sum += b.fact_count;
+			}
+		}
+		return any ? sum : null;
 	};
 </script>
 
@@ -72,39 +100,19 @@
 		<div>
 			<h2 class="text-lg font-semibold">{$i18n.t('Memory adoption')}</h2>
 			<p class="text-xs text-gray-500 dark:text-gray-400">
-				{$i18n.t('Cross-user counts from')}
+				{$i18n.t('Per-bank counts from')}
 				<code>get_adoption_stats</code>. {$i18n.t('Admin only.')}
 			</p>
 		</div>
 
-		<div class="flex items-center gap-2 text-sm">
-			<label for="since-days" class="text-gray-500">{$i18n.t('Window')}</label>
-			<select
-				id="since-days"
-				bind:value={sinceDays}
-				on:change={(e) => {
-					// Read directly from the event so refresh sees the new
-					// value even if any future Svelte version delays the
-					// bind:value commit (Bugbot finding on PR #59).
-					sinceDays = Number((e.target as HTMLSelectElement).value);
-					refresh();
-				}}
-				class="rounded-sm bg-transparent border border-gray-200 dark:border-gray-700 px-1 py-0.5"
-			>
-				<option value={1}>1d</option>
-				<option value={7}>7d</option>
-				<option value={30}>30d</option>
-				<option value={90}>90d</option>
-			</select>
-			<button
-				type="button"
-				class="px-2 py-0.5 rounded-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-850"
-				on:click={refresh}
-				disabled={loading}
-			>
-				{$i18n.t('Refresh')}
-			</button>
-		</div>
+		<button
+			type="button"
+			class="px-2 py-0.5 rounded-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-850 text-sm"
+			on:click={refresh}
+			disabled={loading}
+		>
+			{$i18n.t('Refresh')}
+		</button>
 	</div>
 
 	{#if loading}
@@ -129,40 +137,82 @@
 		</div>
 	{:else if stats}
 		<div class="text-xs text-gray-500 mb-3">
-			{$i18n.t('Snapshot at {{measuredAt}} · window {{windowDays}}d', {
-				measuredAt: formatTimestamp(stats.measured_at),
-				windowDays: stats.session_events.window_days
+			{$i18n.t('Snapshot at {{measuredAt}}', {
+				measuredAt: formatTimestamp(stats.measured_at)
 			})}
 		</div>
 
 		<div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-			<!-- Entries card -->
+			<!-- Banks summary card -->
 			<section
-				class="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3"
+				class="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 md:col-span-2"
 			>
 				<header class="flex items-baseline justify-between mb-2">
-					<h3 class="text-sm font-semibold">{$i18n.t('Entries')}</h3>
-					<span class="text-2xl font-semibold">{stats.entries.total}</span>
+					<h3 class="text-sm font-semibold">{$i18n.t('Banks')}</h3>
+					<div class="flex items-baseline gap-3 text-sm">
+						<div>
+							<span class="text-xs text-gray-500">{$i18n.t('documents')}</span>
+							<span class="ml-1 font-semibold">{totalDocs(stats.banks)}</span>
+						</div>
+						<div>
+							<span class="text-xs text-gray-500">{$i18n.t('facts')}</span>
+							<span class="ml-1 font-semibold">
+								{#if totalFacts(stats.banks) === null}
+									—
+								{:else}
+									{totalFacts(stats.banks)}
+								{/if}
+							</span>
+						</div>
+					</div>
 				</header>
-				{#if stats.entries.by_scope_and_type.length === 0}
+				{#if stats.banks.length === 0}
 					<p class="text-xs text-gray-500">
-						{$i18n.t('No entries yet — the assistant will save them as users chat.')}
+						{$i18n.t('No banks yet.')}
 					</p>
 				{:else}
 					<table class="w-full text-xs">
 						<thead class="text-gray-500">
 							<tr>
-								<th class="text-left font-normal py-1">{$i18n.t('scope')}</th>
-								<th class="text-left font-normal py-1">{$i18n.t('type')}</th>
-								<th class="text-right font-normal py-1">{$i18n.t('count')}</th>
+								<th class="text-left font-normal py-1">{$i18n.t('bank')}</th>
+								<th class="text-right font-normal py-1">{$i18n.t('docs')}</th>
+								<th class="text-right font-normal py-1">{$i18n.t('facts')}</th>
+								<th class="text-left font-normal py-1 pl-3">{$i18n.t('top types')}</th>
+								<th class="text-right font-normal py-1">{$i18n.t('last write')}</th>
 							</tr>
 						</thead>
 						<tbody>
-							{#each stats.entries.by_scope_and_type as row}
+							{#each stats.banks as bank}
 								<tr class="border-t border-gray-100 dark:border-gray-800">
-									<td class="py-1 font-mono">{row.scope}</td>
-									<td class="py-1 font-mono">{row.type}</td>
-									<td class="py-1 text-right">{row.count}</td>
+									<td class="py-1 font-mono">
+										{bank.bank_id}
+										{#if bank.truncated}
+											<span
+												class="ml-1 text-xs text-amber-600 dark:text-amber-400"
+												title={$i18n.t('Scan ceiling reached — counts are lower bounds')}>⚠</span
+											>
+										{/if}
+									</td>
+									<td class="py-1 text-right">{bank.document_count}</td>
+									<td class="py-1 text-right">
+										{#if bank.fact_count === null}
+											<span class="text-gray-400" title={$i18n.t('bank not in /v1/default/banks')}
+												>—</span
+											>
+										{:else}
+											{bank.fact_count}
+										{/if}
+									</td>
+									<td class="py-1 pl-3 font-mono text-gray-600 dark:text-gray-400">
+										{Object.entries(bank.by_type)
+											.sort(([, a], [, b]) => b - a)
+											.slice(0, 3)
+											.map(([t, n]) => `${t}=${n}`)
+											.join(', ') || '—'}
+									</td>
+									<td class="py-1 text-right text-gray-500">
+										{formatTimestamp(bank.last_document_at)}
+									</td>
 								</tr>
 							{/each}
 						</tbody>
@@ -202,95 +252,30 @@
 				{/if}
 			</section>
 
-			<!-- Recent activity card -->
+			<!-- Top users card (aggregated across banks) -->
 			<section
-				class="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 md:col-span-2"
-			>
-				<header class="flex items-baseline justify-between mb-2">
-					<h3 class="text-sm font-semibold">
-						{$i18n.t('Recent activity')}
-						<span class="text-gray-500 font-normal text-xs"
-							>{$i18n.t('(last {{windowDays}}d)', {
-								windowDays: stats.session_events.window_days
-							})}</span
-						>
-					</h3>
-					<span class="text-2xl font-semibold">{stats.session_events.total}</span>
-				</header>
-				<div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-					<div>
-						<div class="text-xs text-gray-500">{$i18n.t('Recall calls')}</div>
-						<div class="font-medium">{stats.session_events.recall.calls}</div>
-					</div>
-					<div>
-						<div class="text-xs text-gray-500">{$i18n.t('Recall hit rate')}</div>
-						<div class="font-medium">
-							{stats.session_events.recall.calls === 0 ? '—' : formatPct(recallHitRate(stats))}
-						</div>
-					</div>
-					<div>
-						<div class="text-xs text-gray-500">{$i18n.t('Save calls')}</div>
-						<div class="font-medium">{stats.session_events.save.calls}</div>
-					</div>
-					<div>
-						<div class="text-xs text-gray-500">{$i18n.t('Notes')}</div>
-						<div class="font-medium">{stats.session_events.notes}</div>
-					</div>
-				</div>
-				{#if stats.session_events.by_tool.length > 0}
-					<table class="w-full text-xs mt-3">
-						<thead class="text-gray-500">
-							<tr>
-								<th class="text-left font-normal py-1">{$i18n.t('tool')}</th>
-								<th class="text-right font-normal py-1">{$i18n.t('calls')}</th>
-								<th class="text-right font-normal py-1">{$i18n.t('errors')}</th>
-								<th class="text-right font-normal py-1">{$i18n.t('err rate')}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each stats.session_events.by_tool as row}
-								<tr class="border-t border-gray-100 dark:border-gray-800">
-									<td class="py-1 font-mono">{row.tool}</td>
-									<td class="py-1 text-right">{row.calls}</td>
-									<td
-										class="py-1 text-right {row.errors > 0 ? 'text-red-700 dark:text-red-400' : ''}"
-									>
-										{row.errors}
-									</td>
-									<td class="py-1 text-right text-gray-500">
-										{row.calls === 0 ? '—' : formatPct(row.errors / row.calls)}
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				{/if}
-			</section>
-
-			<!-- Per-user breakdown card -->
-			<section
-				class="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3 md:col-span-2"
+				class="rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-3"
 			>
 				<header class="flex items-baseline justify-between mb-2">
 					<h3 class="text-sm font-semibold">
 						{$i18n.t('Top users')}
 						<span class="text-gray-500 font-normal text-xs"
-							>{$i18n.t('(by entry count, top {{n}})', { n: TOP_USERS })}</span
+							>{$i18n.t('(documents across all banks, top {{n}})', { n: TOP_USERS })}</span
 						>
 					</h3>
 				</header>
-				{#if stats.entries.by_user.length === 0}
+				{#if owners.length === 0}
 					<p class="text-xs text-gray-500">{$i18n.t('No per-user activity yet.')}</p>
 				{:else}
 					<table class="w-full text-xs">
 						<thead class="text-gray-500">
 							<tr>
 								<th class="text-left font-normal py-1">{$i18n.t('owner_user_id')}</th>
-								<th class="text-right font-normal py-1">{$i18n.t('entries')}</th>
+								<th class="text-right font-normal py-1">{$i18n.t('documents')}</th>
 							</tr>
 						</thead>
 						<tbody>
-							{#each stats.entries.by_user.slice(0, TOP_USERS) as row}
+							{#each owners.slice(0, TOP_USERS) as row}
 								<tr class="border-t border-gray-100 dark:border-gray-800">
 									<td class="py-1 font-mono break-all">{row.owner_user_id}</td>
 									<td class="py-1 text-right">{row.count}</td>
@@ -298,10 +283,10 @@
 							{/each}
 						</tbody>
 					</table>
-					{#if stats.entries.by_user.length > TOP_USERS}
+					{#if owners.length > TOP_USERS}
 						<div class="text-xs text-gray-500 mt-1">
 							{$i18n.t('… and {{count}} more', {
-								count: stats.entries.by_user.length - TOP_USERS
+								count: owners.length - TOP_USERS
 							})}
 						</div>
 					{/if}

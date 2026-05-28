@@ -1,59 +1,40 @@
 import { WEBUI_API_BASE_URL } from '$lib/constants';
 
-export interface CountedScopeType {
-	scope: string;
-	type: string;
-	count: number;
-}
-
-export interface CountedUser {
+export interface CountedOwner {
 	owner_user_id: string;
 	count: number;
 }
 
-export interface CountedTool {
-	tool: string;
-	calls: number;
-	errors: number;
+export interface BankStats {
+	bank_id: string;
+	document_count: number;
+	/** Upstream-computed count of LLM-extracted facts. May be larger
+	 *  than document_count when documents are chunked. Null when the
+	 *  bank doesn't exist upstream or the /v1/default/banks call failed. */
+	fact_count: number | null;
+	last_document_at: string | null;
+	by_owner: CountedOwner[];
+	by_type: Record<string, number>;
+	truncated: boolean;
 }
 
 export interface AdoptionStats {
 	measured_at: string;
-	entries: {
-		total: number;
-		by_scope_and_type: CountedScopeType[];
-		by_user: CountedUser[];
-	};
-	session_events: {
-		window_days: number;
-		total: number;
-		by_tool: CountedTool[];
-		recall: { calls: number; with_hits: number };
-		save: { calls: number };
-		notes: number;
-	};
+	banks: BankStats[];
 	bopa_sessions: { total: number; active: number };
 	projects: number;
 	users: number;
 }
 
 /** GET /api/v1/admin/memory/stats — admin-only memory adoption snapshot. */
-export const getAdoptionStats = async (
-	token: string,
-	sinceDays?: number
-): Promise<AdoptionStats> => {
+export const getAdoptionStats = async (token: string): Promise<AdoptionStats> => {
 	// `error` and `caught` together: an empty-string detail is still an error
 	// (a truthy-only check would let `null` leak as AdoptionStats — Bugbot
 	// finding on PR #57).
 	let error: { detail?: string } | string | null = null;
 	let caught = false;
 
-	const params = new URLSearchParams();
-	if (sinceDays !== undefined) {
-		params.set('since_days', String(sinceDays));
-	}
-	const qs = params.toString();
-	const url = `${WEBUI_API_BASE_URL}/admin/memory/stats${qs ? `?${qs}` : ''}`;
+	const url = `${WEBUI_API_BASE_URL}/admin/memory/stats`;
 
 	const res = await fetch(url, {
 		method: 'GET',
