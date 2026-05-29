@@ -195,8 +195,14 @@
 		// cookie can no longer expire-out from JS's perspective — localStorage
 		// persists indefinitely until something verifies it's still valid.
 		if (localStorage.token) {
+			// `getSessionUser` resolves with `null` (no throw) when the backend
+			// returns a non-JSON error body — e.g., a 502 HTML page from a
+			// reverse proxy. A bare `.then(() => true)` would treat that null
+			// resolution as valid and keep a possibly-expired token, blocking
+			// the OIDC auto-redirect guard below. Coerce the resolved value
+			// to a boolean so only a real user payload counts as valid.
 			const stillValid = await getSessionUser(localStorage.token)
-				.then(() => true)
+				.then((u) => u != null)
 				.catch(() => false);
 			if (!stillValid) {
 				localStorage.removeItem('token');
