@@ -68,7 +68,7 @@ class MemoryEntry(BaseModel):
 class ListMemoriesOutput(BaseModel):
     entries: list[MemoryEntry] = Field(default_factory=list)
     # Canonical id of the calling user as the BFF forwarded it to rm-memory
-    # (`clerk:<sub>` for OAuth users, the gateway key name like `api:mcp-shim`
+    # (`clerk:<sub>` for OAuth users, the gateway key name like `api:gateway`
     # for direct-login admins). The frontend compares this against
     # entry.owner_user_id to decide whether to render Edit/Forget controls
     # — `$user.id` is the local OWUI UUID and never matches.
@@ -335,8 +335,8 @@ async def list_memories_endpoint(
     # Surface the same canonical id rm-memory used to stamp entries so the
     # frontend can compare owner_user_id without knowing the OAuth shape.
     # Falls back to the gateway key name when no OIDC sub is present
-    # (direct-login admins land in the `api:mcp-shim` bucket).
-    result.caller_id = forwarded or 'api:mcp-shim'
+    # (direct-login admins land in the `api:gateway` bucket).
+    result.caller_id = forwarded or 'api:gateway'
     return result
 
 
