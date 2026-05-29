@@ -336,10 +336,7 @@ def run_dry(manifest: Manifest) -> int:
     print(f'Personas ({len(manifest.personas)}):')
     for p in manifest.personas:
         allow = f'allowlist={len(p.tools)}' if p.tools else 'allowlist=EMPTY (no tools)'
-        print(
-            f'  ? {p.id:25s} filters={p.filter_ids} servers={len(p.tool_ids)} '
-            f'{allow} prompt={len(p.system_prompt)}B'
-        )
+        print(f'  ? {p.id:25s} filters={p.filter_ids} servers={len(p.tool_ids)} {allow} prompt={len(p.system_prompt)}B')
     print()
     print(f'Prompts ({len(manifest.prompts)}):')
     for pr in manifest.prompts:

@@ -257,9 +257,7 @@ def ensure_membership(
                 raise
 
 
-def set_default_active_org(
-    client: httpx.Client, user_id: str, email: str, org_id: str, dry_run: bool
-) -> None:
+def set_default_active_org(client: httpx.Client, user_id: str, email: str, org_id: str, dry_run: bool) -> None:
     """No-op stub — kept as a marker, see module docstring.
 
     Verified 2026-05-25 against the live Clerk Backend API: PATCH on
@@ -294,9 +292,7 @@ def main() -> int:
         log.error('CLERK_SECRET_KEY not set')
         return 1
 
-    with httpx.Client(
-        headers={'Authorization': f'Bearer {key}'}, timeout=20.0
-    ) as client:
+    with httpx.Client(headers={'Authorization': f'Bearer {key}'}, timeout=20.0) as client:
         users = list_users(client)
         log.info('Clerk users: %d', len(users))
 
@@ -331,31 +327,23 @@ def main() -> int:
 
         # Live membership state (skip if org freshly created in dry-run mode).
         rm_members = (
-            list_org_memberships(client, rm['id'])
-            if not (args.dry_run and rm['id'].startswith('<new-'))
-            else {}
+            list_org_memberships(client, rm['id']) if not (args.dry_run and rm['id'].startswith('<new-')) else {}
         )
         proph_members = (
-            list_org_memberships(client, proph['id'])
-            if not (args.dry_run and proph['id'].startswith('<new-'))
-            else {}
+            list_org_memberships(client, proph['id']) if not (args.dry_run and proph['id'].startswith('<new-')) else {}
         )
 
         log.info('Ruimtemeesters:')
         for email in sorted(rm_emails):
             u = users[email]
             role = 'org:admin' if email in ADMIN_EMAILS else 'org:member'
-            ensure_membership(
-                client, rm['id'], 'ruimtemeesters', u['id'], email, role, rm_members, args.dry_run
-            )
+            ensure_membership(client, rm['id'], 'ruimtemeesters', u['id'], email, role, rm_members, args.dry_run)
 
         log.info('Prophys:')
         for email in sorted(proph_emails):
             u = users[email]
             role = 'org:admin' if email in ADMIN_EMAILS else 'org:member'
-            ensure_membership(
-                client, proph['id'], 'prophys', u['id'], email, role, proph_members, args.dry_run
-            )
+            ensure_membership(client, proph['id'], 'prophys', u['id'], email, role, proph_members, args.dry_run)
 
         # Default-active org per user. Multi-org → Ruimtemeesters; otherwise
         # the user's only org.
