@@ -206,7 +206,15 @@ personas:
       - list_projects
     filter_ids:
       - skills_context
-    suggestion_prompts: []
+    suggestion_prompts:
+      - title: ['Beleidsscan starten', 'Voor één gemeente op één thema']
+        content: 'Start een thematische beleidsscan voor gemeente {gemeente} op thema {thema}.'
+      - title: ['Locatiescan opvragen', 'Wat speelt er op dit adres?']
+        content: 'Doe een snelle locatiescan voor het adres {adres} — welke regels, beleid en gebiedskenmerken zijn relevant?'
+      - title: ['BOPA evaluatie', 'Begeleid me door de 6 fasen']
+        content: 'Begeleid mij door een BOPA evaluatie voor een project op {locatie}. Begin bij fase 1 (oriëntatie).'
+      - title: ['Beleidsvergelijking', 'Tussen gemeenten op één thema']
+        content: 'Vergelijk hoe gemeenten {gemeente_a} en {gemeente_b} omgaan met {thema} — laat verschillen zien met bronvermelding.'
     system_prompt: |-
       Je bent de RO Assistent voor adviseurs bij Ruimtemeesters. Nederlands.
 
@@ -270,7 +278,15 @@ personas:
       - list_themas
     filter_ids:
       - skills_context
-    suggestion_prompts: []
+    suggestion_prompts:
+      - title: ['Wetsartikel toelichten', 'Met exacte lid+sub citatie']
+        content: 'Leg artikel {artikel} uit de {wet} uit — met exacte lid- en sub-vermelding, en de toelichting uit de Memorie van Toelichting waar relevant.'
+      - title: ['Jurisprudentie zoeken', 'Recente uitspraken op een onderwerp']
+        content: 'Zoek recente jurisprudentie over {onderwerp}. Geef per uitspraak een korte samenvatting met ECLI en de relevante rechtsoverweging.'
+      - title: ['Strijdigheid met omgevingsplan', 'Toets een initiatief']
+        content: 'Toets of het volgende initiatief strijdig is met het geldende omgevingsplan: {beschrijving}. Welke regels raken het en waarom?'
+      - title: ['Onderbouwing schrijven', 'Van scan naar juridische motivering']
+        content: 'Schrijf een juridische onderbouwing voor {project} op basis van de scan-resultaten. Volg de Phase-5-rubric en label interpretaties expliciet.'
     system_prompt: |-
       Je bent de Juridisch Assistent voor adviseurs bij Ruimtemeesters. Nederlands.
 
@@ -334,7 +350,15 @@ personas:
       - note_for_later
     filter_ids:
       - skills_context
-    suggestion_prompts: []
+    suggestion_prompts:
+      - title: ['Gemeente-snapshot opvragen', 'Briefing voor een gesprek']
+        content: 'Maak een snapshot van gemeente {gemeente} — actuele opdrachten, eerder werk dat we daar deden, en aandachtspunten voor een eerstvolgend gesprek.'
+      - title: ['Opdrachten-triage', 'Inbox-prioriteit voor vandaag']
+        content: 'Loop de openstaande opdrachten door en triage op deadline en match — wat moet ik vandaag oppakken, accepteren, of laten lopen?'
+      - title: ['Acquisitie-kandidaten', 'Welke gemeenten nu benaderen?']
+        content: 'Geef mij een geprioriteerde lijst gemeenten om deze week voor acquisitie te benaderen op het thema {thema}, met onderbouwing per kandidaat.'
+      - title: ['Win/loss patroon', 'Wat werkt in eerdere opdrachten?']
+        content: 'Analyseer eerder gewonnen vs verloren opdrachten op {kenmerk}. Wat zijn de patronen en welke daarvan kan ik vandaag toepassen?'
     system_prompt: |-
       Je bent de Commercieel Assistent voor adviseurs bij Ruimtemeesters. Nederlands.
 
