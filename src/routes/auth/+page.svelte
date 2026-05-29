@@ -186,6 +186,23 @@
 			return;
 		}
 
+		// Proactively clear a stale `localStorage.token` so the OIDC auto-redirect
+		// guard below is accurate. Without this, an expired session arriving at
+		// /auth would still see truthy `localStorage.token` (the layout's async
+		// session-check hasn't cleared it yet on this tick), and the guard
+		// `!localStorage.token` would block the seamless OIDC re-auth. Unlike
+		// the previous `document.cookie.includes('token=')` probe — the httpOnly
+		// cookie can no longer expire-out from JS's perspective — localStorage
+		// persists indefinitely until something verifies it's still valid.
+		if (localStorage.token) {
+			const stillValid = await getSessionUser(localStorage.token)
+				.then(() => true)
+				.catch(() => false);
+			if (!stillValid) {
+				localStorage.removeItem('token');
+			}
+		}
+
 		form = $page.url.searchParams.get('form');
 
 		loaded = true;
@@ -205,7 +222,8 @@
 			// 2. User has a Clerk session cookie but no OpenWebUI token yet
 			// Skip if error param, oauth_callback flag, or localStorage token exists
 			// (prevents redirect loop after OIDC callback — the `token` cookie is
-			// now httpOnly so we can no longer probe it from JS).
+			// now httpOnly so we can no longer probe it from JS). Stale tokens
+			// were cleared above so an expired session still gets the redirect.
 			window.location.href = `${WEBUI_BASE_URL}/oauth/oidc/login`;
 		} else {
 			onboarding = $config?.onboarding ?? false;
