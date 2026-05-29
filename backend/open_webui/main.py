@@ -93,6 +93,7 @@ from open_webui.routers import (
     prompts,
     evaluations,
     rm_memory,
+    rm_skills,
     skills,
     tools,
     users,
@@ -1530,6 +1531,7 @@ app.include_router(skills.router, prefix='/api/v1/skills', tags=['skills'])
 app.include_router(memories.router, prefix='/api/v1/memories', tags=['memories'])
 app.include_router(admin_memory.router, prefix='/api/v1/admin/memory', tags=['admin-memory'])
 app.include_router(rm_memory.router, prefix='/api/v1/rm-memory', tags=['rm-memory'])
+app.include_router(rm_skills.router, prefix='/api/v1/rm-skills', tags=['rm-skills'])
 app.include_router(folders.router, prefix='/api/v1/folders', tags=['folders'])
 app.include_router(groups.router, prefix='/api/v1/groups', tags=['groups'])
 app.include_router(files.router, prefix='/api/v1/files', tags=['files'])

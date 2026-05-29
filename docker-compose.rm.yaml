@@ -198,6 +198,15 @@ services:
       # MCP URL is hard-coded to the compose-internal hostname; override only
       # when running the chatbot backend outside the rm-internal network.
       - RM_MEMORY_MCP_URL=${RM_MEMORY_MCP_URL:-http://rm-mcp-memory:3200/mcp}
+      # --- rm-skills user-facing BFF ---
+      # Same value also lives in TOOL_SERVER_CONNECTIONS above for the
+      # LLM on-demand lane; /api/v1/rm-skills/active proxies with this
+      # bearer for the navbar "Skills active" chip. Matches a value in
+      # rm-skills's SKILLS_API_KEYS (gateway-named entry).
+      - SKILLS_GATEWAY_TOKEN=${SKILLS_GATEWAY_TOKEN:-}
+      # rm-skills base URL — override when running the chatbot backend
+      # outside the rm-internal docker network.
+      - SKILLS_API_URL=${SKILLS_API_URL:-http://rm-skills:4101}
       # --- Telemetry off ---
       - SCARF_NO_ANALYTICS=true
       - DO_NOT_TRACK=true
