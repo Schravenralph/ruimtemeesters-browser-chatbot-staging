@@ -108,6 +108,7 @@
 	export let chat;
 	export let history;
 	export let selectedModels;
+	export let atSelectedModel: { id: string } | undefined = undefined;
 	export let showModelSelector = true;
 
 	export let onSaveTempChat: () => {};
@@ -181,9 +182,9 @@
 					</div>
 				{/if}
 
-				<div class="flex-none self-center mr-1 hidden sm:block">
-					<SkillsActiveChip {selectedModels} />
-				</div>
+			<div class="flex-none self-center mr-1 hidden sm:block">
+				<SkillsActiveChip {selectedModels} {atSelectedModel} />
+			</div>
 
 
 				<div class="self-start flex flex-none items-center text-gray-600 dark:text-gray-400">

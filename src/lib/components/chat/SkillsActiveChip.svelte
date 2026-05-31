@@ -2,6 +2,20 @@
 	import { getActiveSkills, type ActiveSkill } from '$lib/apis/rm-skills';
 
 	export let selectedModels: string[] = [];
+	export let atSelectedModel: { id: string } | undefined = undefined;
+
+	// Models the skills_context filter fires for (valve: target_models).
+	// The chip must not render for models outside this set — the filter
+	// no-ops for them so no skills are injected.
+	const TARGET_MODELS: Set<string> = new Set([
+		'rm-assistent',
+		'ro-assistent',
+		'juridisch-assistent',
+		'commercieel-assistent',
+		'RO-Assistent',
+		'Juridisch-Assistent',
+		'Commercieel-Assistent'
+	]);
 
 	// Same persona map as the skills_context inlet filter
 	// (rm-tools/filters/skills_context.py:_PERSONA_MAP) — kept in sync so
@@ -23,11 +37,12 @@
 	const resolvePersona = (modelId: string | undefined | null): string => {
 		if (!modelId) return '';
 		const trimmed = modelId.trim();
+		// Only resolve for models the filter actually targets.
+		if (!TARGET_MODELS.has(trimmed) && !TARGET_MODELS.has(trimmed.toLowerCase())) return '';
 		if (PERSONA_MAP[trimmed]) return PERSONA_MAP[trimmed];
 		const lc = trimmed.toLowerCase();
 		if (PERSONA_MAP[lc]) return PERSONA_MAP[lc];
-		// Last-chance fallback: strip rm- prefix.
-		return lc.startsWith('rm-') ? lc.slice(3) : lc;
+		return '';
 	};
 
 	let skills: ActiveSkill[] = [];
@@ -42,31 +57,29 @@
 			if (myGen === fetchGen) {
 				persona = '';
 				skills = [];
+				open = false;
 			}
 			return;
 		}
 		const result = await getActiveSkills(localStorage.token, slug);
 		if (myGen !== fetchGen) return;
 		if (!result) {
-			// `getActiveSkills` returns null only on transport failure (it
-			// already soft-fails). Hide the chip rather than render
-			// "Skills: 0", which would mislead the user — the
-			// `skills_context` filter may still be injecting skills via a
-			// direct rm-skills path that doesn't touch the BFF.
 			persona = '';
 			skills = [];
+			open = false;
 			return;
 		}
 		persona = result.persona || slug;
 		skills = result.skills ?? [];
 	};
 
-	// Refetch on persona change. The filter inside Chat.svelte resolves
-	// persona per request from `selectedModels[0]`; mirror that here so
-	// the chip can't disagree with what the LLM receives.
+	// Refetch on persona change. Use atSelectedModel when set (the user
+	// picked a model via @-mention), otherwise fall back to the navbar
+	// dropdown selection. This mirrors how Chat.svelte builds
+	// selectedModelIds for the actual request.
 	let lastSeenModel: string | null = null;
 	$: if (typeof window !== 'undefined') {
-		const current = selectedModels?.[0] ?? null;
+		const current = atSelectedModel?.id ?? selectedModels?.[0] ?? null;
 		if (current !== lastSeenModel) {
 			lastSeenModel = current;
 			void refresh(current ?? undefined);

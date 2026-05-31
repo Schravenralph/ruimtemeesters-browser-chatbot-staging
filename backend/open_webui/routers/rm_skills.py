@@ -4,10 +4,6 @@ Read-only proxy that surfaces the persona's mandatory skill list to the
 chatbot frontend so a navbar chip can show "Skills: N" without giving
 the frontend the gateway bearer or direct rm-skills access.
 
-Skill bodies are NOT proxied here — they can be 20 KB+ and are only
-needed by the `skills_context` inlet filter, which fetches them
-server-side. The chip only needs name + short description.
-
 Same gateway-token pattern as rm_memory.py: `SKILLS_GATEWAY_TOKEN`
 matches an entry in rm-skills's `SKILLS_API_KEYS`. The BFF also
 forwards `X-Forwarded-User` so rm-skills can future-extend with
@@ -22,6 +18,7 @@ from typing import Any, Literal
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from open_webui.models.functions import Functions
 from open_webui.utils.auth import get_verified_user
 from pydantic import BaseModel, Field
 
@@ -32,6 +29,8 @@ router = APIRouter()
 
 DEFAULT_SKILLS_URL = 'http://rm-skills:4101'
 SKILLS_TIMEOUT_S = 5.0
+MAX_SKILLS = 5  # Must match skills_context filter's Valves.max_skills default.
+SKILLS_CONTEXT_FUNCTION_ID = 'skills_context'
 
 PERSONA = Literal['ro-assistent', 'juridisch-assistent', 'commercieel-assistent']
 
@@ -78,6 +77,20 @@ def _forwarded_user_id(user: Any) -> str | None:
     return f'clerk:{sub}'
 
 
+def _user_opted_out(user: Any) -> bool:
+    """Check whether the user disabled skills_context via UserValves."""
+    user_id = getattr(user, 'id', None)
+    if not user_id:
+        return False
+    try:
+        valves = Functions.get_user_valves_by_id_and_user_id(SKILLS_CONTEXT_FUNCTION_ID, user_id)
+        if isinstance(valves, dict) and valves.get('enabled') is False:
+            return True
+    except Exception:  # noqa: BLE001
+        pass
+    return False
+
+
 @router.get('/active', response_model=ActiveSkillsOutput)
 async def list_active_skills(
     persona: PERSONA = Query(
@@ -93,7 +106,11 @@ async def list_active_skills(
 
     Returns an empty list if rm-skills has no mandatory entries for this
     persona; never returns 404. Transport / parser failures map to 502.
+    Returns an empty list when the user has opted out of skills_context.
     """
+    if _user_opted_out(user):
+        return ActiveSkillsOutput(persona=persona, skills=[])
+
     headers = {
         'Authorization': f'Bearer {_resolve_gateway_token()}',
         'Accept': 'application/json',
@@ -102,13 +119,33 @@ async def list_active_skills(
     if forwarded:
         headers['X-Forwarded-User'] = forwarded
 
-    url = f'{_resolve_skills_url().rstrip("/")}/api/v1/skills'
+    base_url = _resolve_skills_url().rstrip('/')
+    url = f'{base_url}/api/v1/skills'
 
     try:
         async with httpx.AsyncClient(timeout=SKILLS_TIMEOUT_S) as client:
             resp = await client.get(url, params={'persona': persona}, headers=headers)
-        resp.raise_for_status()
-        payload = resp.json()
+            resp.raise_for_status()
+            payload = resp.json()
+
+            mandatory = _parse_mandatory(payload)
+
+            # Verify each mandatory skill has a fetchable body with
+            # non-empty skill_md — skills whose body fetch fails are not
+            # injected by the filter, so the chip shouldn't show them.
+            verified: list[ActiveSkill] = []
+            for skill in mandatory:
+                body_url = f'{base_url}/api/v1/skills/{skill.name}'
+                try:
+                    body_resp = await client.get(body_url, headers=headers)
+                    body_resp.raise_for_status()
+                    body_data = body_resp.json()
+                    if isinstance(body_data, dict) and body_data.get('skill_md'):
+                        verified.append(skill)
+                except (httpx.HTTPError, ValueError):
+                    log.debug('Skipping skill %s — body fetch failed', skill.name)
+                    continue
+
     except httpx.HTTPStatusError as e:
         upstream = ''
         if e.response is not None:
@@ -129,7 +166,7 @@ async def list_active_skills(
             detail=f'rm-skills unreachable or returned invalid JSON: {e}',
         ) from e
 
-    return ActiveSkillsOutput(persona=persona, skills=_parse_mandatory(payload))
+    return ActiveSkillsOutput(persona=persona, skills=verified)
 
 
 def _parse_mandatory(payload: Any) -> list[ActiveSkill]:
@@ -138,6 +175,8 @@ def _parse_mandatory(payload: Any) -> list[ActiveSkill]:
     Accepts either `{skills: [...]}` (canonical) or a bare list (some
     early endpoints). Returns an empty list on any unexpected shape —
     a chip showing 0 is less surprising than a 502.
+
+    Truncates to MAX_SKILLS to match the skills_context filter's cap.
     """
     raw = payload.get('skills') if isinstance(payload, dict) else payload
     if not isinstance(raw, list):
@@ -150,4 +189,6 @@ def _parse_mandatory(payload: Any) -> list[ActiveSkill]:
         name = s.get('name')
         if isinstance(name, str) and name:
             out.append(ActiveSkill(name=name, description=s.get('description') or ''))
+        if len(out) >= MAX_SKILLS:
+            break
     return out
