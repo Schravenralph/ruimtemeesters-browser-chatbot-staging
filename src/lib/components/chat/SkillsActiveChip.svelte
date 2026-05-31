@@ -47,8 +47,18 @@
 		}
 		const result = await getActiveSkills(localStorage.token, slug);
 		if (myGen !== fetchGen) return;
-		persona = result?.persona ?? slug;
-		skills = result?.skills ?? [];
+		if (!result) {
+			// `getActiveSkills` returns null only on transport failure (it
+			// already soft-fails). Hide the chip rather than render
+			// "Skills: 0", which would mislead the user — the
+			// `skills_context` filter may still be injecting skills via a
+			// direct rm-skills path that doesn't touch the BFF.
+			persona = '';
+			skills = [];
+			return;
+		}
+		persona = result.persona || slug;
+		skills = result.skills ?? [];
 	};
 
 	// Refetch on persona change. The filter inside Chat.svelte resolves
