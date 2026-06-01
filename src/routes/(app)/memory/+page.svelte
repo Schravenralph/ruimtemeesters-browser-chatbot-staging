@@ -13,6 +13,7 @@
 	} from '$lib/apis/rm-memory';
 
 	import Spinner from '$lib/components/common/Spinner.svelte';
+	import MemoryCreateModal from '$lib/components/memory/MemoryCreateModal.svelte';
 
 	const i18n = getContext('i18n') as any;
 
@@ -22,6 +23,7 @@
 	let callerId: string | null = null;
 	let loading = true;
 	let errorMsg: string | null = null;
+	let showCreate = false;
 
 	let scopeFilter: MemoryScope | 'all' = 'all';
 	let typeFilter: MemoryType | 'all' = 'all';
@@ -313,7 +315,31 @@
 		>
 			{$i18n.t('Refresh')}
 		</button>
+		<button
+			type="button"
+			class="px-2 py-1 rounded-sm border border-gray-900 dark:border-gray-100
+			       bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900
+			       hover:bg-gray-800 dark:hover:bg-gray-200 transition"
+			on:click={() => (showCreate = true)}
+		>
+			+ {$i18n.t('New memory')}
+		</button>
 	</div>
+
+	<MemoryCreateModal
+		bind:show={showCreate}
+		on:created={() => {
+			// Clear filters so the freshly-saved entry is guaranteed to
+			// appear in the list — otherwise active scope/type/project/
+			// search filters can hide it and the success toast looks
+			// like a no-op.
+			scopeFilter = 'all';
+			typeFilter = 'all';
+			projectFilter = '';
+			searchTerm = '';
+			void refresh();
+		}}
+	/>
 
 	<!-- Status / errors -->
 	{#if loading}
