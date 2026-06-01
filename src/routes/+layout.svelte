@@ -148,7 +148,7 @@
 			// paths. socket.io evaluates `auth` again on every reconnect,
 			// so a token pushed mid-session is picked up by the explicit
 			// disconnect/connect cycle in `windowMessageEventHandler`.
-			auth: () => ({ token: getBearerToken() ?? localStorage.token })
+			auth: (cb) => cb({ token: getBearerToken() ?? localStorage.token })
 		});
 		await socket.set(_socket);
 
@@ -892,11 +892,13 @@
 		) {
 			if (parseClerkTokenClearedMessage(event.data)) {
 				clearBearerToken();
+				await user.set(null);
 				const live = $socket;
 				if (live) {
 					live.disconnect();
 					live.connect();
 				}
+				await goto('/auth');
 			}
 			return;
 		}
@@ -1238,9 +1240,10 @@
 				const currentUrl = `${window.location.pathname}${window.location.search}`;
 				const encodedUrl = encodeURIComponent(currentUrl);
 
-				if (localStorage.token) {
+				const activeToken = getBearerToken() ?? localStorage.token;
+				if (activeToken) {
 					// Get Session User Info
-					const sessionUser = await getSessionUser(localStorage.token).catch((error) => {
+					const sessionUser = await getSessionUser(activeToken).catch((error) => {
 						toast.error(`${error}`);
 						return null;
 					});
