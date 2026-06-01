@@ -47,6 +47,18 @@
 		sendToHost,
 		BRIDGE_PROTOCOL_VERSION
 	} from '$lib/bridge/geoportaal';
+	import {
+		getAllowedTokenOrigins,
+		isAllowedTokenOrigin,
+		parseClerkTokenClearedMessage,
+		parseClerkTokenMessage,
+		sendChatbotReady
+	} from '$lib/bridge/clerkToken';
+	import {
+		clearBearerToken,
+		getBearerToken,
+		setBearerToken
+	} from '$lib/stores/clerkBridge';
 	import GeoportaalEmbedBanner from '$lib/components/embed/GeoportaalEmbedBanner.svelte';
 	import { getFileContentById } from '$lib/apis/files';
 	import { goto } from '$app/navigation';
@@ -131,7 +143,12 @@
 			randomizationFactor: 0.5,
 			path: '/ws/socket.io',
 			transports: enableWebsocket ? ['websocket'] : ['polling', 'websocket'],
-			auth: { token: localStorage.token }
+			// Read the iframe-bridge bearer first (#145); fall back to
+			// localStorage.token for the standalone tab + native-Clerk
+			// paths. socket.io evaluates `auth` again on every reconnect,
+			// so a token pushed mid-session is picked up by the explicit
+			// disconnect/connect cycle in `windowMessageEventHandler`.
+			auth: (cb) => cb({ token: getBearerToken() ?? localStorage.token })
 		});
 		await socket.set(_socket);
 
@@ -175,11 +192,14 @@
 
 			console.log('version', version);
 
-			if (localStorage.getItem('token')) {
-				// Emit user-join event with auth token
-				_socket.emit('user-join', { auth: { token: localStorage.token } });
+			const authToken = getBearerToken() ?? localStorage.getItem('token');
+			if (authToken) {
+				// Emit user-join event with auth token (bridge bearer wins
+				// over the localStorage fallback when the parent has pushed
+				// a JWT via the rm:clerk-token handshake — #145).
+				_socket.emit('user-join', { auth: { token: authToken } });
 			} else {
-				console.warn('No token found in localStorage, user-join event not emitted');
+				console.warn('No token found in bridge or localStorage, user-join event not emitted');
 			}
 		});
 
@@ -819,7 +839,12 @@
 	const ALLOWED_MESSAGE_ORIGINS = [
 		...OPENWEBUI_MESSAGE_ORIGINS,
 		...RM_DATABANK_ORIGINS,
-		...RM_GEOPORTAAL_ORIGINS
+		...RM_GEOPORTAAL_ORIGINS,
+		// Clerk-Bearer handshake (#145). Single source of truth lives
+		// in $lib/bridge/clerkToken.ts; mirroring here keeps the outer
+		// origin-gate from blocking valid token pushes from origins
+		// that aren't otherwise allowlisted (e.g. datameesters.nl).
+		...getAllowedTokenOrigins()
 	];
 
 	const windowMessageEventHandler = async (event) => {
@@ -836,6 +861,45 @@
 		) {
 			syncStatsEventData = event.data;
 			showSyncStatsModal = true;
+			return;
+		}
+
+		// Clerk-Bearer handshake (#145, M1 of the iframe-bridge programme).
+		// The parent pushes a Clerk session JWT; we hold it in module-level
+		// memory and forward it as `Authorization: Bearer` on fetch + the
+		// Socket.IO handshake. Origin is double-checked against the
+		// token-specific allowlist (the outer ALLOWED_MESSAGE_ORIGINS includes
+		// other protocols' origins that must NOT be allowed to push tokens).
+		if (event.data?.type === 'rm:clerk-token' && isAllowedTokenOrigin(event.origin)) {
+			const payload = parseClerkTokenMessage(event.data);
+			if (payload) {
+				setBearerToken(payload.token);
+				// Force a socket reconnect so the new auth payload fires.
+				// No-op when the socket hasn't been created yet — the
+				// initial setupSocket call below will pick up the token
+				// from module-level memory.
+				const live = $socket;
+				if (live) {
+					live.disconnect();
+					live.connect();
+				}
+			}
+			return;
+		}
+		if (
+			event.data?.type === 'rm:clerk-token-cleared' &&
+			isAllowedTokenOrigin(event.origin)
+		) {
+			if (parseClerkTokenClearedMessage(event.data)) {
+				clearBearerToken();
+				await user.set(null);
+				const live = $socket;
+				if (live) {
+					live.disconnect();
+					live.connect();
+				}
+				await goto('/auth');
+			}
 			return;
 		}
 
@@ -907,6 +971,41 @@
 	onMount(async () => {
 		window.addEventListener('message', windowMessageEventHandler);
 
+		// Install the fetch proxy that injects the bridge bearer (#145).
+		// Same-origin only — never leaks the Clerk JWT to external URLs
+		// (images, third-party APIs). When no bridge token is set this is
+		// a pure pass-through, so standalone-tab + Geoportaal-native paths
+		// are unaffected.
+		if (typeof window !== 'undefined' && !window.__rmFetchProxyInstalled) {
+			const originalFetch = window.fetch.bind(window);
+			window.fetch = async (input, init) => {
+				const token = getBearerToken();
+				if (!token) return originalFetch(input, init);
+				let url;
+				try {
+					url =
+						input instanceof Request
+							? new URL(input.url, window.location.origin)
+							: new URL(String(input), window.location.origin);
+				} catch {
+					return originalFetch(input, init);
+				}
+				if (url.origin !== window.location.origin) {
+					return originalFetch(input, init);
+				}
+				const headers = new Headers(
+					init?.headers ?? (input instanceof Request ? input.headers : undefined)
+				);
+				headers.set('Authorization', `Bearer ${token}`);
+				const next = { ...(init ?? {}), headers };
+				if (input instanceof Request) {
+					return originalFetch(new Request(input, next));
+				}
+				return originalFetch(input, next);
+			};
+			window.__rmFetchProxyInstalled = true;
+		}
+
 		// If we're inside an iframe, signal the parent that we're ready so it
 		// can post the document context. Used by the Ruimtemeesters Databank
 		// embed; harmless no-op when we're top-level.
@@ -915,6 +1014,22 @@
 				window.parent.postMessage({ type: 'rm:chatbot:ready' }, '*');
 			} catch (e) {
 				console.debug('rm:chatbot:ready postMessage failed:', e);
+			}
+
+			// Clerk-Bearer handshake (#145). Distinct message type from
+			// the Databank `rm:chatbot:ready` colon-form above (which is
+			// the legacy Databank handshake — broadcast to '*' for back-
+			// compat). The hyphen-form `rm:chatbot-ready` is targeted to
+			// the allowlisted parent origin only, per ADR-0025's no-broadcast
+			// rule.
+			let parentOrigin = '';
+			try {
+				parentOrigin = new URL(document.referrer || '').origin;
+			} catch {
+				parentOrigin = '';
+			}
+			if (parentOrigin && isAllowedTokenOrigin(parentOrigin)) {
+				sendChatbotReady(parentOrigin, $WEBUI_VERSION ?? 'unknown');
 			}
 		}
 
@@ -1125,9 +1240,10 @@
 				const currentUrl = `${window.location.pathname}${window.location.search}`;
 				const encodedUrl = encodeURIComponent(currentUrl);
 
-				if (localStorage.token) {
+				const activeToken = getBearerToken() ?? localStorage.token;
+				if (activeToken) {
 					// Get Session User Info
-					const sessionUser = await getSessionUser(localStorage.token).catch((error) => {
+					const sessionUser = await getSessionUser(activeToken).catch((error) => {
 						toast.error(`${error}`);
 						return null;
 					});
