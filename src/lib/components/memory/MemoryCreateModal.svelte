@@ -3,11 +3,7 @@
 	import { toast } from 'svelte-sonner';
 
 	import Modal from '$lib/components/common/Modal.svelte';
-	import {
-		saveMemoryEntry,
-		type MemoryScope,
-		type MemoryType
-	} from '$lib/apis/rm-memory';
+	import { saveMemoryEntry, type MemoryScope, type MemoryType } from '$lib/apis/rm-memory';
 
 	const i18n = getContext('i18n') as any;
 	const dispatch = createEventDispatcher<{ created: { name: string } }>();
@@ -91,11 +87,7 @@
 				scope,
 				project_id: scope === 'project' ? projectId.trim() : undefined
 			});
-			toast.success(
-				result?.updated
-					? $i18n.t('Memory updated.')
-					: $i18n.t('Memory created.')
-			);
+			toast.success(result?.updated ? $i18n.t('Memory updated.') : $i18n.t('Memory created.'));
 			dispatch('created', { name: name.trim() });
 			show = false;
 		} catch (e: any) {
@@ -122,7 +114,10 @@
 		autocomplete="off"
 	>
 		<div>
-			<label for="memory-create-name" class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+			<label
+				for="memory-create-name"
+				class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300"
+			>
 				{$i18n.t('Name')} <span class="text-red-500">*</span>
 			</label>
 			<input
@@ -141,7 +136,10 @@
 		</div>
 
 		<div>
-			<label for="memory-create-description" class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+			<label
+				for="memory-create-description"
+				class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300"
+			>
 				{$i18n.t('Description')} <span class="text-red-500">*</span>
 			</label>
 			<input
@@ -158,7 +156,10 @@
 
 		<div class="grid grid-cols-2 gap-3">
 			<div>
-				<label for="memory-create-type" class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+				<label
+					for="memory-create-type"
+					class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300"
+				>
 					{$i18n.t('Type')}
 				</label>
 				<select
@@ -174,7 +175,10 @@
 			</div>
 
 			<div>
-				<label for="memory-create-scope" class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+				<label
+					for="memory-create-scope"
+					class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300"
+				>
 					{$i18n.t('Scope')}
 				</label>
 				<select
@@ -192,7 +196,10 @@
 
 		{#if scope === 'project'}
 			<div>
-				<label for="memory-create-project" class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+				<label
+					for="memory-create-project"
+					class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300"
+				>
 					{$i18n.t('Project ID')} <span class="text-red-500">*</span>
 				</label>
 				<input
@@ -208,7 +215,10 @@
 		{/if}
 
 		<div>
-			<label for="memory-create-content" class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+			<label
+				for="memory-create-content"
+				class="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300"
+			>
 				{$i18n.t('Content')} <span class="text-red-500">*</span>
 			</label>
 			<textarea
@@ -224,8 +234,10 @@
 		</div>
 
 		{#if err}
-			<div class="rounded-md bg-red-50 dark:bg-red-950/30 ring-1 ring-red-200 dark:ring-red-900
-			            px-3 py-2 text-xs text-red-700 dark:text-red-300">
+			<div
+				class="rounded-md bg-red-50 dark:bg-red-950/30 ring-1 ring-red-200 dark:ring-red-900
+			            px-3 py-2 text-xs text-red-700 dark:text-red-300"
+			>
 				{err}
 			</div>
 		{/if}
