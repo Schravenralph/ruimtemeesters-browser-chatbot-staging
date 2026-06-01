@@ -40,12 +40,34 @@
 		err = null;
 	};
 
-	$: if (!show && !saving) {
-		// Reset whenever the modal closes so the next open starts blank.
-		// Guarded on `!saving` so an in-flight POST started before close
-		// finishes naturally — its finally block sets `saving=false`, which
-		// retriggers this reactive and runs reset then.
-		setTimeout(reset, 200);
+	// Reset timer + abandon flag.
+	// - `resetTimer` is stored so a quick close→reopen can cancel a
+	//   pending reset before it wipes the freshly-opened form.
+	// - `abandoned` is flipped when the modal closes mid-save. The
+	//   submit() success path checks it and skips the toast/dispatch
+	//   so a backdrop/Esc dismissal stays a dismissal.
+	let resetTimer: ReturnType<typeof setTimeout> | null = null;
+	let abandoned = false;
+
+	$: if (show) {
+		// Reopened — cancel any pending reset so the form keeps state.
+		if (resetTimer) {
+			clearTimeout(resetTimer);
+			resetTimer = null;
+		}
+		abandoned = false;
+	} else {
+		// Modal closed. If a save was in flight, mark it abandoned so the
+		// success path bails. Defer reset until !saving (else clause runs
+		// again when saving flips false in the finally block).
+		if (saving) {
+			abandoned = true;
+		} else if (!resetTimer) {
+			resetTimer = setTimeout(() => {
+				reset();
+				resetTimer = null;
+			}, 200);
+		}
 	}
 
 	// Clear the project id whenever scope moves away from 'project'.
@@ -87,6 +109,13 @@
 				scope,
 				project_id: scope === 'project' ? projectId.trim() : undefined
 			});
+			if (abandoned) {
+				// User dismissed (backdrop click / Esc) mid-save. Don't
+				// toast or dispatch — they thought they cancelled. The
+				// entry IS saved in rm-memory; surfacing it would
+				// contradict the dismiss intent.
+				return;
+			}
 			toast.success(result?.updated ? $i18n.t('Memory updated.') : $i18n.t('Memory created.'));
 			dispatch('created', { name: name.trim() });
 			show = false;
