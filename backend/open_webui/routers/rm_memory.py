@@ -35,6 +35,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, status
 from pydantic import BaseModel, Field, ValidationError, model_validator
 
 from open_webui.utils.auth import get_verified_user
+from open_webui.utils.forwarded_user import forwarded_user_id as _forwarded_user_id
 from open_webui.utils.mcp_response import extract_tool_result, parse_mcp_response
 
 log = logging.getLogger(__name__)
@@ -250,37 +251,6 @@ def _validate_or_502(model: type[BaseModel], payload: dict[str, Any], tool_name:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=f'rm-memory MCP returned an unexpected payload shape: {e}',
         ) from e
-
-
-def _forwarded_user_id(user: Any) -> str | None:
-    """Construct the canonical `clerk:<sub>` identifier from the user's
-    OAuth profile, matching rm-memory's FORWARDED_ID_RE convention
-    (`(clerk|api):[A-Za-z0-9_.-]+`). Returns None when the user has
-    no OIDC oauth entry — the BFF then sends the request without an
-    X-Forwarded-User header, and rm-memory falls back to attributing
-    to the gateway's own API key.
-
-    The dict key is `'oidc'` (not `'clerk'`). OWUI's generic OIDC
-    integration is registered under the literal string `'oidc'` in
-    `OAUTH_PROVIDERS` (see `config.py`), and `update_user_oauth_by_id`
-    stores the per-provider entry under that key — so a Clerk-OIDC
-    user lands as `oauth = {"oidc": {"sub": "user_..."}}`.
-    `OAUTH_PROVIDER_NAME` is the *display* label only; it doesn't
-    influence the dict key. An earlier version of this helper read
-    `oauth['clerk']`, which always returned None, so every BFF call
-    silently dropped X-Forwarded-User → MCP 401 → BFF 502, and every
-    write attributed to `api:mcp-shim`. Issue #58 (b).
-    """
-    oauth = getattr(user, 'oauth', None) or {}
-    if not isinstance(oauth, dict):
-        return None
-    oidc_entry = oauth.get('oidc')
-    if not isinstance(oidc_entry, dict):
-        return None
-    sub = oidc_entry.get('sub')
-    if not sub or not isinstance(sub, str):
-        return None
-    return f'clerk:{sub}'
 
 
 # --- endpoints -------------------------------------------------------------
