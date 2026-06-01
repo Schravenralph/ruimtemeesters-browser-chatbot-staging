@@ -20,6 +20,7 @@ Commercieel-Assistent and sees no signal that opdrachten-scan or
 gemeente-snapshot are available.
 
 Persona-specific starters:
+
 - **Anchor the advisor to that persona's job** — RO sees BOPA /
   beleidsscan / locatiescan; Juridisch sees citation / onderbouwing;
   Commercieel sees opdrachten / acquisitie.
