@@ -114,6 +114,7 @@ from open_webui.utils.filter import (
 from open_webui.utils.code_interpreter import execute_code_jupyter
 from open_webui.utils.payload import apply_system_prompt_to_body
 from open_webui.utils.response import normalize_usage
+from open_webui.utils.forwarded_user import apply_forwarded_user_header
 from open_webui.utils.mcp.client import MCPClient
 
 
@@ -2536,6 +2537,14 @@ async def process_chat_payload(request, form_data, user, metadata, model):
                                 headers[FORWARD_SESSION_INFO_HEADER_CHAT_ID] = metadata.get('chat_id')
                             if metadata and metadata.get('message_id'):
                                 headers[FORWARD_SESSION_INFO_HEADER_MESSAGE_ID] = metadata.get('message_id')
+
+                        # Forward the canonical clerk:<sub> identity to every
+                        # MCP server. rm-memory uses it to attribute writes to
+                        # the chat user instead of falling back to the gateway's
+                        # api:mcp-shim principal — without this, chat-saved
+                        # entries are silo'd from the /memory UI (Chatbot#158).
+                        # Other MCPs that don't read X-Forwarded-User ignore it.
+                        apply_forwarded_user_header(headers, user)
 
                         mcp_clients[server_id] = MCPClient()
                         await mcp_clients[server_id].connect(
